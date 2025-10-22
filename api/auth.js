@@ -23,21 +23,22 @@ module.exports = async function handler(req, res) {
   try {
     const client = await clientPromise;
     const db = client.db('danger-sneakers');
-    
+
     // Handle different auth endpoints based on URL path and method
     const path = req.url.split('?')[0].toLowerCase();
     const method = req.method;
-    
+
     console.log('🔐 Auth handler:', method, path);
-    
+
+    // Handle Vercel routing - check if this is a sub-route
+    const isLoginRoute = path.includes('/login') || path.endsWith('/auth');
+    const isLogoutRoute = path.includes('/logout');
+    const isCheckRoute = path.includes('/check');
+
     // LOGIN - POST /api/auth or /api/auth/login
-    if (method === 'POST' && (
-      path === '/api/auth' || 
-      path === '/api/auth/login' || 
-      path.endsWith('/login')
-    )) {
+    if (method === 'POST' && isLoginRoute) {
       console.log('🔐 Processing login request');
-      
+
       const { email, password } = req.body;
 
       if (!email || !password) {
@@ -76,42 +77,36 @@ module.exports = async function handler(req, res) {
 
       res.setHeader('Set-Cookie', `token=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Strict`);
       console.log('✅ Login successful for:', email);
-      return res.status(200).json({ 
+      return res.status(200).json({
         message: 'تم تسجيل الدخول بنجاح',
         user: { email: user.email, role: user.role }
       });
     }
-    
+
     // LOGOUT - POST /api/auth/logout
-    else if (method === 'POST' && (
-      path === '/api/auth/logout' || 
-      path.endsWith('/logout')
-    )) {
+    else if (method === 'POST' && isLogoutRoute) {
       console.log('🔐 Processing logout request');
       res.setHeader('Set-Cookie', 'token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict');
       return res.status(200).json({ message: 'Logout successful' });
     }
-    
+
     // CHECK - GET /api/auth/check
-    else if (method === 'GET' && (
-      path === '/api/auth/check' || 
-      path.endsWith('/check')
-    )) {
+    else if (method === 'GET' && isCheckRoute) {
       console.log('🔐 Processing auth check request');
       return requireAuth(req, res, () => {
-        return res.status(200).json({ 
+        return res.status(200).json({
           message: 'Authenticated',
           user: req.user
         });
       });
     }
-    
+
     // Unknown endpoint
     else {
       console.log('❌ Unknown auth endpoint:', method, path);
       return res.status(404).json({ message: 'Auth endpoint not found' });
     }
-    
+
   } catch (error) {
     console.error('❌ Auth handler error:', error);
     return res.status(500).json({ message: 'حدث خطأ في الخادم', error: error.message });
