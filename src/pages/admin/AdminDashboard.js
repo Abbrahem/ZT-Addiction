@@ -148,31 +148,49 @@ const AdminDashboard = () => {
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    
-    const formData = new FormData();
-    files.forEach(file => {
-      formData.append('images', file);
-    });
 
     try {
       console.log('Uploading images...', files.length);
-      const response = await axios.post('/api/upload', formData, {
-        withCredentials: true,
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      
-      console.log('Upload response:', response.data);
-      
-      if (response.data.imageIds && response.data.imageIds.length > 0) {
+      const uploadedIds = [];
+
+      for (const file of files) {
+        // Convert file to base64
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const base64String = reader.result.split(',')[1]; // Remove data:image/...;base64, prefix
+            resolve(base64String);
+          };
+          reader.readAsDataURL(file);
+        });
+
+        // Upload as JSON
+        const response = await axios.post('/api/upload', {
+          imageData: base64,
+          filename: file.name,
+          contentType: file.type
+        }, {
+          withCredentials: true,
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        console.log('Upload response:', response.data);
+        
+        if (response.data.imageId) {
+          uploadedIds.push(response.data.imageId);
+        }
+      }
+
+      if (uploadedIds.length > 0) {
         setProductForm(prev => ({
           ...prev,
-          images: [...prev.images, ...response.data.imageIds]
+          images: [...prev.images, ...uploadedIds]
         }));
         
         Swal.fire({ 
           icon: 'success', 
           title: 'Images Uploaded', 
-          text: `${response.data.imageIds.length} image(s) uploaded successfully`,
+          text: `${uploadedIds.length} image(s) uploaded successfully`,
           timer: 2000,
           showConfirmButton: false
         });
