@@ -43,6 +43,8 @@ module.exports = async function handler(req, res) {
     }
 
     console.log('🔍 Looking for image:', imageId);
+    console.log('🔍 Request URL:', req.url);
+    console.log('🔍 Image ID type:', typeof imageId, 'Length:', imageId.length);
 
     // Try to parse as ObjectId first (for real MongoDB)
     let objectId;
@@ -97,6 +99,32 @@ module.exports = async function handler(req, res) {
         res.setHeader('Cache-Control', 'public, max-age=31536000');
         return res.send(mockImage.buffer);
       }
+    }
+
+    // Check images collection for base64 stored images
+    try {
+      console.log('🔍 Checking images collection for:', imageId);
+      let imageDoc;
+
+      // Try as ObjectId first
+      try {
+        imageDoc = await db.collection('images').findOne({ _id: new ObjectId(imageId) });
+      } catch (error) {
+        // Try as string ID
+        imageDoc = await db.collection('images').findOne({ _id: imageId });
+      }
+
+      if (imageDoc && imageDoc.data) {
+        console.log('✅ Found image in collection, size:', imageDoc.size);
+        const buffer = Buffer.from(imageDoc.data, 'base64');
+        res.setHeader('Content-Type', imageDoc.contentType || 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        return res.send(buffer);
+      } else {
+        console.log('⚠️ Image document not found or no data field');
+      }
+    } catch (collectionError) {
+      console.log('⚠️ Error checking images collection:', collectionError.message);
     }
 
     // Image not found anywhere

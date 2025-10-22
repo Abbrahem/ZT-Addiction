@@ -49,9 +49,11 @@ module.exports = async function handler(req, res) {
 
         const result = await db.collection('images').insertOne(imageDoc);
         
+        console.log('✅ Image stored in collection with ID:', result.insertedId);
+        
         return res.status(200).json({ 
           message: 'Image uploaded successfully',
-          imageId: result.insertedId
+          imageId: result.insertedId.toString() // Convert to string for consistency
         });
 
       } else {
