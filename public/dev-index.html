@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="/c1.jpg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#111827" />
+    <meta name="description" content="ZT ADDICTION - Premium Perfume Shop" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>ZT ADDICTION - Premium Perfume Shop</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 50px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        min-height: 100vh;
+        margin: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: rgba(255,255,255,0.1);
+        padding: 40px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+      }
+      h1 { font-size: 2.5em; margin-bottom: 20px; }
+      p { font-size: 1.2em; margin-bottom: 30px; }
+      .btn {
+        display: inline-block;
+        padding: 15px 30px;
+        background: #ff6b6b;
+        color: white;
+        text-decoration: none;
+        border-radius: 10px;
+        font-size: 1.1em;
+        margin: 10px;
+        transition: all 0.3s;
+      }
+      .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🌟 ZT ADDICTION</h1>
+      <p>Backend Server Running Successfully!</p>
+      <p>للحصول على التجربة الكاملة، استخدم:</p>
+      <a href="#" class="btn" onclick="runDevCommand()">npm run dev</a>
+      <br><br>
+      <p>أو اذهب مباشرة إلى:</p>
+      <a href="http://localhost:3000" class="btn">Frontend (Port 3000)</a>
+      <a href="/api/products" class="btn">API Test</a>
+    </div>
+    
+    <script>
+      function runDevCommand() {
+        alert('في الـ Terminal، اكتب: npm run dev');
+      }
+    </script>
+  </body>
+</html>

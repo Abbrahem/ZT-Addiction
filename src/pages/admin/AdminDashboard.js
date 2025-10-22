@@ -1,0 +1,690 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+
+const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('add-product');
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Product form state
+  const [productForm, setProductForm] = useState({
+    name: '',
+    priceEGP: '',
+    description: '',
+    collection: '',
+    size: '',
+    images: []
+  });
+
+  // Edit product state
+  const [editingProduct, setEditingProduct] = useState(null);
+
+  const collections = ['Summer Samples', 'Winter Samples', 'Bundles'];
+  const availableSizes = ['3ml', '5ml', '10ml', '30ml', '50ml', '70ml', '80ml', '100ml'];
+
+  useEffect(() => {
+    checkAuth();
+    if (activeTab === 'manage-products') {
+      fetchProducts();
+    }
+    if (activeTab === 'orders') {
+      fetchOrders();
+    }
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const checkAuth = async () => {
+    try {
+      await axios.get('/api/auth/check', { withCredentials: true });
+    } catch (error) {
+      navigate('/admin');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('/api/auth/logout', {}, { withCredentials: true });
+      navigate('/admin');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const response = await axios.get('/api/products');
+      setProducts(response.data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      console.log('Fetching orders...');
+      const response = await axios.get('/api/orders', { withCredentials: true });
+      console.log('Orders response:', response.data);
+      console.log('Orders length:', response.data.length);
+      setOrders(response.data || []);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrders([]);
+    }
+  };
+
+  const handleProductSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (editingProduct) {
+        await axios.put(`/api/products/${editingProduct._id}`, productForm, { withCredentials: true });
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'Product Updated Successfully!', 
+          text: 'The product has been updated.',
+          showConfirmButton: true,
+          confirmButtonText: 'View Product',
+          showCancelButton: true,
+          cancelButtonText: 'Continue Editing'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            window.open(`/products/${editingProduct._id}`, '_blank');
+          }
+        });
+        setEditingProduct(null);
+      } else {
+        const response = await axios.post('/api/products', productForm, { withCredentials: true });
+        const productId = response.data.productId;
+        
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'Product Added Successfully!', 
+          html: `
+            <p>Your product has been created with ID: <strong>${productId}</strong></p>
+            <p>What would you like to do next?</p>
+          `,
+          showConfirmButton: true,
+          confirmButtonText: 'View Product',
+          showCancelButton: true,
+          cancelButtonText: 'Add Another Product',
+          showDenyButton: true,
+          denyButtonText: 'Manage Products'
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Open product in new tab
+            window.open(`/products/${productId}`, '_blank');
+          } else if (result.isDenied) {
+            // Switch to manage products tab
+            setActiveTab('manage-products');
+          }
+          // If cancelled, stay on add product form
+        });
+      }
+      
+      setProductForm({
+        name: '', priceEGP: '', description: '', collection: '', size: '', images: []
+      });
+      
+      if (activeTab === 'manage-products') {
+        fetchProducts();
+      }
+    } catch (error) {
+      console.error('Product creation error:', error);
+      Swal.fire({ 
+        icon: 'error', 
+        title: 'Error', 
+        text: error.response?.data?.message || 'Failed to save product',
+        footer: error.response?.data?.error ? `Details: ${error.response.data.error}` : ''
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    const formData = new FormData();
+    files.forEach(file => {
+      formData.append('images', file);
+    });
+
+    try {
+      console.log('Uploading images...', files.length);
+      const response = await axios.post('/api/upload', formData, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      console.log('Upload response:', response.data);
+      
+      if (response.data.imageIds && response.data.imageIds.length > 0) {
+        setProductForm(prev => ({
+          ...prev,
+          images: [...prev.images, ...response.data.imageIds]
+        }));
+        
+        Swal.fire({ 
+          icon: 'success', 
+          title: 'Images Uploaded', 
+          text: `${response.data.imageIds.length} image(s) uploaded successfully`,
+          timer: 2000,
+          showConfirmButton: false
+        });
+      }
+    } catch (error) {
+      console.error('Image upload error:', error);
+      Swal.fire({ 
+        icon: 'error', 
+        title: 'Upload Failed', 
+        text: error.response?.data?.message || 'Failed to upload images' 
+      });
+    }
+  };
+
+  const removeImage = (index) => {
+    setProductForm(prev => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index)
+    }));
+  };
+
+
+  const handleEditProduct = (product) => {
+    setProductForm({
+      name: product.name,
+      priceEGP: product.priceEGP,
+      description: product.description,
+      collection: product.collection,
+      size: product.size,
+      images: product.images
+    });
+    setEditingProduct(product);
+    setActiveTab('add-product');
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: 'This action cannot be undone!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!'
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await axios.delete(`/api/products/${productId}`, { withCredentials: true });
+        Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
+        fetchProducts();
+      } catch (error) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete product' });
+      }
+    }
+  };
+
+  const handleSoldOutToggle = async (productId, currentStatus) => {
+    try {
+      console.log('Toggling soldOut for product:', productId, 'current status:', currentStatus);
+      console.log('Sending request body:', { soldOut: !currentStatus });
+      
+      const response = await axios.patch(`/api/products/${productId}/soldout`, {
+        soldOut: !currentStatus
+      }, { 
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('SoldOut toggle response:', response.data);
+      fetchProducts(); // Refresh the products list
+    } catch (error) {
+      console.error('SoldOut toggle error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to update product status' });
+    }
+  };
+
+  const handleOrderStatusUpdate = async (orderId, newStatus) => {
+    try {
+      console.log('Updating order status:', orderId, 'to:', newStatus);
+      console.log('Sending request body:', { status: newStatus });
+      
+      const response = await axios.patch(`/api/orders/${orderId}`, 
+        { status: newStatus }, 
+        { 
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      console.log('Order status update response:', response.data);
+      fetchOrders(); // Refresh the orders list
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    try {
+      const result = await Swal.fire({
+        title: 'Are you sure?',
+        text: 'This will permanently delete the order. This action cannot be undone!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+      });
+
+      if (result.isConfirmed) {
+        console.log('Deleting order:', orderId);
+        
+        const response = await axios.delete(`/api/orders/${orderId}`, {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Order delete response:', response.data);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Deleted!',
+          text: 'Order has been deleted successfully.',
+          timer: 1500,
+          showConfirmButton: false
+        });
+        
+        fetchOrders(); // Refresh the orders list
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to delete order. Please try again.'
+      });
+    }
+  };
+
+  return (
+  <div className="min-h-screen bg-gray-50">
+    {/* Header */}
+    <header className="bg-white shadow">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center py-6">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <button onClick={handleLogout} className="btn-secondary">
+            Logout
+          </button>
+        </div>
+      </div>
+    </header>
+
+    {/* Navigation Tabs */}
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {[
+            { id: 'add-product', label: 'Add New Product' },
+            { id: 'manage-products', label: 'Manage Products' },
+            { id: 'orders', label: 'Orders' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === tab.id
+                  ? 'border-gray-900 text-gray-900'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+        {/* Tab Content */}
+        <div className="mt-8">
+          {/* Add/Edit Product Tab */}
+          {activeTab === 'add-product' && (
+            <div className="card p-6">
+              <h2 className="text-xl font-semibold mb-6">
+                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              </h2>
+              
+              <form onSubmit={handleProductSubmit} className="space-y-6">
+                {/* Product Name */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Product Name</label>
+                  <input
+                    type="text"
+                    value={productForm.name}
+                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                {/* Price */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Price (EGP)</label>
+                  <input
+                    type="number"
+                    value={productForm.priceEGP}
+                    onChange={(e) => setProductForm({...productForm, priceEGP: e.target.value})}
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <textarea
+                    value={productForm.description}
+                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                    className="input-field"
+                    rows="4"
+                  />
+                </div>
+
+                {/* Collection */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Collection</label>
+                  <select
+                    value={productForm.collection}
+                    onChange={(e) => setProductForm({...productForm, collection: e.target.value})}
+                    className="input-field"
+                    required
+                  >
+                    <option value="">Select Collection</option>
+                    {collections.map(collection => (
+                      <option key={collection} value={collection}>{collection}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Size */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Size</label>
+                  <select
+                    value={productForm.size}
+                    onChange={(e) => setProductForm({...productForm, size: e.target.value})}
+                    className="input-field"
+                    required
+                  >
+                    <option value="">Select Size</option>
+                    {availableSizes.map(size => (
+                      <option key={size} value={size}>{size}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Images</label>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="input-field"
+                  />
+                  
+                  {productForm.images.length > 0 && (
+                    <div className="mt-4">
+                      <p className="text-sm text-gray-600 mb-2">Uploaded Images ({productForm.images.length}):</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {productForm.images.map((imageId, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={`/api/images/${imageId}`}
+                              alt={`Product ${index + 1}`}
+                              className="w-full h-24 object-cover rounded border-2 border-gray-200 hover:border-gray-400 transition-colors"
+                              onLoad={() => console.log('Image preview loaded:', imageId)}
+                              onError={(e) => {
+                                console.error('Image preview failed to load:', imageId);
+                                e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkVycm9yPC90ZXh0Pjwvc3ZnPg==';
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                            <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                              {index + 1}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-4">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`btn-primary ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    {loading ? 'Saving...' : (editingProduct ? 'Update Product' : 'Add New Product')}
+                  </button>
+                  
+                  {editingProduct && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingProduct(null);
+                        setProductForm({
+                          name: '', priceEGP: '', description: '', collection: '', size: '', images: []
+                        });
+                      }}
+                      className="btn-secondary"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Manage Products Tab */}
+          {activeTab === 'manage-products' && (
+            <div>
+              <h2 className="text-xl font-semibold mb-6">Manage Products</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map((product) => (
+                  <div key={product._id} className="card p-4">
+                    <div className="relative h-48 mb-4">
+                      <img
+                        src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
+                        alt={product.name}
+                        className="w-full h-full object-cover rounded"
+                        onLoad={() => console.log('Admin product image loaded:', product.images?.[0])}
+                        onError={(e) => {
+                          console.error('Admin product image failed:', product.images?.[0]);
+                          e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                        }}
+                      />
+                      {product.soldOut && (
+                        <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs font-bold rounded">
+                          SOLD OUT
+                        </div>
+                      )}
+                    </div>
+                    
+                    <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
+                    <p className="text-gray-600 mb-1">{product.collection}</p>
+                    <p className="text-gray-500 text-sm mb-2">{product.size}</p>
+                    <p className="font-bold mb-4">{product.priceEGP} EGP</p>
+                    
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleDeleteProduct(product._id)}
+                        className="flex-1 bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600 font-medium"
+                      >
+                        Delete
+                      </button>
+                      <button
+                        onClick={() => handleEditProduct(product)}
+                        className="flex-1 bg-blue-500 text-white px-3 py-2 rounded text-sm hover:bg-blue-600 font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleSoldOutToggle(product._id, product.soldOut)}
+                        className={`flex-1 px-3 py-2 rounded text-sm font-medium ${
+                          product.soldOut 
+                            ? 'bg-green-500 hover:bg-green-600 text-white' 
+                            : 'bg-gray-500 hover:bg-gray-600 text-white'
+                        }`}
+                      >
+                        {product.soldOut ? 'In Stock' : 'Sold Out'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Orders Tab */}
+          {activeTab === 'orders' && (
+            <div>
+              <h2 className="text-xl font-semibold mb-6">Manage Orders ({orders.length})</h2>
+              
+              {orders.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No orders found</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {orders.map((order) => (
+                    <div key={order._id} className="card p-6">
+                      {/* Order Date */}
+                      <div className="mb-4 pb-4 border-b border-gray-200">
+                        <p className="text-sm text-gray-500">Order Date: {new Date(order.createdAt).toLocaleString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric', 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}</p>
+                      </div>
+
+                      {/* Products */}
+                      <div className="mb-4 pb-4 border-b border-gray-200">
+                        <h4 className="font-semibold mb-3">Products:</h4>
+                        <div className="space-y-3">
+                          {order.items.map((item, index) => (
+                            <div key={index} className="flex items-center gap-4">
+                              <img
+                                src={item.image ? `/api/images/${item.image}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
+                                alt={item.name}
+                                className="w-16 h-16 object-cover rounded"
+                              />
+                              <div className="flex-1">
+                                <p className="font-medium">{item.name}</p>
+                                <p className="text-sm text-gray-600">Size: {item.size}</p>
+                                <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                              </div>
+                              <p className="font-semibold">{item.price} EGP</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Customer Info */}
+                      <div className="mb-4 pb-4 border-b border-gray-200">
+                        <h4 className="font-semibold mb-3">Customer Information:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <p><strong>Name:</strong> {order.customer.name}</p>
+                          <p><strong>Address:</strong> {order.customer.address}</p>
+                          <p><strong>Phone 1:</strong> {order.customer.phone1}</p>
+                          <p><strong>Phone 2:</strong> {order.customer.phone2}</p>
+                        </div>
+                      </div>
+
+                      {/* Order Status */}
+                      <div className="mb-4 pb-4 border-b border-gray-200">
+                        <label className="block text-sm font-medium mb-2">Order Status:</label>
+                        <select
+                          value={order.status}
+                          onChange={(e) => handleOrderStatusUpdate(order._id, e.target.value)}
+                          className="input-field max-w-xs"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="processing">Processing</option>
+                          <option value="shipped">Shipped</option>
+                          <option value="delivered">Delivered</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+
+                      {/* Price Summary */}
+                      <div className="mb-4">
+                        <div className="flex justify-between mb-2">
+                          <span className="text-gray-600">Products Total:</span>
+                          <span className="font-medium">{order.total - order.shippingFee} EGP</span>
+                        </div>
+                        <div className="flex justify-between mb-2">
+                          <span className="text-gray-600">Delivery Fee:</span>
+                          <span className="font-medium">{order.shippingFee} EGP</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-200">
+                          <span className="font-bold text-lg">Total:</span>
+                          <span className="font-bold text-lg">{order.total} EGP</span>
+                        </div>
+                      </div>
+
+                      {/* Delete Button */}
+                      <div className="pt-4 border-t border-gray-200">
+                        <button
+                          onClick={() => handleDeleteOrder(order._id)}
+                          className="w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded text-sm hover:bg-red-600 font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Delete Order
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
