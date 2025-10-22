@@ -98,6 +98,32 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    // Check images collection for base64 stored images
+    try {
+      console.log('🔍 Checking images collection for:', imageId);
+      let imageDoc;
+      
+      // Try as ObjectId first
+      if (isValidObjectId) {
+        imageDoc = await db.collection('images').findOne({ _id: objectId });
+      } else {
+        // Try as string ID
+        imageDoc = await db.collection('images').findOne({ _id: imageId });
+      }
+      
+      if (imageDoc && imageDoc.data) {
+        console.log('✅ Found image in collection, size:', imageDoc.size);
+        const buffer = Buffer.from(imageDoc.data, 'base64');
+        res.setHeader('Content-Type', imageDoc.contentType || 'image/jpeg');
+        res.setHeader('Cache-Control', 'public, max-age=31536000');
+        return res.send(buffer);
+      } else {
+        console.log('⚠️ Image document not found or no data field');
+      }
+    } catch (collectionError) {
+      console.log('⚠️ Error checking images collection:', collectionError.message);
+    }
+
     // Image not found anywhere
     console.log('❌ Image not found:', imageId);
     const svg = `<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
