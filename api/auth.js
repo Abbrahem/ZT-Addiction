@@ -29,19 +29,25 @@ module.exports = async function handler(req, res) {
     const method = req.method;
 
     console.log('🔐 Auth handler:', method, path);
+    console.log('🔐 Request body:', req.body);
+    console.log('🔐 Request headers:', req.headers);
 
     // Handle Vercel routing - check if this is a sub-route
-    const isLoginRoute = path.includes('/login') || path.endsWith('/auth');
-    const isLogoutRoute = path.includes('/logout');
-    const isCheckRoute = path.includes('/check');
+    const isLoginRoute = (path.includes('/login') || path.endsWith('/auth')) && method === 'POST';
+    const isLogoutRoute = path.includes('/logout') && method === 'POST';
+    const isCheckRoute = path.includes('/check') && method === 'GET';
+    
+    console.log('🔐 Route checks - Login:', isLoginRoute, 'Logout:', isLogoutRoute, 'Check:', isCheckRoute);
 
     // LOGIN - POST /api/auth or /api/auth/login
     if (method === 'POST' && isLoginRoute) {
       console.log('🔐 Processing login request');
 
       const { email, password } = req.body;
+      console.log('🔐 Login attempt - Email:', email, 'Password provided:', !!password);
 
       if (!email || !password) {
+        console.log('❌ Missing email or password');
         return res.status(400).json({ message: 'Email and password are required' });
       }
 
@@ -54,14 +60,18 @@ module.exports = async function handler(req, res) {
       }
 
       // Check both users and admins collections
+      console.log('🔍 Searching for user:', email);
       let user = await db.collection('users').findOne({ email });
+      console.log('🔍 User in users collection:', !!user);
       if (!user) {
         user = await db.collection('admins').findOne({ email });
+        console.log('🔍 User in admins collection:', !!user);
       }
       if (!user) {
         console.log('❌ User not found:', email);
         return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
       }
+      console.log('✅ User found:', user.email, 'Role:', user.role);
 
       const isValidPassword = await bcrypt.compare(password, user.password);
       if (!isValidPassword) {
@@ -93,7 +103,9 @@ module.exports = async function handler(req, res) {
     // CHECK - GET /api/auth/check
     else if (method === 'GET' && isCheckRoute) {
       console.log('🔐 Processing auth check request');
+      console.log('🔐 Cookies:', req.cookies);
       return requireAuth(req, res, () => {
+        console.log('✅ Auth check successful for user:', req.user.email);
         return res.status(200).json({
           message: 'Authenticated',
           user: req.user
@@ -104,6 +116,7 @@ module.exports = async function handler(req, res) {
     // Unknown endpoint
     else {
       console.log('❌ Unknown auth endpoint:', method, path);
+      console.log('❌ Available routes should match: POST /api/auth, POST /api/auth/logout, GET /api/auth/check');
       return res.status(404).json({ message: 'Auth endpoint not found' });
     }
 
