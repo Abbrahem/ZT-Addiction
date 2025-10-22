@@ -260,6 +260,13 @@ const Checkout = () => {
               />
             </div>
 
+            {/* Payment Instructions */}
+            <div className="bg-amber-900 text-white p-4 rounded-lg mb-4">
+              <p className="font-montserrat text-sm leading-relaxed text-center">
+                للدفع إنستا باي أو فودافون كاش يرجى التواصل مع الرقم <strong className="text-amber-200">01272558833</strong> على الواتساب
+              </p>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
