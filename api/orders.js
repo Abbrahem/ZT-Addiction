@@ -71,10 +71,15 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // PATCH /api/orders/[id] - Update order status
-    if (req.method === 'PATCH' && isOrderIdEndpoint) {
+    // PATCH /api/orders - Update order status (with orderId in body)
+    if (req.method === 'PATCH') {
       return requireAuth(req, res, async () => {
-        const { status } = req.body;
+        const { orderId: bodyOrderId, status } = req.body;
+        const targetOrderId = bodyOrderId || orderId;
+
+        if (!targetOrderId) {
+          return res.status(400).json({ message: 'Order ID is required' });
+        }
 
         if (!status) {
           return res.status(400).json({ message: 'Status is required' });
@@ -88,12 +93,12 @@ module.exports = async function handler(req, res) {
         let result;
         try {
           result = await db.collection('orders').updateOne(
-            { _id: new ObjectId(orderId) },
+            { _id: new ObjectId(targetOrderId) },
             { $set: { status, updatedAt: new Date() } }
           );
         } catch (error) {
           result = await db.collection('orders').updateOne(
-            { _id: orderId },
+            { _id: targetOrderId },
             { $set: { status, updatedAt: new Date() } }
           );
         }

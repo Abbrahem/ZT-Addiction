@@ -259,8 +259,8 @@ const AdminDashboard = () => {
       console.log('Updating order status:', orderId, 'to:', newStatus);
       console.log('Sending request body:', { status: newStatus });
       
-      const response = await axios.patch(`/api/orders/${orderId}`, 
-        { status: newStatus }, 
+      const response = await axios.patch('/api/orders', 
+        { orderId: orderId, status: newStatus }, 
         { 
           withCredentials: true,
           headers: {
@@ -294,7 +294,8 @@ const AdminDashboard = () => {
       if (result.isConfirmed) {
         console.log('Deleting order:', orderId);
         
-        const response = await axios.delete(`/api/orders/${orderId}`, {
+        const response = await axios.delete('/api/orders', {
+          data: { orderId: orderId },
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json'
