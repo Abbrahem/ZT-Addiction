@@ -1,0 +1,23 @@
+{
+  "products": [],
+  "orders": [],
+  "users": [
+    {
+      "_id": "admin_1",
+      "email": "zt@gmail.com",
+      "password": "$2a$10$4cI9ruvVneTC/RA9sYpxjuVrhhgw1yUvwjdcJYY5nlAJRAUkyFgBK",
+      "role": "admin",
+      "createdAt": "2025-10-22T13:09:44.076Z"
+    }
+  ],
+  "admins": [
+    {
+      "_id": "admin_1",
+      "email": "zt@gmail.com",
+      "password": "$2a$10$4cI9ruvVneTC/RA9sYpxjuVrhhgw1yUvwjdcJYY5nlAJRAUkyFgBK",
+      "role": "admin",
+      "createdAt": "2025-10-22T13:09:44.076Z"
+    }
+  ],
+  "images": []
+}

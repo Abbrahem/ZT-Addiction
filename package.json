@@ -1,0 +1,64 @@
+{
+  "name": "zt-addiction",
+  "version": "1.0.0",
+  "description": "ZT ADDICTION - Premium Perfume Shop",
+  "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "server": "node server.js",
+    "dev": "concurrently \"npm run server\" \"npm start\"",
+    "seed": "node seed-products.js",
+    "seed-admin": "node -e \"require('./api/lib/seedAdmin').seedAdmin().then(() => process.exit(0))\"",
+    "test-db": "node test-mongodb.js",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "gridfs-stream": "^1.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.9.0",
+    "multer": "^1.4.4",
+    "multer-gridfs-storage": "^5.0.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "react-scripts": "^5.0.1",
+    "sweetalert2": "^11.12.4",
+    "web-vitals": "^3.5.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.9",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.0.1",
+    "http-proxy-middleware": "^2.0.6",
+    "nodemon": "^3.1.7",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.10"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "proxy": "http://localhost:3002"
+}
