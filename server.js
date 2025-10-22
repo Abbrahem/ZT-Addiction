@@ -87,9 +87,13 @@ function loadApiRoutes(dir, basePath = '/api') {
           
           // Special handling for auth - add auth sub-routes
           if (file === 'auth.js') {
+            // Main auth route
+            app.all(`${basePath}/auth`, route);
+            // Sub-routes
             app.all(`${basePath}/auth/login`, route);
             app.all(`${basePath}/auth/logout`, route);
             app.all(`${basePath}/auth/check`, route);
+            console.log(`✅ Loaded API route: ${basePath}/auth (ALL methods)`);
             console.log(`✅ Loaded API route: ${basePath}/auth/login (ALL methods)`);
             console.log(`✅ Loaded API route: ${basePath}/auth/logout (ALL methods)`);
             console.log(`✅ Loaded API route: ${basePath}/auth/check (ALL methods)`);
