@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
     console.log('🔐 Auth handler:', method, path);
     
     // POST /api/auth or /api/auth/login = Login
-    if (method === 'POST' && (path === '/api/auth' || path.endsWith('/login') || path.includes('/login'))) {
+    if (method === 'POST' && (path === '/api/auth' || path.endsWith('/login') || path.includes('/login') || path === '/api/auth/login')) {
 
       try {
         const { email, password } = req.body;
@@ -79,7 +79,7 @@ module.exports = async function handler(req, res) {
       }
     }
   
-  else if (path.endsWith('/logout') || path.includes('/auth/logout')) {
+  else if (path.endsWith('/logout') || path.includes('/auth/logout') || path === '/api/auth/logout') {
     if (req.method !== 'POST') {
       return res.status(405).json({ message: 'Method not allowed' });
     }
@@ -88,7 +88,7 @@ module.exports = async function handler(req, res) {
     res.status(200).json({ message: 'Logout successful' });
   }
   
-  else if (path.endsWith('/check') || path.includes('/auth/check')) {
+  else if (path.endsWith('/check') || path.includes('/auth/check') || path === '/api/auth/check') {
     return requireAuth(req, res, () => {
       res.status(200).json({ 
         message: 'Authenticated',

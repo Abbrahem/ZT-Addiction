@@ -8,8 +8,10 @@ module.exports = async function handler(req, res) {
 
   // Extract product ID from URL if present
   const urlParts = req.url.split('/');
-  const productId = urlParts.length > 3 ? urlParts[3].split('?')[0] : null;
+  const productId = req.params?.id || (urlParts.length > 3 ? urlParts[3].split('?')[0] : null);
   const isSoldOutEndpoint = req.url.includes('/soldout');
+
+  console.log('🔍 Products API called:', req.method, req.url, 'ProductID:', productId);
 
   try {
     // GET /api/products - Get all products

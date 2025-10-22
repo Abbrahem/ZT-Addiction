@@ -76,6 +76,24 @@ function loadApiRoutes(dir, basePath = '/api') {
             app.all(`${basePath}/orders/:id`, route);
             console.log(`✅ Loaded API route: ${basePath}/orders/:id (ALL methods)`);
           }
+          
+          // Special handling for products - add dynamic ID routes
+          if (file === 'products.js') {
+            app.all(`${basePath}/products/:id`, route);
+            app.all(`${basePath}/products/:id/soldout`, route);
+            console.log(`✅ Loaded API route: ${basePath}/products/:id (ALL methods)`);
+            console.log(`✅ Loaded API route: ${basePath}/products/:id/soldout (ALL methods)`);
+          }
+          
+          // Special handling for auth - add auth sub-routes
+          if (file === 'auth.js') {
+            app.all(`${basePath}/auth/login`, route);
+            app.all(`${basePath}/auth/logout`, route);
+            app.all(`${basePath}/auth/check`, route);
+            console.log(`✅ Loaded API route: ${basePath}/auth/login (ALL methods)`);
+            console.log(`✅ Loaded API route: ${basePath}/auth/logout (ALL methods)`);
+            console.log(`✅ Loaded API route: ${basePath}/auth/check (ALL methods)`);
+          }
         } else if (route.default && typeof route.default === 'function') {
           app.all(dynamicPath, route.default);
           console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
