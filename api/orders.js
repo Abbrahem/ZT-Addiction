@@ -114,14 +114,21 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // DELETE /api/orders/[id] - Delete order (admin only)
-    if (req.method === 'DELETE' && isOrderIdEndpoint) {
+    // DELETE /api/orders - Delete order (admin only, with orderId in body)
+    if (req.method === 'DELETE') {
       return requireAuth(req, res, async () => {
+        const { orderId: bodyOrderId } = req.body;
+        const targetOrderId = bodyOrderId || orderId;
+
+        if (!targetOrderId) {
+          return res.status(400).json({ message: 'Order ID is required' });
+        }
+
         let result;
         try {
-          result = await db.collection('orders').deleteOne({ _id: new ObjectId(orderId) });
+          result = await db.collection('orders').deleteOne({ _id: new ObjectId(targetOrderId) });
         } catch (error) {
-          result = await db.collection('orders').deleteOne({ _id: orderId });
+          result = await db.collection('orders').deleteOne({ _id: targetOrderId });
         }
 
         if (result.deletedCount === 0) {
