@@ -32,10 +32,11 @@ module.exports = async function handler(req, res) {
     console.log('🔐 Request body:', req.body);
     console.log('🔐 Request headers:', req.headers);
 
-    // Handle Vercel routing - check if this is a sub-route
-    const isLoginRoute = (path.includes('/login') || path.endsWith('/auth')) && method === 'POST';
-    const isLogoutRoute = path.includes('/logout') && method === 'POST';
-    const isCheckRoute = path.includes('/check') && method === 'GET';
+    // Handle different methods on main auth route
+    const isMainAuthRoute = path === '/api/auth';
+    const isLoginRoute = (path.includes('/login') || isMainAuthRoute) && method === 'POST';
+    const isLogoutRoute = (path.includes('/logout') || isMainAuthRoute) && method === 'DELETE';
+    const isCheckRoute = (path.includes('/check') || isMainAuthRoute) && method === 'GET';
     
     console.log('🔐 Route checks - Login:', isLoginRoute, 'Logout:', isLogoutRoute, 'Check:', isCheckRoute);
 
@@ -93,14 +94,14 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // LOGOUT - POST /api/auth/logout
-    else if (method === 'POST' && isLogoutRoute) {
+    // LOGOUT - DELETE /api/auth
+    else if (method === 'DELETE' && isLogoutRoute) {
       console.log('🔐 Processing logout request');
       res.setHeader('Set-Cookie', 'token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict');
       return res.status(200).json({ message: 'Logout successful' });
     }
 
-    // CHECK - GET /api/auth/check
+    // CHECK - GET /api/auth
     else if (method === 'GET' && isCheckRoute) {
       console.log('🔐 Processing auth check request');
       console.log('🔐 Cookies:', req.cookies);

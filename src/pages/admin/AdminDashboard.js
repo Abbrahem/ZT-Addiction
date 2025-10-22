@@ -38,7 +38,7 @@ const AdminDashboard = () => {
 
   const checkAuth = async () => {
     try {
-      await axios.get('/api/auth/check', { withCredentials: true });
+      await axios.get('/api/auth', { withCredentials: true });
     } catch (error) {
       navigate('/admin');
     }
@@ -46,7 +46,7 @@ const AdminDashboard = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.post('/api/auth/logout', {}, { withCredentials: true });
+      await axios.delete('/api/auth', { withCredentials: true });
       navigate('/admin');
     } catch (error) {
       console.error('Logout error:', error);
