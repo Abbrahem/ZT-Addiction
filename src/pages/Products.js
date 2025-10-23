@@ -12,6 +12,7 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
+  const [quickAddPrice, setQuickAddPrice] = useState(0);
   const { addToCart } = useCart();
   const location = useLocation();
 
@@ -63,8 +64,26 @@ const Products = () => {
       return;
     }
     setQuickAddProduct(product);
-    if (product.sizes && product.sizes.length > 0) {
+    
+    // Set initial size and price
+    if (product.sizesWithPrices && product.sizesWithPrices.length > 0) {
+      setSelectedSize(product.sizesWithPrices[0].size);
+      setQuickAddPrice(product.sizesWithPrices[0].price);
+    } else if (product.sizes && product.sizes.length > 0) {
       setSelectedSize(product.sizes[0]);
+      setQuickAddPrice(product.priceEGP || 0);
+    }
+  };
+
+  const handleSizeChange = (size) => {
+    setSelectedSize(size);
+    
+    // Update price based on selected size
+    if (quickAddProduct.sizesWithPrices) {
+      const sizeData = quickAddProduct.sizesWithPrices.find(item => item.size === size);
+      if (sizeData) {
+        setQuickAddPrice(sizeData.price);
+      }
     }
   };
 
@@ -78,7 +97,7 @@ const Products = () => {
       return;
     }
 
-    addToCart(quickAddProduct, selectedSize, 'Default', 1);
+    addToCart(quickAddProduct, selectedSize, 'Default', 1, quickAddPrice);
     Swal.fire({
       icon: 'success',
       title: 'Added to Cart',
@@ -189,19 +208,26 @@ const Products = () => {
             </button>
 
             <h3 className="font-playfair text-lg sm:text-xl mb-2 pr-8">{quickAddProduct.name}</h3>
-            <p className="font-montserrat text-base sm:text-lg font-semibold mb-4">{quickAddProduct.priceEGP} EGP</p>
+            <p className="font-montserrat text-base sm:text-lg font-semibold mb-4">{quickAddPrice} EGP</p>
 
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2 font-montserrat">Select Size</label>
               <select
                 value={selectedSize}
-                onChange={(e) => setSelectedSize(e.target.value)}
+                onChange={(e) => handleSizeChange(e.target.value)}
                 className="w-full px-4 py-3 bg-white border border-gray-300 focus:ring-2 focus:ring-black focus:outline-none font-montserrat text-left"
                 style={{ direction: 'ltr' }}
               >
-                {quickAddProduct.sizes?.map((size) => (
-                  <option key={size} value={size}>{size}</option>
-                ))}
+                {quickAddProduct.sizesWithPrices ? 
+                  quickAddProduct.sizesWithPrices.map((sizeData) => (
+                    <option key={sizeData.size} value={sizeData.size}>
+                      {sizeData.size} - {sizeData.price} EGP
+                    </option>
+                  )) :
+                  quickAddProduct.sizes?.map((size) => (
+                    <option key={size} value={size}>{size}</option>
+                  ))
+                }
               </select>
             </div>
 

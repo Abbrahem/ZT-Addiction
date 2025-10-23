@@ -5,7 +5,7 @@ const { requireAuth } = require('./lib/auth');
 module.exports = async function handler(req, res) {
   const client = await clientPromise;
   const db = client.db('danger-sneakers');
-  
+
   // Parse URL to determine if this is for a specific order
   const urlParts = req.url.split('/');
   const orderId = req.params?.id || urlParts[urlParts.length - 1].split('?')[0];
@@ -65,7 +65,7 @@ module.exports = async function handler(req, res) {
       };
 
       const result = await db.collection('orders').insertOne(order);
-      return res.status(201).json({ 
+      return res.status(201).json({
         message: 'Order created successfully',
         orderId: result.insertedId
       });
@@ -107,9 +107,9 @@ module.exports = async function handler(req, res) {
           return res.status(404).json({ message: 'Order not found' });
         }
 
-        return res.status(200).json({ 
+        return res.status(200).json({
           message: 'Order status updated successfully',
-          status 
+          status
         });
       });
     }

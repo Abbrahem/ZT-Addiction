@@ -71,13 +71,25 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(state.items));
   }, [state.items]);
 
-  const addToCart = (product, size, color, quantity = 1) => {
+  const addToCart = (product, size, color, quantity = 1, customPrice = null) => {
+    // Use custom price if provided, otherwise get price from sizesWithPrices or fallback to priceEGP
+    let price = customPrice;
+    
+    if (!price && product.sizesWithPrices) {
+      const sizeData = product.sizesWithPrices.find(item => item.size === size);
+      price = sizeData ? sizeData.price : product.priceEGP;
+    }
+    
+    if (!price) {
+      price = product.priceEGP;
+    }
+
     dispatch({
       type: 'ADD_TO_CART',
       payload: {
         id: product._id,
         name: product.name,
-        price: product.priceEGP,
+        price: price,
         image: product.images?.[0] || null,
         size,
         color,

@@ -13,6 +13,7 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
+  const [currentPrice, setCurrentPrice] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
@@ -29,16 +30,27 @@ const ProductDetail = () => {
       const response = await axios.get(`/api/products/${id}`);
       const productData = Array.isArray(response.data) ? response.data[0] : response.data;
       setProduct(productData);
-      if (productData.sizes?.length > 0) {
+      
+      // Set initial size and price
+      if (productData.sizesWithPrices?.length > 0) {
+        setSelectedSize(productData.sizesWithPrices[0].size);
+        setCurrentPrice(productData.sizesWithPrices[0].price);
+      } else if (productData.sizes?.length > 0) {
+        // Fallback for old products
         setSelectedSize(productData.sizes[0]);
+        setCurrentPrice(productData.priceEGP || 0);
       }
     } catch (error) {
       console.error('Error fetching product:', error);
       const mockProduct = mockProducts.find(p => p._id === id);
       if (mockProduct) {
         setProduct(mockProduct);
-        if (mockProduct.sizes?.length > 0) {
+        if (mockProduct.sizesWithPrices?.length > 0) {
+          setSelectedSize(mockProduct.sizesWithPrices[0].size);
+          setCurrentPrice(mockProduct.sizesWithPrices[0].price);
+        } else if (mockProduct.sizes?.length > 0) {
           setSelectedSize(mockProduct.sizes[0]);
+          setCurrentPrice(mockProduct.priceEGP || 0);
         }
       } else {
         Swal.fire({
@@ -86,7 +98,7 @@ const ProductDetail = () => {
       return;
     }
 
-    addToCart(product, selectedSize, 'Default', quantity);
+    addToCart(product, selectedSize, 'Default', quantity, currentPrice);
     Swal.fire({
       icon: 'success',
       title: 'Added to Cart',
@@ -115,8 +127,20 @@ const ProductDetail = () => {
       return;
     }
 
-    addToCart(product, selectedSize, 'Default', quantity);
+    addToCart(product, selectedSize, 'Default', quantity, currentPrice);
     navigate('/checkout');
+  };
+
+  const handleSizeChange = (size) => {
+    setSelectedSize(size);
+    
+    // Update price based on selected size
+    if (product.sizesWithPrices) {
+      const sizeData = product.sizesWithPrices.find(item => item.size === size);
+      if (sizeData) {
+        setCurrentPrice(sizeData.price);
+      }
+    }
   };
 
   const updateQuantity = (change) => {
@@ -160,7 +184,11 @@ const ProductDetail = () => {
           )}
         </div>
         <h3 className="font-montserrat text-sm md:text-base mb-1 text-black leading-tight">{product.name}</h3>
-        <p className="font-montserrat text-sm md:text-base font-semibold text-black">{product.priceEGP} EGP</p>
+        <p className="font-montserrat text-sm md:text-base font-semibold text-black">
+          {product.sizesWithPrices && product.sizesWithPrices.length > 0 
+            ? `${product.sizesWithPrices[0].price} EGP` 
+            : `${product.priceEGP} EGP`}
+        </p>
       </Link>
     </div>
   );
@@ -197,33 +225,54 @@ const ProductDetail = () => {
         {/* Product Info */}
         <div className="space-y-6">
           <h1 className="text-3xl font-playfair text-black">{product.name}</h1>
-          <p className="text-2xl font-montserrat font-semibold text-black">{product.priceEGP} EGP</p>
+          <p className="text-2xl font-montserrat font-semibold text-black">{currentPrice} EGP</p>
 
           <hr className="border-beige-300" />
 
           {/* Size Selector */}
-          {product.sizes && product.sizes.length > 0 && (
+          {((product.sizesWithPrices && product.sizesWithPrices.length > 0) || (product.sizes && product.sizes.length > 0)) && (
             <div>
-              {product.sizes.length === 1 ? (
-                <div className="w-full bg-black text-white px-6 py-4 text-center font-montserrat">
-                  {product.sizes[0]}
-                </div>
-              ) : (
+              {/* Use sizesWithPrices if available, otherwise fallback to sizes */}
+              {product.sizesWithPrices && product.sizesWithPrices.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4">
-                  {product.sizes.map((size) => (
+                  {product.sizesWithPrices.map((sizeData) => (
                     <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
+                      key={sizeData.size}
+                      onClick={() => handleSizeChange(sizeData.size)}
                       className={`px-6 py-4 font-montserrat transition-all ${
-                        selectedSize === size
+                        selectedSize === sizeData.size
                           ? 'bg-black text-white'
                           : 'bg-white text-black hover:bg-beige-100'
                       }`}
                     >
-                      {size}
+                      <div>{sizeData.size}</div>
+                      <div className="text-sm">{sizeData.price} EGP</div>
                     </button>
                   ))}
                 </div>
+              ) : (
+                // Fallback for old products
+                product.sizes.length === 1 ? (
+                  <div className="w-full bg-black text-white px-6 py-4 text-center font-montserrat">
+                    {product.sizes[0]}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    {product.sizes.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => handleSizeChange(size)}
+                        className={`px-6 py-4 font-montserrat transition-all ${
+                          selectedSize === size
+                            ? 'bg-black text-white'
+                            : 'bg-white text-black hover:bg-beige-100'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                )
               )}
             </div>
           )}

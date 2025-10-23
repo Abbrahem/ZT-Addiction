@@ -13,17 +13,20 @@ const AdminDashboard = () => {
   // Product form state
   const [productForm, setProductForm] = useState({
     name: '',
-    priceEGP: '',
     description: '',
     collection: '',
-    size: '',
-    images: []
+    images: [],
+    sizesWithPrices: [] // Array of {size: '5ml', price: 450}
   });
 
   // Edit product state
   const [editingProduct, setEditingProduct] = useState(null);
 
-  const collections = ['Summer Samples', 'Winter Samples', 'Bundles'];
+  // Temporary state for adding size/price
+  const [tempSize, setTempSize] = useState('');
+  const [tempPrice, setTempPrice] = useState('');
+
+  const collections = ['Summer Samples', 'Winter Samples', 'Bundles', 'Bottles'];
   const availableSizes = ['3ml', '5ml', '10ml', '30ml', '50ml', '70ml', '80ml', '100ml'];
 
   useEffect(() => {
@@ -77,7 +80,20 @@ const AdminDashboard = () => {
 
   const handleProductSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form
+    if (!productForm.name || !productForm.collection) {
+      Swal.fire({ icon: 'error', title: 'Missing Info', text: 'Name and collection are required' });
+      return;
+    }
+    
+    if (!productForm.sizesWithPrices || productForm.sizesWithPrices.length === 0) {
+      Swal.fire({ icon: 'error', title: 'Missing Sizes', text: 'Please add at least one size with price' });
+      return;
+    }
+    
     setLoading(true);
+    console.log('Submitting product:', productForm);
 
     try {
       if (editingProduct) {
@@ -126,7 +142,7 @@ const AdminDashboard = () => {
       }
       
       setProductForm({
-        name: '', priceEGP: '', description: '', collection: '', size: '', images: []
+        name: '', description: '', collection: '', images: [], sizesWithPrices: []
       });
       
       if (activeTab === 'manage-products') {
@@ -212,15 +228,41 @@ const AdminDashboard = () => {
     }));
   };
 
+  const addSizeWithPrice = () => {
+    if (!tempSize || !tempPrice) {
+      Swal.fire({ icon: 'warning', title: 'Missing Info', text: 'Please select size and enter price' });
+      return;
+    }
+
+    // Check if size already exists
+    if (productForm.sizesWithPrices.some(item => item.size === tempSize)) {
+      Swal.fire({ icon: 'warning', title: 'Duplicate Size', text: 'This size already exists' });
+      return;
+    }
+
+    setProductForm(prev => ({
+      ...prev,
+      sizesWithPrices: [...prev.sizesWithPrices, { size: tempSize, price: parseFloat(tempPrice) }]
+    }));
+
+    setTempSize('');
+    setTempPrice('');
+  };
+
+  const removeSizeWithPrice = (index) => {
+    setProductForm(prev => ({
+      ...prev,
+      sizesWithPrices: prev.sizesWithPrices.filter((_, i) => i !== index)
+    }));
+  };
 
   const handleEditProduct = (product) => {
     setProductForm({
       name: product.name,
-      priceEGP: product.priceEGP,
       description: product.description,
       collection: product.collection,
-      size: product.size,
-      images: product.images
+      images: product.images,
+      sizesWithPrices: product.sizesWithPrices || (product.size && product.priceEGP ? [{ size: product.size, price: product.priceEGP }] : [])
     });
     setEditingProduct(product);
     setActiveTab('add-product');
@@ -405,17 +447,7 @@ const AdminDashboard = () => {
                   />
                 </div>
 
-                {/* Price */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Price (EGP)</label>
-                  <input
-                    type="number"
-                    value={productForm.priceEGP}
-                    onChange={(e) => setProductForm({...productForm, priceEGP: e.target.value})}
-                    className="input-field"
-                    required
-                  />
-                </div>
+
 
                 {/* Description */}
                 <div>
@@ -444,20 +476,55 @@ const AdminDashboard = () => {
                   </select>
                 </div>
 
-                {/* Size */}
+                {/* Sizes with Prices */}
                 <div>
-                  <label className="block text-sm font-medium mb-2">Size</label>
-                  <select
-                    value={productForm.size}
-                    onChange={(e) => setProductForm({...productForm, size: e.target.value})}
-                    className="input-field"
-                    required
-                  >
-                    <option value="">Select Size</option>
-                    {availableSizes.map(size => (
-                      <option key={size} value={size}>{size}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium mb-2">Sizes & Prices</label>
+                  
+                  {/* Add Size/Price */}
+                  <div className="flex gap-2 mb-4">
+                    <select
+                      value={tempSize}
+                      onChange={(e) => setTempSize(e.target.value)}
+                      className="input-field flex-1"
+                    >
+                      <option value="">Select Size</option>
+                      {availableSizes.map(size => (
+                        <option key={size} value={size}>{size}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={tempPrice}
+                      onChange={(e) => setTempPrice(e.target.value)}
+                      placeholder="Price (EGP)"
+                      className="input-field flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={addSizeWithPrice}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Display Added Sizes */}
+                  {productForm.sizesWithPrices.length > 0 && (
+                    <div className="space-y-2">
+                      {productForm.sizesWithPrices.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between bg-gray-100 p-3 rounded">
+                          <span className="font-medium">{item.size} - {item.price} EGP</span>
+                          <button
+                            type="button"
+                            onClick={() => removeSizeWithPrice(index)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>

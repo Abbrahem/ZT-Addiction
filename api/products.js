@@ -59,24 +59,49 @@ module.exports = async function handler(req, res) {
     // POST /api/products - Create new product
     if (req.method === 'POST' && !productId) {
       return requireAuth(req, res, async () => {
-        const { name, priceEGP, description, collection, size, images } = req.body;
+        const { name, description, collection, images, sizesWithPrices, priceEGP, size } = req.body;
+        
+        console.log('📦 Creating product with data:', { name, collection, sizesWithPrices, priceEGP, size });
 
-        if (!name || !priceEGP || !collection || !size) {
-          return res.status(400).json({ message: 'Name, price, collection, and size are required' });
+        if (!name || !collection) {
+          console.log('❌ Missing name or collection');
+          return res.status(400).json({ message: 'Name and collection are required' });
+        }
+
+        // Check if we have either sizesWithPrices or legacy format
+        const hasSizesWithPrices = sizesWithPrices && Array.isArray(sizesWithPrices) && sizesWithPrices.length > 0;
+        const hasLegacyFormat = priceEGP && size;
+        
+        console.log('📦 Validation check:', { hasSizesWithPrices, hasLegacyFormat, sizesWithPricesLength: sizesWithPrices?.length });
+        
+        if (!hasSizesWithPrices && !hasLegacyFormat) {
+          console.log('❌ Missing sizes/prices data');
+          return res.status(400).json({ message: 'Either sizesWithPrices array or price/size are required' });
         }
 
         const product = {
           name,
-          priceEGP: parseFloat(priceEGP),
           description: description || '',
           collection,
-          size,
-          sizes: [size], // Keep for compatibility
           images: images || [],
           soldOut: false,
           createdAt: new Date(),
           updatedAt: new Date()
         };
+
+        // Add sizesWithPrices if provided, otherwise use legacy format
+        if (hasSizesWithPrices) {
+          product.sizesWithPrices = sizesWithPrices;
+          // Set legacy fields for compatibility
+          product.priceEGP = sizesWithPrices[0].price;
+          product.size = sizesWithPrices[0].size;
+          product.sizes = sizesWithPrices.map(item => item.size);
+        } else {
+          // Legacy format
+          product.priceEGP = parseFloat(priceEGP);
+          product.size = size;
+          product.sizes = [size];
+        }
 
         const result = await db.collection('products').insertOne(product);
         return res.status(201).json({
