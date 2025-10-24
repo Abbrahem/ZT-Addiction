@@ -184,7 +184,7 @@ const Home = () => {
       <section className="py-20 px-6 max-w-7xl mx-auto">
         <h2 className="text-4xl font-playfair text-center mb-16 text-black">Bottles</h2>
         
-        <Link to="/products" className="group block max-w-2xl mx-auto">
+        <Link to="/category/bottles" className="group block max-w-2xl mx-auto">
           <div className="relative overflow-hidden mb-4" style={{ paddingBottom: '50%' }}>
             <img
               src="/Bottles.jpg"

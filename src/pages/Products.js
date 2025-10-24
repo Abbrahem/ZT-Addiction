@@ -170,7 +170,9 @@ const Products = () => {
           >
             {collections.map((collection) => (
               <option key={collection} value={collection}>
-                {collection === 'all' ? 'All Collections' : collection}
+                {collection === 'all' ? 'All Collections' : 
+                 collection === 'Bottles' ? 'Full Bottles' : 
+                 collection}
               </option>
             ))}
           </select>

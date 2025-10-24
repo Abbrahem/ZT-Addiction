@@ -133,7 +133,7 @@ const Navbar = () => {
                   Home
                 </Link>
                 <Link 
-                  to="/products" 
+                  to="/category/bottles" 
                   onClick={() => setIsSidebarOpen(false)}
                   className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black"
                 >

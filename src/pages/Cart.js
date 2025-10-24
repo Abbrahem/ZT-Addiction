@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, getCartTotal } = useCart();
-  const shippingFee = 120;
+  const shippingFee = 100;
   const subtotal = getCartTotal();
   const total = subtotal + (items.length > 0 ? shippingFee : 0);
 
@@ -54,7 +54,7 @@ const Cart = () => {
                       {(item.price * item.quantity).toLocaleString()} EGP
                     </p>
                   </div>
-                  
+
                   <button
                     onClick={() => removeFromCart(item.id, item.size, item.color)}
                     className="text-sm font-montserrat text-gray-600 hover:text-black transition-colors"
@@ -74,14 +74,14 @@ const Cart = () => {
               <span>Subtotal:</span>
               <span>{subtotal.toLocaleString()} EGP</span>
             </div>
-            
+
             <div className="flex justify-between font-montserrat">
               <span>Delivery:</span>
               <span>{shippingFee} EGP</span>
             </div>
-            
+
             <hr className="border-beige-300" />
-            
+
             <div className="flex justify-between text-xl font-montserrat font-bold">
               <span>Total:</span>
               <span>{total.toLocaleString()} EGP</span>
@@ -92,7 +92,7 @@ const Cart = () => {
             <Link to="/checkout" className="btn-primary w-full text-center block">
               Buy it now
             </Link>
-            
+
             <Link to="/products" className="btn-secondary w-full text-center block">
               Remove
             </Link>

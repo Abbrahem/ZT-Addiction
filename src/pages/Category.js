@@ -18,7 +18,8 @@ const Category = () => {
   const categoryTitles = {
     'winter-samples': 'Winter Samples',
     'summer-samples': 'Summer Samples',
-    'bundles': 'Bundles'
+    'bundles': 'Bundles',
+    'bottles': 'Bottles'
   };
 
   useEffect(() => {

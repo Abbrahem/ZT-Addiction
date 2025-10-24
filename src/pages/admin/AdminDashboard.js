@@ -27,7 +27,7 @@ const AdminDashboard = () => {
   const [tempPrice, setTempPrice] = useState('');
 
   const collections = ['Summer Samples', 'Winter Samples', 'Bundles', 'Bottles'];
-  const availableSizes = ['3ml', '5ml', '10ml', '30ml', '50ml', '70ml', '80ml', '100ml'];
+  const availableSizes = ['3ml', '5ml', '10ml', '30ml', '50ml', '70ml', '80ml', '100ml', '200ml'];
 
   useEffect(() => {
     checkAuth();

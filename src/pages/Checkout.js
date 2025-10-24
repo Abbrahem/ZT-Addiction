@@ -15,7 +15,7 @@ const Checkout = () => {
     phone2: ''
   });
 
-  const shippingFee = 120;
+  const shippingFee = 100;
   const subtotal = getCartTotal();
   const total = subtotal + (items.length > 0 ? shippingFee : 0);
 
@@ -105,7 +105,7 @@ const Checkout = () => {
           <p><strong>Order ID:</strong> ${orderId}</p>
           <br>
           <p><strong>Delivery Information:</strong></p>
-          <p>• Cairo & Giza: 1 day</p>
+          <p>• Cairo & Giza: 2 day</p>
           <p>• Other governorates: 3-5 days</p>
           <br>
           <p><strong>Return Policy:</strong> 3 days</p>
@@ -263,9 +263,9 @@ const Checkout = () => {
             {/* Payment Instructions */}
             <div className="bg-amber-900 text-white p-4 rounded-lg mb-4">
               <p className="font-montserrat text-sm leading-relaxed text-center">
-                للدفع إنستا باي أو فودافون كاش يرجى التواصل مع الرقم <strong className="text-amber-200">01272558833</strong> على الواتساب
+                للدفع إنستا باي أو فودافون كاش او تيلدا او اورنج كاش يرجى التواصل مع الرقم <strong className="text-amber-200">01272558833</strong> على الواتساب
               </p>
-            </div>
+            </div>                                                                                                                                                               
 
             <button
               type="submit"
