@@ -79,7 +79,7 @@ const AdminDashboard = () => {
 
   const fetchPromoCodes = async () => {
     try {
-      const response = await axios.get('/api/orders/promo', { withCredentials: true });
+      const response = await axios.get('/api/promo', { withCredentials: true });
       setPromoCodes(response.data);
     } catch (error) {
       console.error('Error fetching promo codes:', error);
@@ -802,7 +802,7 @@ const AdminDashboard = () => {
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   try {
-                    const response = await axios.post('/api/orders/promo', promoForm, { withCredentials: true });
+                    const response = await axios.post('/api/promo', promoForm, { withCredentials: true });
                     setGeneratedCode(response.data.promoCode.code);
                     Swal.fire({
                       icon: 'success',
@@ -921,7 +921,7 @@ const AdminDashboard = () => {
 
                               if (result.isConfirmed) {
                                 try {
-                                  await axios.delete('/api/orders/promo', {
+                                  await axios.delete('/api/promo', {
                                     data: { code: promo.code },
                                     withCredentials: true
                                   });

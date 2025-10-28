@@ -74,7 +74,7 @@ const Checkout = () => {
     
     setPromoLoading(true);
     try {
-      const response = await axios.patch('/api/orders/promo', { code: promoCode.toUpperCase() });
+      const response = await axios.patch('/api/promo', { code: promoCode.toUpperCase() });
       setAppliedPromo(response.data);
       Swal.fire({
         icon: 'success',
