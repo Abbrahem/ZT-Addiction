@@ -14,10 +14,16 @@ const Checkout = () => {
     phone1: '',
     phone2: ''
   });
+  
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState(null);
+  const [promoLoading, setPromoLoading] = useState(false);
 
   const shippingFee = 100;
   const subtotal = getCartTotal();
-  const total = subtotal + (items.length > 0 ? shippingFee : 0);
+  const discount = appliedPromo ? Math.round(subtotal * (appliedPromo.discount / 100)) : 0;
+  const total = subtotal + (items.length > 0 ? shippingFee : 0) - discount;
 
   const validateForm = () => {
     const { fullName, address, phone1, phone2 } = formData;
@@ -60,6 +66,39 @@ const Checkout = () => {
     return true;
   };
 
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) {
+      Swal.fire({ icon: 'warning', title: 'Enter Code', text: 'Please enter a promo code' });
+      return;
+    }
+    
+    setPromoLoading(true);
+    try {
+      const response = await axios.patch('/api/orders/promo', { code: promoCode.toUpperCase() });
+      setAppliedPromo(response.data);
+      Swal.fire({
+        icon: 'success',
+        title: 'Promo Applied!',
+        text: `You saved ${response.data.discount}%`,
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Invalid Code',
+        text: error.response?.data?.message || 'This promo code is not valid'
+      });
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -89,7 +128,9 @@ const Checkout = () => {
           phone2: formData.phone2
         },
         shippingFee,
-        total
+        total,
+        promoCode: appliedPromo?.code,
+        discount: appliedPromo?.discount
       };
 
       const response = await axios.post('/api/orders', orderData);
@@ -198,10 +239,59 @@ const Checkout = () => {
               <span>Delivery:</span>
               <span>{shippingFee} EGP</span>
             </div>
-            <div className="flex justify-between text-xl font-bold">
+            {appliedPromo && (
+              <div className="flex justify-between text-green-600">
+                <span>Promo ({appliedPromo.code}):</span>
+                <span>-{discount.toLocaleString()} EGP ({appliedPromo.discount}%)</span>
+              </div>
+            )}
+            <div className="flex justify-between text-xl font-bold border-t pt-2">
               <span>Total:</span>
               <span>{total.toLocaleString()} EGP</span>
             </div>
+          </div>
+
+          {/* Promo Code Section */}
+          <div className="mt-6 pt-6 border-t border-beige-300">
+            <h3 className="font-montserrat font-semibold mb-3">Have a Promo Code?</h3>
+            {!appliedPromo ? (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                  placeholder="Enter promo code"
+                  className="input-field flex-1 font-montserrat"
+                  maxLength="10"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyPromo}
+                  disabled={promoLoading}
+                  className={`bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 font-montserrat ${promoLoading ? 'opacity-50' : ''}`}
+                >
+                  {promoLoading ? 'Checking...' : 'Apply'}
+                </button>
+              </div>
+            ) : (
+              <div className="bg-green-50 border border-green-200 rounded p-3 flex justify-between items-center">
+                <div>
+                  <p className="font-montserrat font-semibold text-green-700">
+                    {appliedPromo.code} Applied!
+                  </p>
+                  <p className="text-sm text-green-600">
+                    You're saving {appliedPromo.discount}%
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRemovePromo}
+                  className="text-red-500 hover:text-red-700 font-montserrat text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
           </div>
         </div>
 

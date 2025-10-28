@@ -8,7 +8,16 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('add-product');
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [promoCodes, setPromoCodes] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Promo code form state
+  const [promoForm, setPromoForm] = useState({
+    discount: '10',
+    maxUses: '10',
+    expiryDays: '1'
+  });
+  const [generatedCode, setGeneratedCode] = useState('');
 
   // Product form state
   const [productForm, setProductForm] = useState({
@@ -36,6 +45,9 @@ const AdminDashboard = () => {
     }
     if (activeTab === 'orders') {
       fetchOrders();
+    }
+    if (activeTab === 'promo-codes') {
+      fetchPromoCodes();
     }
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -65,6 +77,15 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchPromoCodes = async () => {
+    try {
+      const response = await axios.get('/api/orders/promo', { withCredentials: true });
+      setPromoCodes(response.data);
+    } catch (error) {
+      console.error('Error fetching promo codes:', error);
+    }
+  };
+
   const fetchOrders = async () => {
     try {
       console.log('Fetching orders...');
@@ -80,27 +101,27 @@ const AdminDashboard = () => {
 
   const handleProductSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!productForm.name || !productForm.collection) {
       Swal.fire({ icon: 'error', title: 'Missing Info', text: 'Name and collection are required' });
       return;
     }
-    
+
     if (!productForm.sizesWithPrices || productForm.sizesWithPrices.length === 0) {
       Swal.fire({ icon: 'error', title: 'Missing Sizes', text: 'Please add at least one size with price' });
       return;
     }
-    
+
     setLoading(true);
     console.log('Submitting product:', productForm);
 
     try {
       if (editingProduct) {
         await axios.put(`/api/products/${editingProduct._id}`, productForm, { withCredentials: true });
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'Product Updated Successfully!', 
+        Swal.fire({
+          icon: 'success',
+          title: 'Product Updated Successfully!',
           text: 'The product has been updated.',
           showConfirmButton: true,
           confirmButtonText: 'View Product',
@@ -115,10 +136,10 @@ const AdminDashboard = () => {
       } else {
         const response = await axios.post('/api/products', productForm, { withCredentials: true });
         const productId = response.data.productId;
-        
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'Product Added Successfully!', 
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Product Added Successfully!',
           html: `
             <p>Your product has been created with ID: <strong>${productId}</strong></p>
             <p>What would you like to do next?</p>
@@ -140,19 +161,19 @@ const AdminDashboard = () => {
           // If cancelled, stay on add product form
         });
       }
-      
+
       setProductForm({
         name: '', description: '', collection: '', images: [], sizesWithPrices: []
       });
-      
+
       if (activeTab === 'manage-products') {
         fetchProducts();
       }
     } catch (error) {
       console.error('Product creation error:', error);
-      Swal.fire({ 
-        icon: 'error', 
-        title: 'Error', 
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
         text: error.response?.data?.message || 'Failed to save product',
         footer: error.response?.data?.error ? `Details: ${error.response.data.error}` : ''
       });
@@ -189,9 +210,9 @@ const AdminDashboard = () => {
           withCredentials: true,
           headers: { 'Content-Type': 'application/json' }
         });
-        
+
         console.log('Upload response:', response.data);
-        
+
         if (response.data.imageId) {
           uploadedIds.push(response.data.imageId);
         }
@@ -202,10 +223,10 @@ const AdminDashboard = () => {
           ...prev,
           images: [...prev.images, ...uploadedIds]
         }));
-        
-        Swal.fire({ 
-          icon: 'success', 
-          title: 'Images Uploaded', 
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Images Uploaded',
           text: `${uploadedIds.length} image(s) uploaded successfully`,
           timer: 2000,
           showConfirmButton: false
@@ -213,10 +234,10 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Image upload error:', error);
-      Swal.fire({ 
-        icon: 'error', 
-        title: 'Upload Failed', 
-        text: error.response?.data?.message || 'Failed to upload images' 
+      Swal.fire({
+        icon: 'error',
+        title: 'Upload Failed',
+        text: error.response?.data?.message || 'Failed to upload images'
       });
     }
   };
@@ -294,16 +315,16 @@ const AdminDashboard = () => {
     try {
       console.log('Toggling soldOut for product:', productId, 'current status:', currentStatus);
       console.log('Sending request body:', { soldOut: !currentStatus });
-      
+
       const response = await axios.patch(`/api/products/${productId}/soldout`, {
         soldOut: !currentStatus
-      }, { 
+      }, {
         withCredentials: true,
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
+
       console.log('SoldOut toggle response:', response.data);
       fetchProducts(); // Refresh the products list
     } catch (error) {
@@ -318,17 +339,17 @@ const AdminDashboard = () => {
     try {
       console.log('Updating order status:', orderId, 'to:', newStatus);
       console.log('Sending request body:', { status: newStatus });
-      
-      const response = await axios.patch('/api/orders', 
-        { orderId: orderId, status: newStatus }, 
-        { 
+
+      const response = await axios.patch('/api/orders',
+        { orderId: orderId, status: newStatus },
+        {
           withCredentials: true,
           headers: {
             'Content-Type': 'application/json'
           }
         }
       );
-      
+
       console.log('Order status update response:', response.data);
       fetchOrders(); // Refresh the orders list
     } catch (error) {
@@ -353,7 +374,7 @@ const AdminDashboard = () => {
 
       if (result.isConfirmed) {
         console.log('Deleting order:', orderId);
-        
+
         const response = await axios.delete('/api/orders', {
           data: { orderId: orderId },
           withCredentials: true,
@@ -361,9 +382,9 @@ const AdminDashboard = () => {
             'Content-Type': 'application/json'
           }
         });
-        
+
         console.log('Order delete response:', response.data);
-        
+
         Swal.fire({
           icon: 'success',
           title: 'Deleted!',
@@ -371,14 +392,14 @@ const AdminDashboard = () => {
           timer: 1500,
           showConfirmButton: false
         });
-        
+
         fetchOrders(); // Refresh the orders list
       }
     } catch (error) {
       console.error('Error deleting order:', error);
       console.error('Error response:', error.response?.data);
       console.error('Error status:', error.response?.status);
-      
+
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -388,42 +409,42 @@ const AdminDashboard = () => {
   };
 
   return (
-  <div className="min-h-screen bg-gray-50">
-    {/* Header */}
-    <header className="bg-white shadow">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <button onClick={handleLogout} className="btn-secondary">
-            Logout
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <button onClick={handleLogout} className="btn-secondary">
+              Logout
+            </button>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
 
-    {/* Navigation Tabs */}
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'add-product', label: 'Add New Product' },
-            { id: 'manage-products', label: 'Manage Products' },
-            { id: 'orders', label: 'Orders' }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === tab.id
+      {/* Navigation Tabs */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="border-b border-gray-200 overflow-x-auto">
+          <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
+            {[
+              { id: 'add-product', label: 'Add New Product' },
+              { id: 'manage-products', label: 'Manage Products' },
+              { id: 'orders', label: 'Orders' },
+              { id: 'promo-codes', label: 'Promo Codes' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-2 px-3 sm:px-4 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab.id
                   ? 'border-gray-900 text-gray-900'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
-      </div>
+                  }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
         {/* Tab Content */}
         <div className="mt-8">
@@ -433,7 +454,7 @@ const AdminDashboard = () => {
               <h2 className="text-xl font-semibold mb-6">
                 {editingProduct ? 'Edit Product' : 'Add New Product'}
               </h2>
-              
+
               <form onSubmit={handleProductSubmit} className="space-y-6">
                 {/* Product Name */}
                 <div>
@@ -441,7 +462,7 @@ const AdminDashboard = () => {
                   <input
                     type="text"
                     value={productForm.name}
-                    onChange={(e) => setProductForm({...productForm, name: e.target.value})}
+                    onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                     className="input-field"
                     required
                   />
@@ -454,7 +475,7 @@ const AdminDashboard = () => {
                   <label className="block text-sm font-medium mb-2">Description</label>
                   <textarea
                     value={productForm.description}
-                    onChange={(e) => setProductForm({...productForm, description: e.target.value})}
+                    onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
                     className="input-field"
                     rows="4"
                   />
@@ -465,7 +486,7 @@ const AdminDashboard = () => {
                   <label className="block text-sm font-medium mb-2">Collection</label>
                   <select
                     value={productForm.collection}
-                    onChange={(e) => setProductForm({...productForm, collection: e.target.value})}
+                    onChange={(e) => setProductForm({ ...productForm, collection: e.target.value })}
                     className="input-field"
                     required
                   >
@@ -479,7 +500,7 @@ const AdminDashboard = () => {
                 {/* Sizes with Prices */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Sizes & Prices</label>
-                  
+
                   {/* Add Size/Price */}
                   <div className="flex gap-2 mb-4">
                     <select
@@ -536,7 +557,7 @@ const AdminDashboard = () => {
                     onChange={handleImageUpload}
                     className="input-field"
                   />
-                  
+
                   {productForm.images.length > 0 && (
                     <div className="mt-4">
                       <p className="text-sm text-gray-600 mb-2">Uploaded Images ({productForm.images.length}):</p>
@@ -579,7 +600,7 @@ const AdminDashboard = () => {
                   >
                     {loading ? 'Saving...' : (editingProduct ? 'Update Product' : 'Add New Product')}
                   </button>
-                  
+
                   {editingProduct && (
                     <button
                       type="button"
@@ -603,7 +624,7 @@ const AdminDashboard = () => {
           {activeTab === 'manage-products' && (
             <div>
               <h2 className="text-xl font-semibold mb-6">Manage Products</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {products.map((product) => (
                   <div key={product._id} className="card p-4">
@@ -624,12 +645,12 @@ const AdminDashboard = () => {
                         </div>
                       )}
                     </div>
-                    
+
                     <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
                     <p className="text-gray-600 mb-1">{product.collection}</p>
                     <p className="text-gray-500 text-sm mb-2">{product.size}</p>
                     <p className="font-bold mb-4">{product.priceEGP} EGP</p>
-                    
+
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleDeleteProduct(product._id)}
@@ -645,11 +666,10 @@ const AdminDashboard = () => {
                       </button>
                       <button
                         onClick={() => handleSoldOutToggle(product._id, product.soldOut)}
-                        className={`flex-1 px-3 py-2 rounded text-sm font-medium ${
-                          product.soldOut 
-                            ? 'bg-green-500 hover:bg-green-600 text-white' 
-                            : 'bg-gray-500 hover:bg-gray-600 text-white'
-                        }`}
+                        className={`flex-1 px-3 py-2 rounded text-sm font-medium ${product.soldOut
+                          ? 'bg-green-500 hover:bg-green-600 text-white'
+                          : 'bg-gray-500 hover:bg-gray-600 text-white'
+                          }`}
                       >
                         {product.soldOut ? 'In Stock' : 'Sold Out'}
                       </button>
@@ -664,7 +684,7 @@ const AdminDashboard = () => {
           {activeTab === 'orders' && (
             <div>
               <h2 className="text-xl font-semibold mb-6">Manage Orders ({orders.length})</h2>
-              
+
               {orders.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">No orders found</p>
@@ -675,12 +695,12 @@ const AdminDashboard = () => {
                     <div key={order._id} className="card p-6">
                       {/* Order Date */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
-                        <p className="text-sm text-gray-500">Order Date: {new Date(order.createdAt).toLocaleString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric', 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
+                        <p className="text-sm text-gray-500">Order Date: {new Date(order.createdAt).toLocaleString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
                         })}</p>
                       </div>
 
@@ -734,30 +754,33 @@ const AdminDashboard = () => {
                       </div>
 
                       {/* Price Summary */}
-                      <div className="mb-4">
+                      <div>
                         <div className="flex justify-between mb-2">
-                          <span className="text-gray-600">Products Total:</span>
-                          <span className="font-medium">{order.total - order.shippingFee} EGP</span>
+                          <span className="font-semibold">Subtotal:</span>
+                          <span>{order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)} EGP</span>
                         </div>
                         <div className="flex justify-between mb-2">
-                          <span className="text-gray-600">Delivery Fee:</span>
-                          <span className="font-medium">{order.shippingFee} EGP</span>
+                          <span className="font-semibold">Shipping:</span>
+                          <span>{order.shippingFee || 0} EGP</span>
                         </div>
-                        <div className="flex justify-between pt-2 border-t border-gray-200">
-                          <span className="font-bold text-lg">Total:</span>
-                          <span className="font-bold text-lg">{order.total} EGP</span>
+                        {order.promoCode && (
+                          <div className="flex justify-between mb-2 text-green-600">
+                            <span className="font-semibold">Promo ({order.promoCode}):</span>
+                            <span>-{order.discount || 0}%</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-lg font-bold border-t pt-2">
+                          <span>Total:</span>
+                          <span>{order.total} EGP</span>
                         </div>
                       </div>
 
-                      {/* Delete Button */}
-                      <div className="pt-4 border-t border-gray-200">
+                      {/* Delete Order Button */}
+                      <div className="mt-4">
                         <button
                           onClick={() => handleDeleteOrder(order._id)}
-                          className="w-full sm:w-auto bg-red-500 text-white px-4 py-2 rounded text-sm hover:bg-red-600 font-medium transition-colors duration-200 flex items-center justify-center gap-2"
+                          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full"
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
                           Delete Order
                         </button>
                       </div>
@@ -765,6 +788,160 @@ const AdminDashboard = () => {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Promo Codes Tab */}
+          {activeTab === 'promo-codes' && (
+            <div>
+              <h2 className="text-xl font-semibold mb-6">Manage Promo Codes</h2>
+
+              {/* Create Promo Code Form */}
+              <div className="card p-6 mb-8">
+                <h3 className="text-lg font-semibold mb-4">Create New Promo Code</h3>
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    const response = await axios.post('/api/orders/promo', promoForm, { withCredentials: true });
+                    setGeneratedCode(response.data.promoCode.code);
+                    Swal.fire({
+                      icon: 'success',
+                      title: 'Promo Code Created!',
+                      html: `
+                        <p>Your promo code: <strong style="font-size: 24px; color: #059669;">${response.data.promoCode.code}</strong></p>
+                        <p>Discount: ${response.data.promoCode.discount}%</p>
+                        <p>Max Uses: ${response.data.promoCode.maxUses}</p>
+                        <p>Expires: ${new Date(response.data.promoCode.expiryDate).toLocaleDateString()}</p>
+                      `,
+                      confirmButtonText: 'OK'
+                    });
+                    fetchPromoCodes();
+                  } catch (error) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to create promo code' });
+                  }
+                }} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Discount (%)</label>
+                      <input
+                        type="number"
+                        value={promoForm.discount}
+                        onChange={(e) => setPromoForm({ ...promoForm, discount: e.target.value })}
+                        className="input-field"
+                        min="1"
+                        max="100"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Max Uses</label>
+                      <input
+                        type="number"
+                        value={promoForm.maxUses}
+                        onChange={(e) => setPromoForm({ ...promoForm, maxUses: e.target.value })}
+                        className="input-field"
+                        min="1"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Expiry (Days)</label>
+                      <input
+                        type="number"
+                        value={promoForm.expiryDays}
+                        onChange={(e) => setPromoForm({ ...promoForm, expiryDays: e.target.value })}
+                        className="input-field"
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button type="submit" className="btn-primary">
+                    Generate Promo Code
+                  </button>
+                </form>
+              </div>
+
+              {/* Promo Codes List */}
+              <div className="space-y-4">
+                {promoCodes.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No promo codes found</p>
+                  </div>
+                ) : (
+                  promoCodes.map((promo) => {
+                    const isExpired = new Date() > new Date(promo.expiryDate);
+                    const isMaxedOut = promo.currentUses >= promo.maxUses;
+
+                    return (
+                      <div key={promo._id} className="card p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                          <div className="flex-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-3">
+                              <h3 className="text-xl sm:text-2xl font-bold text-green-600">{promo.code}</h3>
+                              {!promo.active && (
+                                <span className="bg-gray-500 text-white px-2 py-1 text-xs rounded">INACTIVE</span>
+                              )}
+                              {isExpired && (
+                                <span className="bg-red-500 text-white px-2 py-1 text-xs rounded">EXPIRED</span>
+                              )}
+                              {isMaxedOut && (
+                                <span className="bg-orange-500 text-white px-2 py-1 text-xs rounded">MAX USES</span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-sm">
+                              <div>
+                                <p className="text-gray-600 text-xs sm:text-sm">Discount</p>
+                                <p className="font-semibold">{promo.discount}%</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600 text-xs sm:text-sm">Uses</p>
+                                <p className="font-semibold">{promo.currentUses} / {promo.maxUses}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600 text-xs sm:text-sm">Expires</p>
+                                <p className="font-semibold text-xs sm:text-sm">{new Date(promo.expiryDate).toLocaleDateString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-gray-600 text-xs sm:text-sm">Created</p>
+                                <p className="font-semibold text-xs sm:text-sm">{new Date(promo.createdAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={async () => {
+                              const result = await Swal.fire({
+                                title: 'Delete Promo Code?',
+                                text: `Are you sure you want to delete ${promo.code}?`,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                confirmButtonText: 'Yes, delete it!'
+                              });
+
+                              if (result.isConfirmed) {
+                                try {
+                                  await axios.delete('/api/orders/promo', {
+                                    data: { code: promo.code },
+                                    withCredentials: true
+                                  });
+                                  Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false });
+                                  fetchPromoCodes();
+                                } catch (error) {
+                                  Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to delete promo code' });
+                                }
+                              }
+                            }}
+                            className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded hover:bg-red-600 text-sm whitespace-nowrap"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           )}
         </div>

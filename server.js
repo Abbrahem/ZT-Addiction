@@ -71,10 +71,12 @@ function loadApiRoutes(dir, basePath = '/api') {
           app.all(dynamicPath, route);
           console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
           
-          // Special handling for orders - add dynamic ID route
+          // Special handling for orders - add dynamic ID route and promo routes
           if (file === 'orders.js') {
             app.all(`${basePath}/orders/:id`, route);
+            app.all(`${basePath}/orders/promo`, route);
             console.log(`✅ Loaded API route: ${basePath}/orders/:id (ALL methods)`);
+            console.log(`✅ Loaded API route: ${basePath}/orders/promo (ALL methods)`);
           }
           
           // Special handling for products - add dynamic ID routes
