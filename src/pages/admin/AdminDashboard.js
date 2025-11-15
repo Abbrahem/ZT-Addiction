@@ -17,7 +17,6 @@ const AdminDashboard = () => {
     maxUses: '10',
     expiryDays: '1'
   });
-  const [generatedCode, setGeneratedCode] = useState('');
 
   // Product form state
   const [productForm, setProductForm] = useState({
@@ -35,7 +34,7 @@ const AdminDashboard = () => {
   const [tempSize, setTempSize] = useState('');
   const [tempPrice, setTempPrice] = useState('');
 
-  const collections = ['Summer Samples', 'Winter Samples', 'Bundles', 'Bottles'];
+  const collections = ['Summer Samples', 'Winter Samples', 'Bundles', 'Bottles', 'Quantities With Bottle'];
   const availableSizes = ['3ml', '5ml', '10ml', '30ml', '50ml', '70ml', '80ml', '100ml', '200ml'];
 
   useEffect(() => {
