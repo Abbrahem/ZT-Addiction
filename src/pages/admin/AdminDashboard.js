@@ -802,7 +802,6 @@ const AdminDashboard = () => {
                   e.preventDefault();
                   try {
                     const response = await axios.post('/api/promo', promoForm, { withCredentials: true });
-                    setGeneratedCode(response.data.promoCode.code);
                     Swal.fire({
                       icon: 'success',
                       title: 'Promo Code Created!',
