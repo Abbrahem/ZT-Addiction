@@ -7,6 +7,7 @@ import { mockProducts } from '../data/mockData';
 
 const Home = () => {
   const [bestSellingProducts, setBestSellingProducts] = useState([]);
+  const [bestSellerProducts, setBestSellerProducts] = useState([]);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
   const [quickAddPrice, setQuickAddPrice] = useState(0);
@@ -14,6 +15,7 @@ const Home = () => {
 
   useEffect(() => {
     fetchBestSellingProducts();
+    fetchBestSellerProducts();
   }, []);
 
   const fetchBestSellingProducts = async () => {
@@ -25,6 +27,17 @@ const Home = () => {
       // Shuffle mock products randomly
       const shuffled = [...mockProducts].sort(() => Math.random() - 0.5);
       setBestSellingProducts(shuffled.slice(0, 10));
+    }
+  };
+
+  const fetchBestSellerProducts = async () => {
+    try {
+      const response = await axios.get('/api/products');
+      const bestSellers = response.data.filter(p => p.isBestSeller === true);
+      setBestSellerProducts(bestSellers.slice(0, 6));
+    } catch (error) {
+      console.log('Error fetching best sellers');
+      setBestSellerProducts([]);
     }
   };
 
@@ -86,7 +99,7 @@ const Home = () => {
   const ProductCard = ({ product }) => (
     <div className="group relative">
       <Link to={`/products/${product._id}`} className="block">
-        <div className="relative overflow-hidden mb-3" style={{ paddingBottom: '75%' }}>
+        <div className="relative overflow-hidden mb-4" style={{ paddingBottom: '120%' }}>
           <img
             src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
             alt={product.name}
@@ -94,14 +107,14 @@ const Home = () => {
           />
           {product.soldOut && (
             <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-              <span className="bg-red-600 text-white px-2 py-1 rounded text-xs font-medium">
+              <span className="bg-red-600 text-white px-3 py-2 rounded text-sm font-medium">
                 SOLD OUT
               </span>
             </div>
           )}
         </div>
-        <h3 className="font-montserrat text-sm md:text-base mb-1 text-black leading-tight">{product.name}</h3>
-        <p className="font-montserrat text-sm md:text-base font-semibold text-black">{product.priceEGP} EGP</p>
+        <h3 className="font-montserrat text-base md:text-lg mb-2 text-black leading-tight">{product.name}</h3>
+        <p className="font-montserrat text-base md:text-lg font-semibold text-black">{product.priceEGP} EGP</p>
       </Link>
       
       {!product.soldOut && (
@@ -110,9 +123,9 @@ const Home = () => {
             e.stopPropagation();
             handleQuickAdd(product);
           }}
-          className="absolute top-2 right-2 bg-white text-black p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
+          className="absolute top-3 right-3 bg-white text-black p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
         </button>
@@ -210,11 +223,59 @@ const Home = () => {
         </Link>
       </section>
 
-      {/* Best Selling Section */}
+      {/* Best Selling Horizontal Scroll Section */}
+      {bestSellerProducts.length > 0 && (
+        <section className="py-20 px-6">
+          <h2 className="text-4xl font-playfair text-center mb-16 text-black">BEST SELLING</h2>
+          
+          <div className="overflow-x-auto scrollbar-hide">
+            <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
+              {bestSellerProducts.map((product) => (
+                <div key={product._id} className="group relative flex-shrink-0" style={{ width: '280px' }}>
+                  <Link to={`/products/${product._id}`} className="block">
+                    <div className="relative overflow-hidden mb-4" style={{ paddingBottom: '120%' }}>
+                      <img
+                        src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
+                        alt={product.name}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {product.soldOut && (
+                        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                          <span className="bg-red-600 text-white px-3 py-2 rounded text-sm font-medium">
+                            SOLD OUT
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="font-montserrat text-base md:text-lg mb-2 text-black leading-tight">{product.name}</h3>
+                    <p className="font-montserrat text-base md:text-lg font-semibold text-black">{product.priceEGP} EGP</p>
+                  </Link>
+                  
+                  {!product.soldOut && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleQuickAdd(product);
+                      }}
+                      className="absolute top-3 right-3 bg-white text-black p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Some Products Section */}
       <section className="py-20 px-6 max-w-7xl mx-auto">
-        <h2 className="text-4xl font-playfair text-center mb-16 text-black">Best Selling</h2>
+        <h2 className="text-4xl font-playfair text-center mb-16 text-black">SOME PRODUCTS</h2>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-8">
+        <div className="grid grid-cols-2 gap-6 md:gap-10">
           {bestSellingProducts.map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}

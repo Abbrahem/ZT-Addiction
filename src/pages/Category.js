@@ -119,7 +119,7 @@ const Category = () => {
   const ProductCard = ({ product }) => (
     <div className="group relative">
       <Link to={`/products/${product._id}`} className="block">
-        <div className="relative overflow-hidden mb-3" style={{ paddingBottom: '75%' }}>
+        <div className="relative overflow-hidden mb-4" style={{ paddingBottom: '120%' }}>
           <img
             src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
             alt={product.name}
@@ -127,14 +127,14 @@ const Category = () => {
           />
           {product.soldOut && (
             <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-              <span className="bg-red-600 text-white px-2 py-1 rounded text-xs font-medium">
+              <span className="bg-red-600 text-white px-3 py-2 rounded text-sm font-medium">
                 SOLD OUT
               </span>
             </div>
           )}
         </div>
-        <h3 className="font-montserrat text-sm md:text-base mb-1 text-black leading-tight">{product.name}</h3>
-        <p className="font-montserrat text-sm md:text-base font-semibold text-black">{product.priceEGP} EGP</p>
+        <h3 className="font-montserrat text-base md:text-lg mb-2 text-black leading-tight">{product.name}</h3>
+        <p className="font-montserrat text-base md:text-lg font-semibold text-black">{product.priceEGP} EGP</p>
       </Link>
       
       {!product.soldOut && (
@@ -143,9 +143,9 @@ const Category = () => {
             e.stopPropagation();
             handleQuickAdd(product);
           }}
-          className="absolute top-2 right-2 bg-white text-black p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
+          className="absolute top-3 right-3 bg-white text-black p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
           </svg>
         </button>
@@ -177,7 +177,7 @@ const Category = () => {
             <p className="text-lg text-gray-600 font-montserrat">No products found</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
+          <div className="grid grid-cols-2 gap-6 md:gap-10">
             {filteredProducts.map((product) => (
               <ProductCard key={product._id} product={product} />
             ))}

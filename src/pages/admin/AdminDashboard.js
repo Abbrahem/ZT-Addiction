@@ -34,6 +34,10 @@ const AdminDashboard = () => {
   const [tempSize, setTempSize] = useState('');
   const [tempPrice, setTempPrice] = useState('');
 
+  // Search and filter state for manage products
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterCollection, setFilterCollection] = useState('all');
+
   const collections = ['Summer Samples', 'Winter Samples', 'Bundles', 'Bottles', 'Quantities With Bottle'];
   const availableSizes = ['3ml', '5ml', '10ml', '30ml', '50ml', '70ml', '80ml', '100ml', '200ml'];
 
@@ -334,6 +338,26 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleBestSellerToggle = async (productId, currentStatus) => {
+    try {
+      const response = await axios.patch(`/api/products/${productId}/bestseller`, {
+        isBestSeller: !currentStatus
+      }, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('BestSeller toggle response:', response.data);
+      fetchProducts();
+    } catch (error) {
+      console.error('BestSeller toggle error:', error);
+      const errorMsg = error.response?.data?.message || 'Failed to update best seller status';
+      Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
+    }
+  };
+
   const handleOrderStatusUpdate = async (orderId, newStatus) => {
     try {
       console.log('Updating order status:', orderId, 'to:', newStatus);
@@ -624,8 +648,39 @@ const AdminDashboard = () => {
             <div>
               <h2 className="text-xl font-semibold mb-6">Manage Products</h2>
 
+              {/* Search and Filter */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="flex-1 sm:w-[65%]">
+                  <input
+                    type="text"
+                    placeholder="Search products by name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="input-field w-full"
+                  />
+                </div>
+                <div className="sm:w-[35%]">
+                  <select
+                    value={filterCollection}
+                    onChange={(e) => setFilterCollection(e.target.value)}
+                    className="input-field w-full"
+                  >
+                    <option value="all">All Collections</option>
+                    {collections.map(collection => (
+                      <option key={collection} value={collection}>{collection}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {products.map((product) => (
+                {products
+                  .filter(product => {
+                    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesCollection = filterCollection === 'all' || product.collection === filterCollection;
+                    return matchesSearch && matchesCollection;
+                  })
+                  .map((product) => (
                   <div key={product._id} className="card p-4">
                     <div className="relative h-48 mb-4">
                       <img
@@ -643,6 +698,11 @@ const AdminDashboard = () => {
                           SOLD OUT
                         </div>
                       )}
+                      {product.isBestSeller && (
+                        <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 text-xs font-bold rounded">
+                          BEST
+                        </div>
+                      )}
                     </div>
 
                     <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
@@ -650,7 +710,7 @@ const AdminDashboard = () => {
                     <p className="text-gray-500 text-sm mb-2">{product.size}</p>
                     <p className="font-bold mb-4">{product.priceEGP} EGP</p>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => handleDeleteProduct(product._id)}
                         className="flex-1 bg-red-500 text-white px-3 py-2 rounded text-sm hover:bg-red-600 font-medium"
@@ -671,6 +731,15 @@ const AdminDashboard = () => {
                           }`}
                       >
                         {product.soldOut ? 'In Stock' : 'Sold Out'}
+                      </button>
+                      <button
+                        onClick={() => handleBestSellerToggle(product._id, product.isBestSeller)}
+                        className={`flex-1 px-3 py-2 rounded text-sm font-medium ${product.isBestSeller
+                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                          : 'bg-gray-300 hover:bg-gray-400 text-gray-700'
+                          }`}
+                      >
+                        BEST
                       </button>
                     </div>
                   </div>

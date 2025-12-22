@@ -180,6 +180,48 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // PATCH /api/products/[id]/bestseller - Toggle best seller status
+    const isBestSellerEndpoint = req.url.includes('/bestseller');
+    if (req.method === 'PATCH' && productId && isBestSellerEndpoint) {
+      return requireAuth(req, res, async () => {
+        const { isBestSeller } = req.body;
+
+        if (typeof isBestSeller !== 'boolean') {
+          return res.status(400).json({ message: 'isBestSeller must be a boolean value' });
+        }
+
+        // If setting as best seller, check if we already have 6
+        if (isBestSeller) {
+          const bestSellerCount = await db.collection('products').countDocuments({ isBestSeller: true });
+          if (bestSellerCount >= 6) {
+            return res.status(400).json({ message: 'Maximum 6 best sellers allowed. Remove one first.' });
+          }
+        }
+
+        let result;
+        try {
+          result = await db.collection('products').updateOne(
+            { _id: new ObjectId(productId) },
+            { $set: { isBestSeller, updatedAt: new Date() } }
+          );
+        } catch (error) {
+          result = await db.collection('products').updateOne(
+            { _id: productId },
+            { $set: { isBestSeller, updatedAt: new Date() } }
+          );
+        }
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: 'Product not found' });
+        }
+
+        return res.status(200).json({
+          message: 'Best seller status updated successfully',
+          isBestSeller
+        });
+      });
+    }
+
     // DELETE /api/products/[id] - Delete product
     if (req.method === 'DELETE' && productId) {
       return requireAuth(req, res, async () => {

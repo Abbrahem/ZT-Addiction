@@ -42,4 +42,13 @@ h1, h2, h3, h4, h5, h6 {
   .product-card {
     @apply bg-white overflow-hidden transition-all duration-300 hover:shadow-lg;
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
