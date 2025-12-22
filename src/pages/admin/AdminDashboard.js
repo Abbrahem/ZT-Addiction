@@ -340,8 +340,9 @@ const AdminDashboard = () => {
 
   const handleBestSellerToggle = async (productId, currentStatus) => {
     try {
-      const response = await axios.patch(`/api/products/${productId}/bestseller`, {
-        isBestSeller: !currentStatus
+      const response = await axios.patch(`/api/products/${productId}/soldout?action=bestseller`, {
+        isBestSeller: !currentStatus,
+        action: 'bestseller'
       }, {
         withCredentials: true,
         headers: {
