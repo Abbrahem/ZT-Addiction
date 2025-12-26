@@ -174,7 +174,9 @@ module.exports = async function handler(req, res) {
 
     // POST /api/orders - Create new order
     if (req.method === 'POST' && !isOrderIdEndpoint) {
-      const { customer, items, total, shippingFee, promoCode, discount } = req.body;
+      const { customer, items, total, shippingFee, promoCode, discount, payment } = req.body;
+      
+      console.log('Creating order with payment:', payment);
 
       if (!customer || !items || !total) {
         return res.status(400).json({ message: 'Customer, items, and total are required' });
@@ -208,6 +210,17 @@ module.exports = async function handler(req, res) {
           { code: promoCode.toUpperCase() },
           { $inc: { currentUses: 1 } }
         );
+      }
+
+      // Add payment info if provided
+      if (payment) {
+        order.payment = {
+          method: payment.method,
+          methodName: payment.methodName,
+          amount: payment.amount,
+          senderPhone: payment.senderPhone,
+          screenshot: payment.screenshot
+        };
       }
 
       const result = await db.collection('orders').insertOne(order);

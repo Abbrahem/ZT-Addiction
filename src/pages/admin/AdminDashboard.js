@@ -38,6 +38,9 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCollection, setFilterCollection] = useState('all');
 
+  // Image modal state
+  const [imageModal, setImageModal] = useState(null);
+
   const collections = ['Summer Samples', 'Winter Samples', 'Bundles', 'Bottles', 'Quantities With Bottle'];
   const availableSizes = ['3ml', '5ml', '10ml', '30ml', '50ml', '70ml', '80ml', '100ml', '200ml'];
 
@@ -806,6 +809,35 @@ const AdminDashboard = () => {
                         </div>
                       </div>
 
+                      {/* Payment Info */}
+                      <div className="mb-4 pb-4 border-b border-gray-200">
+                        <h4 className="font-semibold mb-3">Payment Information:</h4>
+                        {order.payment ? (
+                          <div className="bg-green-50 p-4 rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                              <p><strong>Method:</strong> <span className="text-green-700">{order.payment.methodName}</span></p>
+                              <p><strong>Amount:</strong> {order.payment.amount} EGP</p>
+                              <p><strong>Sender Phone:</strong> {order.payment.senderPhone}</p>
+                            </div>
+                            {order.payment.screenshot && (
+                              <div>
+                                <p className="font-semibold mb-2">Screenshot:</p>
+                                <img
+                                  src={order.payment.screenshot}
+                                  alt="Payment Screenshot"
+                                  className="max-w-xs h-48 object-contain rounded border cursor-pointer hover:opacity-80"
+                                  onClick={() => setImageModal(order.payment.screenshot)}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="bg-yellow-50 p-4 rounded-lg">
+                            <p><strong>Method:</strong> <span className="text-yellow-700">Cash on Delivery</span></p>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Order Status */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
                         <label className="block text-sm font-medium mb-2">Order Status:</label>
@@ -1014,6 +1046,31 @@ const AdminDashboard = () => {
           )}
         </div>
       </div>
+
+      {/* Image Modal */}
+      {imageModal && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-80 z-50"
+            onClick={() => setImageModal(null)}
+          />
+          <div className="fixed inset-4 z-50 flex items-center justify-center">
+            <div className="relative max-w-4xl max-h-full">
+              <button 
+                onClick={() => setImageModal(null)}
+                className="absolute -top-10 right-0 text-white hover:opacity-70 text-2xl"
+              >
+                ✕
+              </button>
+              <img
+                src={imageModal}
+                alt="Payment Screenshot"
+                className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

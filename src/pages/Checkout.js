@@ -20,6 +20,22 @@ const Checkout = () => {
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoLoading, setPromoLoading] = useState(false);
 
+  // Payment method state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [paymentData, setPaymentData] = useState({
+    amount: '',
+    senderPhone: '',
+    screenshot: null
+  });
+
+  const paymentMethods = [
+    { id: 'vodafone', name: 'Vodafone Cash', image: '/vodafone-cash.png', phone: '01003019300' },
+    { id: 'instapay', name: 'InstaPay', image: '/instapay.png', phone: '01228982199' },
+    { id: 'orange', name: 'Orange Cash', image: '/orange-cash.png', phone: '01228982199' },
+    { id: 'telda', name: 'Telda', image: '/telda.png', phone: '01272558833' }
+  ];
+
   const shippingFee = 100;
   const subtotal = getCartTotal();
   const discount = appliedPromo ? Math.round(subtotal * (appliedPromo.discount / 100)) : 0;
@@ -99,6 +115,112 @@ const Checkout = () => {
     setPromoCode('');
   };
 
+  const handlePaymentMethodClick = (method) => {
+    setSelectedPaymentMethod(method);
+    setShowPaymentModal(true);
+    setPaymentData({ amount: '', senderPhone: '', screenshot: null });
+  };
+
+  const handleScreenshotUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPaymentData(prev => ({ ...prev, screenshot: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    Swal.fire({
+      icon: 'success',
+      title: 'Copied!',
+      text: 'Phone number copied to clipboard',
+      timer: 1500,
+      showConfirmButton: false
+    });
+  };
+
+  const handlePaymentSubmit = async () => {
+    if (!paymentData.amount || !paymentData.senderPhone || !paymentData.screenshot) {
+      Swal.fire({ icon: 'error', title: 'Missing Info', text: 'Please fill all fields and upload screenshot' });
+      return;
+    }
+
+    if (!validateForm()) return;
+
+    setLoading(true);
+    
+    try {
+      const orderData = {
+        items: items.map(item => ({
+          productId: item.id,
+          name: item.name,
+          size: item.size,
+          quantity: item.quantity,
+          price: item.price,
+          image: item.image
+        })),
+        customer: {
+          name: formData.fullName,
+          address: formData.address,
+          phone1: formData.phone1,
+          phone2: formData.phone2
+        },
+        shippingFee,
+        total,
+        promoCode: appliedPromo?.code,
+        discount: appliedPromo?.discount,
+        payment: {
+          method: selectedPaymentMethod.id,
+          methodName: selectedPaymentMethod.name,
+          amount: paymentData.amount,
+          senderPhone: paymentData.senderPhone,
+          screenshot: paymentData.screenshot
+        }
+      };
+
+      console.log('Sending order with payment:', orderData.payment);
+      const response = await axios.post('/api/orders', orderData);
+      const orderId = response.data.orderId;
+      
+      clearCart();
+      setShowPaymentModal(false);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Order Placed Successfully!',
+        html: `
+          <p>Your order has been placed successfully!</p>
+          <p><strong>Order ID:</strong> ${orderId}</p>
+          <br>
+          <p><strong>Payment Method:</strong> ${selectedPaymentMethod.name}</p>
+          <br>
+          <p><strong>Delivery Information:</strong></p>
+          <p>• Cairo & Giza: 2 day</p>
+          <p>• Other governorates: 3-5 days</p>
+          <br>
+          <p><strong>Return Policy:</strong> 3 days</p>
+        `,
+        confirmButtonText: 'Continue Shopping'
+      }).then(() => {
+        navigate('/');
+      });
+      
+    } catch (error) {
+      console.error('Error placing order:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Order Failed',
+        text: 'There was an error placing your order. Please try again.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -173,7 +295,6 @@ const Checkout = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // For phone fields, only allow digits
     if (name === 'phone1' || name === 'phone2') {
       const digits = value.replace(/\D/g, '');
       setFormData(prev => ({ ...prev, [name]: digits }));
@@ -296,10 +417,10 @@ const Checkout = () => {
         </div>
 
         {/* Customer Information Form */}
-        <div className="bg-white p-6">
+        <div className="bg-white p-6 mb-8">
           <h2 className="text-xl font-playfair mb-6 text-black">Personal Information</h2>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div>
               <input
                 type="text"
@@ -350,23 +471,134 @@ const Checkout = () => {
               />
             </div>
 
-            {/* Payment Instructions */}
-            <div className="bg-amber-900 text-white p-4 rounded-lg mb-4">
-              <p className="font-montserrat text-sm leading-relaxed text-center">
-                للدفع إنستا باي أو فودافون كاش او تيلدا او اورنج كاش يرجى التواصل مع الرقم <strong className="text-amber-200">01272558833</strong> على الواتساب
-              </p>
-            </div>                                                                                                                                                               
-
             <button
-              type="submit"
+              onClick={handleSubmit}
               disabled={loading}
               className={`btn-primary w-full ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {loading ? 'Processing...' : 'Buy It'}
+              {loading ? 'Processing...' : 'Cash on Delivery'}
             </button>
-          </form>
+          </div>
+        </div>
+
+        {/* Payment Methods Section */}
+        <div className="bg-white p-6">
+          <h2 className="text-xl font-playfair mb-6 text-black text-center">Online Payment (Optional)</h2>
+          
+          <div className="grid grid-cols-2 gap-4">
+            {paymentMethods.map((method) => (
+              <button
+                key={method.id}
+                onClick={() => handlePaymentMethodClick(method)}
+                className="bg-gray-100 hover:bg-gray-200 rounded-lg p-4 transition-all flex flex-col items-center"
+              >
+                <div className="w-20 h-20 mb-2 flex items-center justify-center bg-white rounded-lg overflow-hidden">
+                  <img
+                    src={method.image}
+                    alt={method.name}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiM5OWEzYWYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5QYXltZW50PC90ZXh0Pjwvc3ZnPg==';
+                    }}
+                  />
+                </div>
+                <span className="font-montserrat text-sm font-medium text-black">{method.name}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedPaymentMethod && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-50"
+            onClick={() => setShowPaymentModal(false)}
+          />
+          <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 bg-white z-50 p-6 rounded-2xl max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+            <button 
+              onClick={() => setShowPaymentModal(false)}
+              className="absolute top-4 right-4 text-black hover:opacity-70"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <h3 className="font-playfair text-xl mb-6 text-center">{selectedPaymentMethod.name}</h3>
+
+            {/* Transfer Number */}
+            <div className="bg-gray-100 p-4 rounded-lg mb-6">
+              <p className="font-montserrat text-sm text-gray-600 mb-2 text-center">يرجى التحويل على الرقم</p>
+              <div className="flex items-center justify-center gap-2">
+                <span className="font-montserrat text-xl font-bold">{selectedPaymentMethod.phone}</span>
+                <button
+                  onClick={() => copyToClipboard(selectedPaymentMethod.phone)}
+                  className="bg-black text-white px-3 py-1 rounded text-sm hover:bg-gray-800"
+                >
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Amount */}
+              <div>
+                <label className="block text-sm font-medium mb-2 font-montserrat">المبلغ المحول</label>
+                <input
+                  type="number"
+                  value={paymentData.amount}
+                  onChange={(e) => setPaymentData(prev => ({ ...prev, amount: e.target.value }))}
+                  className="input-field font-montserrat"
+                  placeholder="Enter amount"
+                />
+              </div>
+
+              {/* Sender Phone */}
+              <div>
+                <label className="block text-sm font-medium mb-2 font-montserrat">الرقم المحول منه</label>
+                <input
+                  type="tel"
+                  value={paymentData.senderPhone}
+                  onChange={(e) => setPaymentData(prev => ({ ...prev, senderPhone: e.target.value.replace(/\D/g, '') }))}
+                  className="input-field font-montserrat"
+                  placeholder="Enter sender phone"
+                  maxLength="11"
+                />
+              </div>
+
+              {/* Screenshot Upload */}
+              <div>
+                <label className="block text-sm font-medium mb-2 font-montserrat">اسكرين شوت للتحويل</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleScreenshotUpload}
+                  className="input-field font-montserrat"
+                />
+                {paymentData.screenshot && (
+                  <div className="mt-2">
+                    <img
+                      src={paymentData.screenshot}
+                      alt="Screenshot"
+                      className="w-full h-32 object-contain rounded border"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={handlePaymentSubmit}
+                disabled={loading}
+                className={`btn-primary w-full ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {loading ? 'Processing...' : 'Confirm Payment'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Footer */}
       <footer className="py-12 text-center mt-20">
