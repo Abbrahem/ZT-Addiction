@@ -43,7 +43,28 @@ const Cart = () => {
 
                 <div className="flex-1 space-y-2">
                   <h3 className="text-lg font-montserrat font-semibold text-black">{item.name}</h3>
-                  <p className="font-montserrat text-sm text-gray-600">Size: {item.size}</p>
+                  {item.isBundle && item.bundleDetails ? (
+                    <div className="space-y-2 mt-3">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                          <p className="text-xs text-gray-500 font-medium mb-1">Perfume 1</p>
+                          <p className="font-medium text-gray-900 text-sm">{item.bundleDetails.perfume1Name}</p>
+                          <span className="inline-block mt-1 bg-black text-white text-xs px-2 py-0.5 rounded">
+                            {item.bundleDetails.size1}
+                          </span>
+                        </div>
+                        <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                          <p className="text-xs text-gray-500 font-medium mb-1">Perfume 2</p>
+                          <p className="font-medium text-gray-900 text-sm">{item.bundleDetails.perfume2Name}</p>
+                          <span className="inline-block mt-1 bg-black text-white text-xs px-2 py-0.5 rounded">
+                            {item.bundleDetails.size2}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="font-montserrat text-sm text-gray-600">Size: {item.size}</p>
+                  )}
                   <p className="font-montserrat text-sm text-gray-600">Quantity: {item.quantity}</p>
                   <p className="text-lg font-montserrat font-bold text-black">{item.price} EGP</p>
                 </div>

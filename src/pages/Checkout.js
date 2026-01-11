@@ -161,7 +161,9 @@ const Checkout = () => {
           size: item.size,
           quantity: item.quantity,
           price: item.price,
-          image: item.image
+          image: item.image,
+          isBundle: item.isBundle || false,
+          bundleDetails: item.bundleDetails || null
         })),
         customer: {
           name: formData.fullName,
@@ -241,7 +243,9 @@ const Checkout = () => {
           size: item.size,
           quantity: item.quantity,
           price: item.price,
-          image: item.image
+          image: item.image,
+          isBundle: item.isBundle || false,
+          bundleDetails: item.bundleDetails || null
         })),
         customer: {
           name: formData.fullName,

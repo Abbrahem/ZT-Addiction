@@ -56,8 +56,135 @@ module.exports = async function handler(req, res) {
         isBestSeller 
       });
     }
+
+    // Handle size soldout action
+    if (action === 'sizeSoldout') {
+      const { size, isSoldOut } = req.body;
+
+      if (!size) {
+        return res.status(400).json({ message: 'Size is required' });
+      }
+
+      if (typeof isSoldOut !== 'boolean') {
+        return res.status(400).json({ message: 'isSoldOut must be a boolean value' });
+      }
+
+      // Get the product first
+      let product;
+      try {
+        product = await db.collection('products').findOne({ _id: new ObjectId(productId) });
+      } catch (error) {
+        product = await db.collection('products').findOne({ _id: productId });
+      }
+
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      // Update sizesWithPrices array
+      const sizesWithPrices = product.sizesWithPrices || [];
+      const updatedSizes = sizesWithPrices.map(item => {
+        if (item.size === size) {
+          return { ...item, soldOut: isSoldOut };
+        }
+        return item;
+      });
+
+      let result;
+      try {
+        result = await db.collection('products').updateOne(
+          { _id: new ObjectId(productId) },
+          { $set: { sizesWithPrices: updatedSizes, updatedAt: new Date() } }
+        );
+      } catch (error) {
+        result = await db.collection('products').updateOne(
+          { _id: productId },
+          { $set: { sizesWithPrices: updatedSizes, updatedAt: new Date() } }
+        );
+      }
+
+      return res.status(200).json({ 
+        message: 'Size sold out status updated successfully',
+        size,
+        isSoldOut 
+      });
+    }
+
+    // Handle bundle size soldout action
+    if (action === 'bundleSizeSoldout') {
+      const { perfumeNumber, size, isSoldOut } = req.body;
+
+      console.log('Bundle size soldout request:', { perfumeNumber, size, isSoldOut });
+
+      if (!perfumeNumber || !size) {
+        console.log('Missing perfumeNumber or size');
+        return res.status(400).json({ message: 'Perfume number and size are required' });
+      }
+
+      if (typeof isSoldOut !== 'boolean') {
+        console.log('isSoldOut is not boolean:', typeof isSoldOut);
+        return res.status(400).json({ message: 'isSoldOut must be a boolean value' });
+      }
+
+      // Get the product first
+      let product;
+      try {
+        product = await db.collection('products').findOne({ _id: new ObjectId(productId) });
+      } catch (error) {
+        product = await db.collection('products').findOne({ _id: productId });
+      }
+
+      if (!product) {
+        console.log('Product not found:', productId);
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      console.log('Product found:', product.name);
+
+      // Update the correct perfume's sizes
+      const perfumeKey = perfumeNumber === 1 ? 'bundlePerfume1' : 'bundlePerfume2';
+      const perfume = product[perfumeKey];
+      
+      if (!perfume || !perfume.sizesWithPrices) {
+        console.log('Perfume or sizes not found:', perfumeKey);
+        return res.status(404).json({ message: 'Perfume or sizes not found' });
+      }
+
+      console.log('Current sizes:', perfume.sizesWithPrices);
+
+      const updatedSizes = perfume.sizesWithPrices.map(item => {
+        if (item.size === size) {
+          return { ...item, soldOut: isSoldOut };
+        }
+        return item;
+      });
+
+      console.log('Updated sizes:', updatedSizes);
+
+      let result;
+      try {
+        result = await db.collection('products').updateOne(
+          { _id: new ObjectId(productId) },
+          { $set: { [`${perfumeKey}.sizesWithPrices`]: updatedSizes, updatedAt: new Date() } }
+        );
+      } catch (error) {
+        result = await db.collection('products').updateOne(
+          { _id: productId },
+          { $set: { [`${perfumeKey}.sizesWithPrices`]: updatedSizes, updatedAt: new Date() } }
+        );
+      }
+
+      console.log('Update result:', result);
+
+      return res.status(200).json({ 
+        message: 'Bundle size sold out status updated successfully',
+        perfumeNumber,
+        size,
+        isSoldOut 
+      });
+    }
     
-    // Handle soldout action (default)
+    // Handle soldout action (default) - for whole product
     const { soldOut } = req.body;
 
     if (typeof soldOut !== 'boolean') {

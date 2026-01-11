@@ -59,24 +59,40 @@ module.exports = async function handler(req, res) {
     // POST /api/products - Create new product
     if (req.method === 'POST' && !productId) {
       return requireAuth(req, res, async () => {
-        const { name, description, collection, images, sizesWithPrices, priceEGP, size } = req.body;
+        const { name, description, collection, images, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2 } = req.body;
         
-        console.log('📦 Creating product with data:', { name, collection, sizesWithPrices, priceEGP, size });
+        console.log('📦 Creating product with data:', { name, collection, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2 });
 
         if (!name || !collection) {
           console.log('❌ Missing name or collection');
           return res.status(400).json({ message: 'Name and collection are required' });
         }
 
-        // Check if we have either sizesWithPrices or legacy format
-        const hasSizesWithPrices = sizesWithPrices && Array.isArray(sizesWithPrices) && sizesWithPrices.length > 0;
-        const hasLegacyFormat = priceEGP && size;
+        // Check if it's a bundle
+        const isBundle = collection === 'Bundles';
         
-        console.log('📦 Validation check:', { hasSizesWithPrices, hasLegacyFormat, sizesWithPricesLength: sizesWithPrices?.length });
-        
-        if (!hasSizesWithPrices && !hasLegacyFormat) {
-          console.log('❌ Missing sizes/prices data');
-          return res.status(400).json({ message: 'Either sizesWithPrices array or price/size are required' });
+        // For bundles, validate bundle data
+        if (isBundle) {
+          if (!bundlePerfume1 || !bundlePerfume2) {
+            return res.status(400).json({ message: 'Bundle products require both perfumes' });
+          }
+          if (!bundlePerfume1.sizesWithPrices || bundlePerfume1.sizesWithPrices.length === 0) {
+            return res.status(400).json({ message: 'Perfume 1 requires sizes with prices' });
+          }
+          if (!bundlePerfume2.sizesWithPrices || bundlePerfume2.sizesWithPrices.length === 0) {
+            return res.status(400).json({ message: 'Perfume 2 requires sizes with prices' });
+          }
+        } else {
+          // Check if we have either sizesWithPrices or legacy format
+          const hasSizesWithPrices = sizesWithPrices && Array.isArray(sizesWithPrices) && sizesWithPrices.length > 0;
+          const hasLegacyFormat = priceEGP && size;
+          
+          console.log('📦 Validation check:', { hasSizesWithPrices, hasLegacyFormat, sizesWithPricesLength: sizesWithPrices?.length });
+          
+          if (!hasSizesWithPrices && !hasLegacyFormat) {
+            console.log('❌ Missing sizes/prices data');
+            return res.status(400).json({ message: 'Either sizesWithPrices array or price/size are required' });
+          }
         }
 
         const product = {
@@ -89,18 +105,49 @@ module.exports = async function handler(req, res) {
           updatedAt: new Date()
         };
 
-        // Add sizesWithPrices if provided, otherwise use legacy format
-        if (hasSizesWithPrices) {
-          product.sizesWithPrices = sizesWithPrices;
-          // Set legacy fields for compatibility
-          product.priceEGP = sizesWithPrices[0].price;
-          product.size = sizesWithPrices[0].size;
-          product.sizes = sizesWithPrices.map(item => item.size);
+        // Handle bundle products
+        if (isBundle) {
+          // Initialize soldOut property for all sizes
+          const perfume1WithSoldOut = {
+            ...bundlePerfume1,
+            sizesWithPrices: bundlePerfume1.sizesWithPrices.map(item => ({
+              ...item,
+              soldOut: item.soldOut || false
+            }))
+          };
+          
+          const perfume2WithSoldOut = {
+            ...bundlePerfume2,
+            sizesWithPrices: bundlePerfume2.sizesWithPrices.map(item => ({
+              ...item,
+              soldOut: item.soldOut || false
+            }))
+          };
+          
+          product.bundlePerfume1 = perfume1WithSoldOut;
+          product.bundlePerfume2 = perfume2WithSoldOut;
+          
+          // Calculate default price from first size of each perfume
+          const price1 = bundlePerfume1.sizesWithPrices[0]?.price || 0;
+          const price2 = bundlePerfume2.sizesWithPrices[0]?.price || 0;
+          product.priceEGP = price1 + price2;
+          
+          product.isBundle = true;
         } else {
-          // Legacy format
-          product.priceEGP = parseFloat(priceEGP);
-          product.size = size;
-          product.sizes = [size];
+          // Add sizesWithPrices if provided, otherwise use legacy format
+          const hasSizesWithPrices = sizesWithPrices && Array.isArray(sizesWithPrices) && sizesWithPrices.length > 0;
+          if (hasSizesWithPrices) {
+            product.sizesWithPrices = sizesWithPrices;
+            // Set legacy fields for compatibility
+            product.priceEGP = sizesWithPrices[0].price;
+            product.size = sizesWithPrices[0].size;
+            product.sizes = sizesWithPrices.map(item => item.size);
+          } else {
+            // Legacy format
+            product.priceEGP = parseFloat(priceEGP);
+            product.size = size;
+            product.sizes = [size];
+          }
         }
 
         const result = await db.collection('products').insertOne(product);

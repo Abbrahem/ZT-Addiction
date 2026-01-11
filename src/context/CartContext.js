@@ -71,7 +71,7 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem('cart', JSON.stringify(state.items));
   }, [state.items]);
 
-  const addToCart = (product, size, color, quantity = 1, customPrice = null) => {
+  const addToCart = (product, size, color, quantity = 1, customPrice = null, bundleDetails = null) => {
     // Use custom price if provided, otherwise get price from sizesWithPrices or fallback to priceEGP
     let price = customPrice;
     
@@ -93,7 +93,9 @@ export const CartProvider = ({ children }) => {
         image: product.images?.[0] || null,
         size,
         color,
-        quantity
+        quantity,
+        isBundle: product.isBundle || false,
+        bundleDetails: bundleDetails
       }
     });
   };

@@ -135,7 +135,12 @@ const Products = () => {
           )}
         </div>
         <h3 className="font-montserrat text-base md:text-lg mb-2 text-black leading-tight">{product.name}</h3>
-        <p className="font-montserrat text-base md:text-lg font-semibold text-black">{product.priceEGP} EGP</p>
+        <p className="font-montserrat text-base md:text-lg font-semibold text-black">
+          {product.isBundle 
+            ? (product.priceEGP || ((product.bundlePerfume1?.sizesWithPrices?.[0]?.price || 0) + (product.bundlePerfume2?.sizesWithPrices?.[0]?.price || 0)))
+            : (product.sizesWithPrices?.[0]?.price || product.priceEGP || 0)
+          } EGP
+        </p>
       </Link>
       
       {!product.soldOut && (
@@ -214,23 +219,47 @@ const Products = () => {
 
             <div className="mb-4">
               <label className="block text-sm font-medium mb-2 font-montserrat">Select Size</label>
-              <select
-                value={selectedSize}
-                onChange={(e) => handleSizeChange(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 focus:ring-2 focus:ring-black focus:outline-none font-montserrat text-left"
-                style={{ direction: 'ltr' }}
-              >
+              <div className="grid grid-cols-2 gap-2">
                 {quickAddProduct.sizesWithPrices ? 
                   quickAddProduct.sizesWithPrices.map((sizeData) => (
-                    <option key={sizeData.size} value={sizeData.size}>
-                      {sizeData.size} - {sizeData.price} EGP
-                    </option>
+                    <button
+                      key={sizeData.size}
+                      onClick={() => {
+                        if (!sizeData.soldOut) {
+                          handleSizeChange(sizeData.size);
+                        }
+                      }}
+                      disabled={sizeData.soldOut}
+                      className={`px-3 py-2 font-montserrat transition-all text-sm relative ${
+                        sizeData.soldOut
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                          : selectedSize === sizeData.size
+                            ? 'bg-black text-white'
+                            : 'bg-white text-black border border-gray-300 hover:bg-beige-100'
+                      }`}
+                    >
+                      <div className={sizeData.soldOut ? 'line-through' : ''}>{sizeData.size}</div>
+                      <div className={`text-xs ${sizeData.soldOut ? 'line-through' : ''}`}>{sizeData.price} EGP</div>
+                      {sizeData.soldOut && (
+                        <div className="text-xs mt-0.5" style={{ textDecoration: 'none' }}>Sold Out</div>
+                      )}
+                    </button>
                   )) :
                   quickAddProduct.sizes?.map((size) => (
-                    <option key={size} value={size}>{size}</option>
+                    <button
+                      key={size}
+                      onClick={() => handleSizeChange(size)}
+                      className={`px-3 py-2 font-montserrat transition-all text-sm ${
+                        selectedSize === size
+                          ? 'bg-black text-white'
+                          : 'bg-white text-black border border-gray-300 hover:bg-beige-100'
+                      }`}
+                    >
+                      {size}
+                    </button>
                   ))
                 }
-              </select>
+              </div>
             </div>
 
             <div className="flex gap-2 sm:gap-4">

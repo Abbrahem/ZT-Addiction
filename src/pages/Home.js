@@ -11,6 +11,8 @@ const Home = () => {
   const [quickAddProduct, setQuickAddProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
   const [quickAddPrice, setQuickAddPrice] = useState(0);
+  const [selectedBundleSize1, setSelectedBundleSize1] = useState('');
+  const [selectedBundleSize2, setSelectedBundleSize2] = useState('');
   const { addToCart } = useCart();
 
   useEffect(() => {
@@ -52,13 +54,24 @@ const Home = () => {
     }
     setQuickAddProduct(product);
     
-    // Set initial size and price
-    if (product.sizesWithPrices && product.sizesWithPrices.length > 0) {
-      setSelectedSize(product.sizesWithPrices[0].size);
-      setQuickAddPrice(product.sizesWithPrices[0].price);
-    } else if (product.sizes && product.sizes.length > 0) {
-      setSelectedSize(product.sizes[0]);
-      setQuickAddPrice(product.priceEGP || 0);
+    // For bundles, set initial sizes and calculate price
+    if (product.isBundle) {
+      const size1 = product.bundlePerfume1?.sizesWithPrices?.[0];
+      const size2 = product.bundlePerfume2?.sizesWithPrices?.[0];
+      if (size1 && size2) {
+        setSelectedBundleSize1(size1.size);
+        setSelectedBundleSize2(size2.size);
+        setQuickAddPrice(size1.price + size2.price);
+      }
+    } else {
+      // Set initial size and price
+      if (product.sizesWithPrices && product.sizesWithPrices.length > 0) {
+        setSelectedSize(product.sizesWithPrices[0].size);
+        setQuickAddPrice(product.sizesWithPrices[0].price);
+      } else if (product.sizes && product.sizes.length > 0) {
+        setSelectedSize(product.sizes[0]);
+        setQuickAddPrice(product.priceEGP || 0);
+      }
     }
   };
 
@@ -75,16 +88,39 @@ const Home = () => {
   };
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Select Size',
-        text: 'Please select a bottle size'
-      });
-      return;
+    if (quickAddProduct.isBundle) {
+      if (!selectedBundleSize1 || !selectedBundleSize2) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Select Sizes',
+          text: 'Please select sizes for both perfumes'
+        });
+        return;
+      }
+      
+      // Add bundle to cart with bundle details
+      const bundleSize = `${selectedBundleSize1} + ${selectedBundleSize2}`;
+      const bundleDetails = {
+        perfume1Name: quickAddProduct.bundlePerfume1.name,
+        perfume2Name: quickAddProduct.bundlePerfume2.name,
+        size1: selectedBundleSize1,
+        size2: selectedBundleSize2
+      };
+      
+      addToCart(quickAddProduct, bundleSize, 'Default', 1, quickAddPrice, bundleDetails);
+    } else {
+      if (!selectedSize) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Select Size',
+          text: 'Please select a bottle size'
+        });
+        return;
+      }
+      
+      addToCart(quickAddProduct, selectedSize, 'Default', 1, quickAddPrice);
     }
 
-    addToCart(quickAddProduct, selectedSize, 'Default', 1, quickAddPrice);
     Swal.fire({
       icon: 'success',
       title: 'Added to Cart',
@@ -94,6 +130,8 @@ const Home = () => {
     });
     setQuickAddProduct(null);
     setSelectedSize('');
+    setSelectedBundleSize1('');
+    setSelectedBundleSize2('');
   };
 
   const ProductCard = ({ product }) => (
@@ -114,7 +152,12 @@ const Home = () => {
           )}
         </div>
         <h3 className="font-montserrat text-base md:text-lg mb-2 text-black leading-tight">{product.name}</h3>
-        <p className="font-montserrat text-base md:text-lg font-semibold text-black">{product.priceEGP} EGP</p>
+        <p className="font-montserrat text-base md:text-lg font-semibold text-black">
+          {product.isBundle 
+            ? (product.priceEGP || ((product.bundlePerfume1?.sizesWithPrices?.[0]?.price || 0) + (product.bundlePerfume2?.sizesWithPrices?.[0]?.price || 0)))
+            : (product.sizesWithPrices?.[0]?.price || product.priceEGP || 0)
+          } EGP
+        </p>
       </Link>
       
       {!product.soldOut && (
@@ -287,11 +330,19 @@ const Home = () => {
         <>
           <div 
             className="fixed inset-0 bg-black bg-opacity-50 z-50"
-            onClick={() => setQuickAddProduct(null)}
+            onClick={() => {
+              setQuickAddProduct(null);
+              setSelectedBundleSize1('');
+              setSelectedBundleSize2('');
+            }}
           />
-          <div className="fixed bottom-0 left-0 right-0 bg-white z-50 p-4 sm:p-6 md:p-8 transform transition-transform duration-300 max-w-2xl mx-auto rounded-t-2xl">
+          <div className="fixed bottom-0 left-0 right-0 bg-white z-50 p-4 sm:p-6 md:p-8 transform transition-transform duration-300 max-w-2xl mx-auto rounded-t-2xl max-h-[80vh] overflow-y-auto">
             <button 
-              onClick={() => setQuickAddProduct(null)}
+              onClick={() => {
+                setQuickAddProduct(null);
+                setSelectedBundleSize1('');
+                setSelectedBundleSize2('');
+              }}
               className="absolute top-4 right-4 text-black hover:opacity-70"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -302,26 +353,122 @@ const Home = () => {
             <h3 className="font-playfair text-lg sm:text-xl mb-2 pr-8">{quickAddProduct.name}</h3>
             <p className="font-montserrat text-base sm:text-lg font-semibold mb-4">{quickAddPrice} EGP</p>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2 font-montserrat">Select Size</label>
-              <select
-                value={selectedSize}
-                onChange={(e) => handleSizeChange(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-gray-300 focus:ring-2 focus:ring-black focus:outline-none font-montserrat text-left"
-                style={{ direction: 'ltr' }}
-              >
-                {quickAddProduct.sizesWithPrices ? 
-                  quickAddProduct.sizesWithPrices.map((sizeData) => (
-                    <option key={sizeData.size} value={sizeData.size}>
-                      {sizeData.size} - {sizeData.price} EGP
-                    </option>
-                  )) :
-                  quickAddProduct.sizes?.map((size) => (
-                    <option key={size} value={size}>{size}</option>
-                  ))
-                }
-              </select>
-            </div>
+            {quickAddProduct.isBundle ? (
+              // Bundle Size Selectors
+              <div className="space-y-4 mb-4">
+                {/* Perfume 1 */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 font-montserrat">{quickAddProduct.bundlePerfume1?.name}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {quickAddProduct.bundlePerfume1?.sizesWithPrices?.map((sizeData) => (
+                      <button
+                        key={sizeData.size}
+                        onClick={() => {
+                          if (!sizeData.soldOut) {
+                            setSelectedBundleSize1(sizeData.size);
+                            const price2 = quickAddProduct.bundlePerfume2?.sizesWithPrices?.find(s => s.size === selectedBundleSize2)?.price || 0;
+                            setQuickAddPrice(sizeData.price + price2);
+                          }
+                        }}
+                        disabled={sizeData.soldOut}
+                        className={`px-3 py-2 font-montserrat transition-all text-sm relative ${
+                          sizeData.soldOut
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                            : selectedBundleSize1 === sizeData.size
+                              ? 'bg-black text-white'
+                              : 'bg-white text-black border border-gray-300 hover:bg-beige-100'
+                        }`}
+                      >
+                        <div className={sizeData.soldOut ? 'line-through' : ''}>{sizeData.size}</div>
+                        <div className={`text-xs ${sizeData.soldOut ? 'line-through' : ''}`}>{sizeData.price} EGP</div>
+                        {sizeData.soldOut && (
+                          <div className="text-xs mt-0.5" style={{ textDecoration: 'none' }}>Sold Out</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Perfume 2 */}
+                <div>
+                  <label className="block text-sm font-medium mb-2 font-montserrat">{quickAddProduct.bundlePerfume2?.name}</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {quickAddProduct.bundlePerfume2?.sizesWithPrices?.map((sizeData) => (
+                      <button
+                        key={sizeData.size}
+                        onClick={() => {
+                          if (!sizeData.soldOut) {
+                            setSelectedBundleSize2(sizeData.size);
+                            const price1 = quickAddProduct.bundlePerfume1?.sizesWithPrices?.find(s => s.size === selectedBundleSize1)?.price || 0;
+                            setQuickAddPrice(price1 + sizeData.price);
+                          }
+                        }}
+                        disabled={sizeData.soldOut}
+                        className={`px-3 py-2 font-montserrat transition-all text-sm relative ${
+                          sizeData.soldOut
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                            : selectedBundleSize2 === sizeData.size
+                              ? 'bg-black text-white'
+                              : 'bg-white text-black border border-gray-300 hover:bg-beige-100'
+                        }`}
+                      >
+                        <div className={sizeData.soldOut ? 'line-through' : ''}>{sizeData.size}</div>
+                        <div className={`text-xs ${sizeData.soldOut ? 'line-through' : ''}`}>{sizeData.price} EGP</div>
+                        {sizeData.soldOut && (
+                          <div className="text-xs mt-0.5" style={{ textDecoration: 'none' }}>Sold Out</div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Regular Product Size Selector
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2 font-montserrat">Select Size</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {quickAddProduct.sizesWithPrices ? 
+                    quickAddProduct.sizesWithPrices.map((sizeData) => (
+                      <button
+                        key={sizeData.size}
+                        onClick={() => {
+                          if (!sizeData.soldOut) {
+                            handleSizeChange(sizeData.size);
+                          }
+                        }}
+                        disabled={sizeData.soldOut}
+                        className={`px-3 py-2 font-montserrat transition-all text-sm relative ${
+                          sizeData.soldOut
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                            : selectedSize === sizeData.size
+                              ? 'bg-black text-white'
+                              : 'bg-white text-black border border-gray-300 hover:bg-beige-100'
+                        }`}
+                      >
+                        <div className={sizeData.soldOut ? 'line-through' : ''}>{sizeData.size}</div>
+                        <div className={`text-xs ${sizeData.soldOut ? 'line-through' : ''}`}>{sizeData.price} EGP</div>
+                        {sizeData.soldOut && (
+                          <div className="text-xs mt-0.5" style={{ textDecoration: 'none' }}>Sold Out</div>
+                        )}
+                      </button>
+                    )) :
+                    quickAddProduct.sizes?.map((size) => (
+                      <button
+                        key={size}
+                        onClick={() => handleSizeChange(size)}
+                        className={`px-3 py-2 font-montserrat transition-all text-sm ${
+                          selectedSize === size
+                            ? 'bg-black text-white'
+                            : 'bg-white text-black border border-gray-300 hover:bg-beige-100'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    ))
+                  }
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-2 sm:gap-4">
               <button
@@ -332,7 +479,11 @@ const Home = () => {
                 Add to Cart
               </button>
               <button
-                onClick={() => setQuickAddProduct(null)}
+                onClick={() => {
+                  setQuickAddProduct(null);
+                  setSelectedBundleSize1('');
+                  setSelectedBundleSize2('');
+                }}
                 style={{ width: '30%' }}
                 className="bg-white text-black border border-black px-4 sm:px-6 py-3 font-medium hover:bg-beige-100 transition-all font-montserrat text-sm sm:text-base"
               >

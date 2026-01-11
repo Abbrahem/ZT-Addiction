@@ -381,16 +381,53 @@ class MockDatabase {
 const uri = process.env.MONGODB_URI;
 const options = {
   maxPoolSize: 10,
-  serverSelectionTimeoutMS: 10000,
-  socketTimeoutMS: 45000,
-  connectTimeoutMS: 10000,
+  serverSelectionTimeoutMS: 30000,
+  socketTimeoutMS: 60000,
+  connectTimeoutMS: 30000,
   retryWrites: true,
-  w: 'majority'
+  w: 'majority',
+  retryReads: true,
+  maxIdleTimeMS: 60000
 };
 
 let client;
 let clientPromise;
 let useMockDB = false;
+let connectionAttempts = 0;
+const MAX_RETRIES = 3;
+
+// Function to attempt MongoDB connection with retries
+async function connectWithRetry() {
+  while (connectionAttempts < MAX_RETRIES) {
+    try {
+      connectionAttempts++;
+      console.log(`🔄 Attempting to connect to MongoDB (attempt ${connectionAttempts}/${MAX_RETRIES})...`);
+      
+      const connectedClient = await client.connect();
+      
+      // Test the connection
+      await connectedClient.db('admin').command({ ping: 1 });
+      
+      console.log('✅ Successfully connected to MongoDB');
+      useMockDB = false;
+      connectionAttempts = 0; // Reset on success
+      return connectedClient;
+    } catch (error) {
+      console.error(`❌ MongoDB connection attempt ${connectionAttempts} failed:`, error.message);
+      
+      if (connectionAttempts >= MAX_RETRIES) {
+        console.log('🔧 Max retries reached. Falling back to Mock Database');
+        useMockDB = true;
+        return new MockDatabase();
+      }
+      
+      // Wait before retry (exponential backoff)
+      const waitTime = Math.min(1000 * Math.pow(2, connectionAttempts - 1), 5000);
+      console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+  }
+}
 
 // Try to connect to MongoDB, fallback to Mock DB if it fails
 if (!uri) {
@@ -399,22 +436,8 @@ if (!uri) {
   const mockClient = new MockDatabase();
   clientPromise = Promise.resolve(mockClient);
 } else {
-  console.log('🔄 Attempting to connect to MongoDB...');
   client = new MongoClient(uri, options);
-
-  clientPromise = client.connect()
-    .then((connectedClient) => {
-      console.log('✅ Successfully connected to MongoDB');
-      useMockDB = false;
-      return connectedClient;
-    })
-    .catch((error) => {
-      console.error('❌ MongoDB connection failed:', error.message);
-      console.log('🔧 Falling back to Mock Database');
-      useMockDB = true;
-      const mockClient = new MockDatabase();
-      return mockClient;
-    });
+  clientPromise = connectWithRetry();
 }
 
 // Export a module-scoped MongoClient promise. By doing this in a
