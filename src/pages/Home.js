@@ -13,7 +13,28 @@ const Home = () => {
   const [quickAddPrice, setQuickAddPrice] = useState(0);
   const [selectedBundleSize1, setSelectedBundleSize1] = useState('');
   const [selectedBundleSize2, setSelectedBundleSize2] = useState('');
+  const [selectedBundleSize3, setSelectedBundleSize3] = useState('');
+  const [selectedBundleSize4, setSelectedBundleSize4] = useState('');
+  const [activePerfume, setActivePerfume] = useState(1);
   const { addToCart } = useCart();
+
+  // Helper function to check if a perfume has available sizes
+  const hasAvailableSizes = (perfume) => {
+    if (!perfume?.sizesWithPrices || perfume.sizesWithPrices.length === 0) return false;
+    return perfume.sizesWithPrices.some(s => !s.soldOut);
+  };
+
+  // Helper function to get first available size
+  const getFirstAvailableSize = (perfume) => {
+    if (!perfume?.sizesWithPrices) return null;
+    return perfume.sizesWithPrices.find(s => !s.soldOut);
+  };
+
+  // Helper function to check if perfume is completely sold out
+  const isPerfumeFullySoldOut = (perfume) => {
+    if (!perfume?.name || !perfume?.sizesWithPrices || perfume.sizesWithPrices.length === 0) return true;
+    return perfume.sizesWithPrices.every(s => s.soldOut);
+  };
 
   useEffect(() => {
     fetchBestSellingProducts();
@@ -53,21 +74,57 @@ const Home = () => {
       return;
     }
     setQuickAddProduct(product);
+    setActivePerfume(1);
     
-    // For bundles, set initial sizes and calculate price
+    // For bundles, set initial sizes and calculate price (skip sold out)
     if (product.isBundle) {
-      const size1 = product.bundlePerfume1?.sizesWithPrices?.[0];
-      const size2 = product.bundlePerfume2?.sizesWithPrices?.[0];
-      if (size1 && size2) {
-        setSelectedBundleSize1(size1.size);
-        setSelectedBundleSize2(size2.size);
-        setQuickAddPrice(size1.price + size2.price);
+      let totalPrice = 0;
+      
+      // Perfume 1
+      const availableSize1 = getFirstAvailableSize(product.bundlePerfume1);
+      if (availableSize1) {
+        setSelectedBundleSize1(availableSize1.size);
+        totalPrice += availableSize1.price;
+      } else {
+        setSelectedBundleSize1('');
       }
+      
+      // Perfume 2
+      const availableSize2 = getFirstAvailableSize(product.bundlePerfume2);
+      if (availableSize2) {
+        setSelectedBundleSize2(availableSize2.size);
+        totalPrice += availableSize2.price;
+      } else {
+        setSelectedBundleSize2('');
+      }
+      
+      // Perfume 3
+      const availableSize3 = getFirstAvailableSize(product.bundlePerfume3);
+      if (availableSize3) {
+        setSelectedBundleSize3(availableSize3.size);
+        totalPrice += availableSize3.price;
+      } else {
+        setSelectedBundleSize3('');
+      }
+      
+      // Perfume 4
+      const availableSize4 = getFirstAvailableSize(product.bundlePerfume4);
+      if (availableSize4) {
+        setSelectedBundleSize4(availableSize4.size);
+        totalPrice += availableSize4.price;
+      } else {
+        setSelectedBundleSize4('');
+      }
+      
+      setQuickAddPrice(totalPrice);
     } else {
-      // Set initial size and price
+      // Set initial size and price (skip sold out)
       if (product.sizesWithPrices && product.sizesWithPrices.length > 0) {
-        setSelectedSize(product.sizesWithPrices[0].size);
-        setQuickAddPrice(product.sizesWithPrices[0].price);
+        const availableSize = product.sizesWithPrices.find(s => !s.soldOut);
+        if (availableSize) {
+          setSelectedSize(availableSize.size);
+          setQuickAddPrice(availableSize.price);
+        }
       } else if (product.sizes && product.sizes.length > 0) {
         setSelectedSize(product.sizes[0]);
         setQuickAddPrice(product.priceEGP || 0);
@@ -89,22 +146,49 @@ const Home = () => {
 
   const handleAddToCart = () => {
     if (quickAddProduct.isBundle) {
-      if (!selectedBundleSize1 || !selectedBundleSize2) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Select Sizes',
-          text: 'Please select sizes for both perfumes'
-        });
+      // Check which perfumes have available sizes (not fully sold out)
+      const perfume1Available = hasAvailableSizes(quickAddProduct.bundlePerfume1);
+      const perfume2Available = hasAvailableSizes(quickAddProduct.bundlePerfume2);
+      const perfume3Exists = quickAddProduct.bundlePerfume3?.name;
+      const perfume4Exists = quickAddProduct.bundlePerfume4?.name;
+      const perfume3Available = perfume3Exists && hasAvailableSizes(quickAddProduct.bundlePerfume3);
+      const perfume4Available = perfume4Exists && hasAvailableSizes(quickAddProduct.bundlePerfume4);
+      
+      // Validate selections for available perfumes only
+      if (perfume1Available && !selectedBundleSize1) {
+        Swal.fire({ icon: 'warning', title: 'Select Size', text: 'Please select size for Perfume 1' });
+        return;
+      }
+      if (perfume2Available && !selectedBundleSize2) {
+        Swal.fire({ icon: 'warning', title: 'Select Size', text: 'Please select size for Perfume 2' });
+        return;
+      }
+      if (perfume3Available && !selectedBundleSize3) {
+        Swal.fire({ icon: 'warning', title: 'Select Size', text: 'Please select size for Perfume 3' });
+        return;
+      }
+      if (perfume4Available && !selectedBundleSize4) {
+        Swal.fire({ icon: 'warning', title: 'Select Size', text: 'Please select size for Perfume 4' });
         return;
       }
       
-      // Add bundle to cart with bundle details
-      const bundleSize = `${selectedBundleSize1} + ${selectedBundleSize2}`;
+      // Build bundle size string (only include selected sizes)
+      let bundleSizeParts = [];
+      if (selectedBundleSize1) bundleSizeParts.push(selectedBundleSize1);
+      if (selectedBundleSize2) bundleSizeParts.push(selectedBundleSize2);
+      if (selectedBundleSize3) bundleSizeParts.push(selectedBundleSize3);
+      if (selectedBundleSize4) bundleSizeParts.push(selectedBundleSize4);
+      const bundleSize = bundleSizeParts.join(' + ');
+      
       const bundleDetails = {
-        perfume1Name: quickAddProduct.bundlePerfume1.name,
-        perfume2Name: quickAddProduct.bundlePerfume2.name,
-        size1: selectedBundleSize1,
-        size2: selectedBundleSize2
+        perfume1Name: selectedBundleSize1 ? quickAddProduct.bundlePerfume1.name : null,
+        perfume2Name: selectedBundleSize2 ? quickAddProduct.bundlePerfume2.name : null,
+        size1: selectedBundleSize1 || null,
+        size2: selectedBundleSize2 || null,
+        perfume3Name: selectedBundleSize3 ? quickAddProduct.bundlePerfume3?.name : null,
+        size3: selectedBundleSize3 || null,
+        perfume4Name: selectedBundleSize4 ? quickAddProduct.bundlePerfume4?.name : null,
+        size4: selectedBundleSize4 || null
       };
       
       addToCart(quickAddProduct, bundleSize, 'Default', 1, quickAddPrice, bundleDetails);
@@ -132,6 +216,9 @@ const Home = () => {
     setSelectedSize('');
     setSelectedBundleSize1('');
     setSelectedBundleSize2('');
+    setSelectedBundleSize3('');
+    setSelectedBundleSize4('');
+    setActivePerfume(1);
   };
 
   const ProductCard = ({ product }) => (
@@ -334,6 +421,9 @@ const Home = () => {
               setQuickAddProduct(null);
               setSelectedBundleSize1('');
               setSelectedBundleSize2('');
+              setSelectedBundleSize3('');
+              setSelectedBundleSize4('');
+              setActivePerfume(1);
             }}
           />
           <div className="fixed bottom-0 left-0 right-0 bg-white z-50 p-4 sm:p-6 md:p-8 transform transition-transform duration-300 max-w-2xl mx-auto rounded-t-2xl max-h-[80vh] overflow-y-auto">
@@ -342,6 +432,9 @@ const Home = () => {
                 setQuickAddProduct(null);
                 setSelectedBundleSize1('');
                 setSelectedBundleSize2('');
+                setSelectedBundleSize3('');
+                setSelectedBundleSize4('');
+                setActivePerfume(1);
               }}
               className="absolute top-4 right-4 text-black hover:opacity-70"
             >
@@ -354,71 +447,115 @@ const Home = () => {
             <p className="font-montserrat text-base sm:text-lg font-semibold mb-4">{quickAddPrice} EGP</p>
 
             {quickAddProduct.isBundle ? (
-              // Bundle Size Selectors
+              // Bundle Size Selectors with Circles
               <div className="space-y-4 mb-4">
-                {/* Perfume 1 */}
-                <div>
-                  <label className="block text-sm font-medium mb-2 font-montserrat">{quickAddProduct.bundlePerfume1?.name}</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {quickAddProduct.bundlePerfume1?.sizesWithPrices?.map((sizeData) => (
-                      <button
-                        key={sizeData.size}
-                        onClick={() => {
-                          if (!sizeData.soldOut) {
-                            setSelectedBundleSize1(sizeData.size);
-                            const price2 = quickAddProduct.bundlePerfume2?.sizesWithPrices?.find(s => s.size === selectedBundleSize2)?.price || 0;
-                            setQuickAddPrice(sizeData.price + price2);
-                          }
-                        }}
-                        disabled={sizeData.soldOut}
-                        className={`px-3 py-2 font-montserrat transition-all text-sm relative ${
-                          sizeData.soldOut
-                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-                            : selectedBundleSize1 === sizeData.size
-                              ? 'bg-black text-white'
-                              : 'bg-white text-black border border-gray-300 hover:bg-beige-100'
-                        }`}
+                {/* Perfume Selection Circles */}
+                <div className="flex justify-center gap-3 flex-wrap mb-4">
+                  {[1, 2, 3, 4].map((num) => {
+                    const perfume = num === 1 ? quickAddProduct.bundlePerfume1 
+                      : num === 2 ? quickAddProduct.bundlePerfume2 
+                      : num === 3 ? quickAddProduct.bundlePerfume3 
+                      : quickAddProduct.bundlePerfume4;
+                    const selectedSize = num === 1 ? selectedBundleSize1 
+                      : num === 2 ? selectedBundleSize2 
+                      : num === 3 ? selectedBundleSize3 
+                      : selectedBundleSize4;
+                    
+                    if (!perfume?.name) return null;
+                    
+                    // Check if this perfume is fully sold out
+                    const isFullySoldOut = isPerfumeFullySoldOut(perfume);
+                    
+                    return (
+                      <div 
+                        key={num}
+                        onClick={() => !isFullySoldOut && setActivePerfume(num)}
+                        className={`transition-all duration-300 ${isFullySoldOut ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${activePerfume === num && !isFullySoldOut ? 'scale-105' : 'opacity-70'}`}
                       >
-                        <div className={sizeData.soldOut ? 'line-through' : ''}>{sizeData.size}</div>
-                        <div className={`text-xs ${sizeData.soldOut ? 'line-through' : ''}`}>{sizeData.price} EGP</div>
-                        {sizeData.soldOut && (
-                          <div className="text-xs mt-0.5" style={{ textDecoration: 'none' }}>Sold Out</div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center border-3 transition-all ${
+                          isFullySoldOut
+                            ? 'border-red-300 bg-red-100 text-red-400'
+                            : activePerfume === num 
+                              ? 'border-black bg-black text-white' 
+                              : 'border-gray-300 bg-white text-black'
+                        }`}>
+                          <span className={`text-lg font-bold ${isFullySoldOut ? 'line-through' : ''}`}>{num}</span>
+                        </div>
+                        <p className={`text-center mt-1 text-xs max-w-14 leading-tight truncate ${isFullySoldOut ? 'line-through text-red-400' : ''}`}>{perfume?.name}</p>
+                        {isFullySoldOut ? (
+                          <p className="text-center text-xs text-red-500">Sold Out</p>
+                        ) : selectedSize ? (
+                          <p className="text-center text-xs text-green-600">{selectedSize}</p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
 
-                {/* Perfume 2 */}
-                <div>
-                  <label className="block text-sm font-medium mb-2 font-montserrat">{quickAddProduct.bundlePerfume2?.name}</label>
+                {/* Active Perfume Sizes */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <p className="text-sm font-medium mb-2 font-montserrat text-center">
+                    {activePerfume === 1 && quickAddProduct.bundlePerfume1?.name}
+                    {activePerfume === 2 && quickAddProduct.bundlePerfume2?.name}
+                    {activePerfume === 3 && quickAddProduct.bundlePerfume3?.name}
+                    {activePerfume === 4 && quickAddProduct.bundlePerfume4?.name}
+                  </p>
                   <div className="grid grid-cols-2 gap-2">
-                    {quickAddProduct.bundlePerfume2?.sizesWithPrices?.map((sizeData) => (
-                      <button
-                        key={sizeData.size}
-                        onClick={() => {
-                          if (!sizeData.soldOut) {
-                            setSelectedBundleSize2(sizeData.size);
-                            const price1 = quickAddProduct.bundlePerfume1?.sizesWithPrices?.find(s => s.size === selectedBundleSize1)?.price || 0;
-                            setQuickAddPrice(price1 + sizeData.price);
-                          }
-                        }}
-                        disabled={sizeData.soldOut}
-                        className={`px-3 py-2 font-montserrat transition-all text-sm relative ${
-                          sizeData.soldOut
-                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-                            : selectedBundleSize2 === sizeData.size
-                              ? 'bg-black text-white'
-                              : 'bg-white text-black border border-gray-300 hover:bg-beige-100'
-                        }`}
-                      >
-                        <div className={sizeData.soldOut ? 'line-through' : ''}>{sizeData.size}</div>
-                        <div className={`text-xs ${sizeData.soldOut ? 'line-through' : ''}`}>{sizeData.price} EGP</div>
-                        {sizeData.soldOut && (
-                          <div className="text-xs mt-0.5" style={{ textDecoration: 'none' }}>Sold Out</div>
-                        )}
-                      </button>
-                    ))}
+                    {(() => {
+                      const perfume = activePerfume === 1 ? quickAddProduct.bundlePerfume1 
+                        : activePerfume === 2 ? quickAddProduct.bundlePerfume2 
+                        : activePerfume === 3 ? quickAddProduct.bundlePerfume3 
+                        : quickAddProduct.bundlePerfume4;
+                      const selectedSize = activePerfume === 1 ? selectedBundleSize1 
+                        : activePerfume === 2 ? selectedBundleSize2 
+                        : activePerfume === 3 ? selectedBundleSize3 
+                        : selectedBundleSize4;
+                      
+                      // Check if all sizes are sold out
+                      const allSoldOut = perfume?.sizesWithPrices?.every(s => s.soldOut);
+                      if (allSoldOut) {
+                        return (
+                          <div className="col-span-2 text-center py-4 text-red-500">
+                            All sizes are sold out for this perfume
+                          </div>
+                        );
+                      }
+                      
+                      return perfume?.sizesWithPrices?.map((sizeData) => (
+                        <button
+                          key={sizeData.size}
+                          onClick={() => {
+                            if (!sizeData.soldOut) {
+                              if (activePerfume === 1) setSelectedBundleSize1(sizeData.size);
+                              else if (activePerfume === 2) setSelectedBundleSize2(sizeData.size);
+                              else if (activePerfume === 3) setSelectedBundleSize3(sizeData.size);
+                              else setSelectedBundleSize4(sizeData.size);
+                              
+                              // Recalculate price
+                              const p1 = activePerfume === 1 ? sizeData.price : (quickAddProduct.bundlePerfume1?.sizesWithPrices?.find(s => s.size === selectedBundleSize1)?.price || 0);
+                              const p2 = activePerfume === 2 ? sizeData.price : (quickAddProduct.bundlePerfume2?.sizesWithPrices?.find(s => s.size === selectedBundleSize2)?.price || 0);
+                              const p3 = activePerfume === 3 ? sizeData.price : (quickAddProduct.bundlePerfume3?.sizesWithPrices?.find(s => s.size === selectedBundleSize3)?.price || 0);
+                              const p4 = activePerfume === 4 ? sizeData.price : (quickAddProduct.bundlePerfume4?.sizesWithPrices?.find(s => s.size === selectedBundleSize4)?.price || 0);
+                              setQuickAddPrice(p1 + p2 + p3 + p4);
+                            }
+                          }}
+                          disabled={sizeData.soldOut}
+                          className={`px-3 py-2 font-montserrat transition-all text-sm relative ${
+                            sizeData.soldOut
+                              ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                              : selectedSize === sizeData.size
+                                ? 'bg-black text-white'
+                                : 'bg-white text-black border border-gray-300 hover:bg-beige-100'
+                          }`}
+                        >
+                          <div className={sizeData.soldOut ? 'line-through' : ''}>{sizeData.size}</div>
+                          <div className={`text-xs ${sizeData.soldOut ? 'line-through' : ''}`}>{sizeData.price} EGP</div>
+                          {sizeData.soldOut && (
+                            <div className="text-xs mt-0.5" style={{ textDecoration: 'none' }}>Sold Out</div>
+                          )}
+                        </button>
+                      ));
+                    })()}
                   </div>
                 </div>
               </div>
@@ -483,6 +620,9 @@ const Home = () => {
                   setQuickAddProduct(null);
                   setSelectedBundleSize1('');
                   setSelectedBundleSize2('');
+                  setSelectedBundleSize3('');
+                  setSelectedBundleSize4('');
+                  setActivePerfume(1);
                 }}
                 style={{ width: '30%' }}
                 className="bg-white text-black border border-black px-4 sm:px-6 py-3 font-medium hover:bg-beige-100 transition-all font-montserrat text-sm sm:text-base"

@@ -59,9 +59,9 @@ module.exports = async function handler(req, res) {
     // POST /api/products - Create new product
     if (req.method === 'POST' && !productId) {
       return requireAuth(req, res, async () => {
-        const { name, description, collection, images, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2 } = req.body;
+        const { name, description, collection, images, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2, bundlePerfume3, bundlePerfume4 } = req.body;
         
-        console.log('📦 Creating product with data:', { name, collection, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2 });
+        console.log('📦 Creating product with data:', { name, collection, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2, bundlePerfume3, bundlePerfume4 });
 
         if (!name || !collection) {
           console.log('❌ Missing name or collection');
@@ -74,7 +74,7 @@ module.exports = async function handler(req, res) {
         // For bundles, validate bundle data
         if (isBundle) {
           if (!bundlePerfume1 || !bundlePerfume2) {
-            return res.status(400).json({ message: 'Bundle products require both perfumes' });
+            return res.status(400).json({ message: 'Bundle products require at least 2 perfumes' });
           }
           if (!bundlePerfume1.sizesWithPrices || bundlePerfume1.sizesWithPrices.length === 0) {
             return res.status(400).json({ message: 'Perfume 1 requires sizes with prices' });
@@ -107,7 +107,7 @@ module.exports = async function handler(req, res) {
 
         // Handle bundle products
         if (isBundle) {
-          // Initialize soldOut property for all sizes
+          // Initialize soldOut property for all sizes - Perfume 1
           const perfume1WithSoldOut = {
             ...bundlePerfume1,
             sizesWithPrices: bundlePerfume1.sizesWithPrices.map(item => ({
@@ -116,6 +116,7 @@ module.exports = async function handler(req, res) {
             }))
           };
           
+          // Perfume 2
           const perfume2WithSoldOut = {
             ...bundlePerfume2,
             sizesWithPrices: bundlePerfume2.sizesWithPrices.map(item => ({
@@ -127,10 +128,34 @@ module.exports = async function handler(req, res) {
           product.bundlePerfume1 = perfume1WithSoldOut;
           product.bundlePerfume2 = perfume2WithSoldOut;
           
+          // Perfume 3 (Optional)
+          if (bundlePerfume3?.name && bundlePerfume3?.sizesWithPrices?.length > 0) {
+            product.bundlePerfume3 = {
+              ...bundlePerfume3,
+              sizesWithPrices: bundlePerfume3.sizesWithPrices.map(item => ({
+                ...item,
+                soldOut: item.soldOut || false
+              }))
+            };
+          }
+          
+          // Perfume 4 (Optional)
+          if (bundlePerfume4?.name && bundlePerfume4?.sizesWithPrices?.length > 0) {
+            product.bundlePerfume4 = {
+              ...bundlePerfume4,
+              sizesWithPrices: bundlePerfume4.sizesWithPrices.map(item => ({
+                ...item,
+                soldOut: item.soldOut || false
+              }))
+            };
+          }
+          
           // Calculate default price from first size of each perfume
           const price1 = bundlePerfume1.sizesWithPrices[0]?.price || 0;
           const price2 = bundlePerfume2.sizesWithPrices[0]?.price || 0;
-          product.priceEGP = price1 + price2;
+          const price3 = bundlePerfume3?.sizesWithPrices?.[0]?.price || 0;
+          const price4 = bundlePerfume4?.sizesWithPrices?.[0]?.price || 0;
+          product.priceEGP = price1 + price2 + price3 + price4;
           
           product.isBundle = true;
         } else {

@@ -141,8 +141,19 @@ module.exports = async function handler(req, res) {
 
       console.log('Product found:', product.name);
 
-      // Update the correct perfume's sizes
-      const perfumeKey = perfumeNumber === 1 ? 'bundlePerfume1' : 'bundlePerfume2';
+      // Update the correct perfume's sizes (supports 1, 2, 3, 4)
+      const perfumeKeyMap = {
+        1: 'bundlePerfume1',
+        2: 'bundlePerfume2',
+        3: 'bundlePerfume3',
+        4: 'bundlePerfume4'
+      };
+      const perfumeKey = perfumeKeyMap[perfumeNumber];
+      
+      if (!perfumeKey) {
+        return res.status(400).json({ message: 'Invalid perfume number. Must be 1, 2, 3, or 4' });
+      }
+      
       const perfume = product[perfumeKey];
       
       if (!perfume || !perfume.sizesWithPrices) {

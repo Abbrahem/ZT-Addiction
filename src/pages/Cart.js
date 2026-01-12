@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
 const Cart = () => {
-  const { items, updateQuantity, removeFromCart, getCartTotal } = useCart();
+  const { items, removeFromCart, getCartTotal } = useCart();
   const shippingFee = 100;
   const subtotal = getCartTotal();
   const total = subtotal + (items.length > 0 ? shippingFee : 0);
@@ -45,21 +45,39 @@ const Cart = () => {
                   <h3 className="text-lg font-montserrat font-semibold text-black">{item.name}</h3>
                   {item.isBundle && item.bundleDetails ? (
                     <div className="space-y-2 mt-3">
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                           <p className="text-xs text-gray-500 font-medium mb-1">Perfume 1</p>
                           <p className="font-medium text-gray-900 text-sm">{item.bundleDetails.perfume1Name}</p>
                           <span className="inline-block mt-1 bg-black text-white text-xs px-2 py-0.5 rounded">
                             {item.bundleDetails.size1}
                           </span>
                         </div>
-                        <div className="flex-1 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                           <p className="text-xs text-gray-500 font-medium mb-1">Perfume 2</p>
                           <p className="font-medium text-gray-900 text-sm">{item.bundleDetails.perfume2Name}</p>
                           <span className="inline-block mt-1 bg-black text-white text-xs px-2 py-0.5 rounded">
                             {item.bundleDetails.size2}
                           </span>
                         </div>
+                        {item.bundleDetails.perfume3Name && (
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                            <p className="text-xs text-gray-500 font-medium mb-1">Perfume 3</p>
+                            <p className="font-medium text-gray-900 text-sm">{item.bundleDetails.perfume3Name}</p>
+                            <span className="inline-block mt-1 bg-black text-white text-xs px-2 py-0.5 rounded">
+                              {item.bundleDetails.size3}
+                            </span>
+                          </div>
+                        )}
+                        {item.bundleDetails.perfume4Name && (
+                          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                            <p className="text-xs text-gray-500 font-medium mb-1">Perfume 4</p>
+                            <p className="font-medium text-gray-900 text-sm">{item.bundleDetails.perfume4Name}</p>
+                            <span className="inline-block mt-1 bg-black text-white text-xs px-2 py-0.5 rounded">
+                              {item.bundleDetails.size4}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ) : (
