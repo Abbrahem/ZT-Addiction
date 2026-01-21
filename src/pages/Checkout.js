@@ -14,6 +14,17 @@ const Checkout = () => {
     phone1: '',
     phone2: ''
   });
+  const [saveInfo, setSaveInfo] = useState(false);
+  
+  // Load saved info on mount
+  React.useEffect(() => {
+    const savedInfo = localStorage.getItem('checkoutInfo');
+    if (savedInfo) {
+      const parsed = JSON.parse(savedInfo);
+      setFormData(parsed);
+      setSaveInfo(true);
+    }
+  }, []);
   
   // Promo code state
   const [promoCode, setPromoCode] = useState('');
@@ -151,6 +162,13 @@ const Checkout = () => {
 
     if (!validateForm()) return;
 
+    // Save info if checkbox is checked
+    if (saveInfo) {
+      localStorage.setItem('checkoutInfo', JSON.stringify(formData));
+    } else {
+      localStorage.removeItem('checkoutInfo');
+    }
+
     setLoading(true);
     
     try {
@@ -187,6 +205,18 @@ const Checkout = () => {
       console.log('Sending order with payment:', orderData.payment);
       const response = await axios.post('/api/orders', orderData);
       const orderId = response.data.orderId;
+      
+      // Save order to localStorage for tracking
+      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+      orders.push({
+        orderId,
+        date: new Date().toISOString(),
+        total,
+        status: 'Processing',
+        items: orderData.items,
+        customerInfo: orderData.customer
+      });
+      localStorage.setItem('orders', JSON.stringify(orders));
       
       clearCart();
       setShowPaymentModal(false);
@@ -233,6 +263,13 @@ const Checkout = () => {
     
     if (!validateForm()) return;
     
+    // Save info if checkbox is checked
+    if (saveInfo) {
+      localStorage.setItem('checkoutInfo', JSON.stringify(formData));
+    } else {
+      localStorage.removeItem('checkoutInfo');
+    }
+    
     setLoading(true);
     
     try {
@@ -261,6 +298,18 @@ const Checkout = () => {
 
       const response = await axios.post('/api/orders', orderData);
       const orderId = response.data.orderId;
+      
+      // Save order to localStorage for tracking
+      const orders = JSON.parse(localStorage.getItem('orders') || '[]');
+      orders.push({
+        orderId,
+        date: new Date().toISOString(),
+        total,
+        status: 'Processing',
+        items: orderData.items,
+        customerInfo: orderData.customer
+      });
+      localStorage.setItem('orders', JSON.stringify(orders));
       
       clearCart();
       
@@ -473,6 +522,20 @@ const Checkout = () => {
                 maxLength="11"
                 required
               />
+            </div>
+
+            {/* Save Info Checkbox */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="saveInfo"
+                checked={saveInfo}
+                onChange={(e) => setSaveInfo(e.target.checked)}
+                className="w-4 h-4 cursor-pointer"
+              />
+              <label htmlFor="saveInfo" className="font-montserrat text-sm cursor-pointer">
+                Save this information for next time
+              </label>
             </div>
 
             <button

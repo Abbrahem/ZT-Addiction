@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { mockProducts } from '../data/mockData';
@@ -9,6 +10,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { addToWishlist, isInWishlist } = useWishlist();
   
   const [product, setProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
@@ -18,6 +20,7 @@ const ProductDetail = () => {
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [otherProducts, setOtherProducts] = useState([]);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
   
   // Bundle specific states
   const [selectedBundleSize1, setSelectedBundleSize1] = useState('');
@@ -45,6 +48,8 @@ const ProductDetail = () => {
   useEffect(() => {
     fetchProduct();
     fetchOtherProducts();
+    loadRecentlyViewed();
+    saveToRecentlyViewed();
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchProduct = async () => {
@@ -114,13 +119,63 @@ const ProductDetail = () => {
 
   const fetchOtherProducts = async () => {
     try {
-      const response = await axios.get(`/api/products?limit=4&random=true&exclude=${id}`);
-      setOtherProducts(response.data);
+      // Fetch related products from same category
+      if (product?.collection) {
+        const response = await axios.get(`/api/products?collection=${product.collection}&limit=4&exclude=${id}`);
+        setOtherProducts(response.data);
+      } else {
+        const response = await axios.get(`/api/products?limit=4&random=true&exclude=${id}`);
+        setOtherProducts(response.data);
+      }
     } catch (error) {
-      const shuffled = [...mockProducts]
-        .filter(p => p._id !== id)
-        .sort(() => Math.random() - 0.5);
+      // Fallback to mock data with same category
+      let filtered = [...mockProducts].filter(p => p._id !== id);
+      if (product?.collection) {
+        filtered = filtered.filter(p => p.collection === product.collection);
+      }
+      const shuffled = filtered.sort(() => Math.random() - 0.5);
       setOtherProducts(shuffled.slice(0, 4));
+    }
+  };
+
+  const saveToRecentlyViewed = () => {
+    if (!product) return;
+    
+    const viewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+    const filtered = viewed.filter(item => item.id !== id);
+    const updated = [
+      { id: product._id, name: product.name, image: product.images?.[0], price: product.sizesWithPrices?.[0]?.price || product.priceEGP, timestamp: Date.now() },
+      ...filtered
+    ].slice(0, 10); // Keep only last 10
+    
+    localStorage.setItem('recentlyViewed', JSON.stringify(updated));
+  };
+
+  const loadRecentlyViewed = () => {
+    const viewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
+    // Show last viewed products excluding current one
+    const filtered = viewed.filter(item => item.id !== id);
+    setRecentlyViewed(filtered.slice(0, 4));
+  };
+
+  const handleToggleWishlist = () => {
+    if (isInWishlist(product._id)) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Already in Wishlist',
+        text: 'This product is already in your wishlist',
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } else {
+      addToWishlist(product);
+      Swal.fire({
+        icon: 'success',
+        title: 'Added to Wishlist',
+        text: `${product.name} has been added to your wishlist.`,
+        timer: 1500,
+        showConfirmButton: false
+      });
     }
   };
 
@@ -305,6 +360,39 @@ const ProductDetail = () => {
             : `${product.priceEGP} EGP`}
         </p>
       </Link>
+      
+      {/* Wishlist Heart Icon */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          if (isInWishlist(product._id)) {
+            Swal.fire({
+              icon: 'info',
+              title: 'Already in Wishlist',
+              timer: 1000,
+              showConfirmButton: false
+            });
+          } else {
+            addToWishlist(product);
+            Swal.fire({
+              icon: 'success',
+              title: 'Added to Wishlist',
+              timer: 1000,
+              showConfirmButton: false
+            });
+          }
+        }}
+        className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:scale-110 transition-transform z-10"
+      >
+        <svg 
+          className="w-5 h-5" 
+          fill={isInWishlist(product._id) ? '#ef4444' : 'none'} 
+          stroke={isInWishlist(product._id) ? '#ef4444' : 'currentColor'} 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        </svg>
+      </button>
     </div>
   );
 
@@ -660,6 +748,26 @@ const ProductDetail = () => {
               >
                 Buy it now
               </button>
+              
+              {/* Wishlist Button */}
+              <button
+                onClick={handleToggleWishlist}
+                className={`w-full flex items-center justify-center gap-2 px-6 py-4 font-montserrat transition-all border-2 ${
+                  isInWishlist(product._id)
+                    ? 'bg-red-50 border-red-500 text-red-500'
+                    : 'bg-white border-gray-300 text-black hover:border-black'
+                }`}
+              >
+                <svg 
+                  className="w-5 h-5" 
+                  fill={isInWishlist(product._id) ? 'currentColor' : 'none'} 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {isInWishlist(product._id) ? 'In Wishlist' : 'Add to Wishlist'}
+              </button>
             </>
           )}
 
@@ -684,15 +792,39 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Other Products */}
+        {/* Related Products */}
         <section className="mt-20">
-          <h2 className="text-3xl font-playfair text-center mb-12 text-black">Others Products</h2>
+          <h2 className="text-3xl font-playfair text-center mb-12 text-black">Related Products</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
             {otherProducts.map((prod) => (
               <ProductCard key={prod._id} product={prod} />
             ))}
           </div>
         </section>
+
+        {/* Recently Viewed */}
+        {recentlyViewed.length > 0 && (
+          <section className="mt-20">
+            <h2 className="text-3xl font-playfair text-center mb-12 text-black">Recently Viewed</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+              {recentlyViewed.map((item) => (
+                <div key={item.id} className="group relative">
+                  <Link to={`/products/${item.id}`} className="block">
+                    <div className="relative overflow-hidden mb-3" style={{ paddingBottom: '75%' }}>
+                      <img
+                        src={item.image ? `/api/images/${item.image}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
+                        alt={item.name}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                    <h3 className="font-montserrat text-sm md:text-base mb-1 text-black leading-tight">{item.name}</h3>
+                    <p className="font-montserrat text-sm md:text-base font-semibold text-black">{item.price} EGP</p>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       {/* Footer */}

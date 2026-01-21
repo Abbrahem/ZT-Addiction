@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 
 const Navbar = () => {
   const { getCartItemsCount } = useCart();
+  const { getWishlistCount } = useWishlist();
   const cartCount = getCartItemsCount();
+  const wishlistCount = getWishlistCount();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
   const location = useLocation();
 
   const isHomePage = location.pathname === '/';
@@ -23,15 +23,6 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery)}`);
-      setIsSearchOpen(false);
-      setSearchQuery('');
-    }
-  };
-
   const navbarClasses = isHomePage && !isScrolled
     ? 'fixed top-0 left-0 right-0 z-50 transition-all duration-300'
     : 'sticky top-0 z-50 bg-beige-50 shadow-md transition-all duration-300';
@@ -44,26 +35,37 @@ const Navbar = () => {
       <nav className={navbarClasses}>
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
           <div className="flex justify-between items-center h-20">
-            {/* Left: Search */}
+            {/* Left: Order Tracking */}
             <div className="flex items-center">
-              <button 
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
+              <Link 
+                to="/order-tracking"
                 className={`${textColor} hover:opacity-70 transition-opacity`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-              </button>
+              </Link>
             </div>
 
-            {/* Center: Brand Name - Two Lines */}
+            {/* Center: Brand Name */}
             <Link to="/" className={`flex flex-col items-center ${logoTextColor} font-playfair`}>
               <span className="text-xl md:text-2xl font-bold tracking-widest leading-tight">ZT</span>
               <span className="text-xs md:text-sm font-medium tracking-widest -mt-1">ADDICTION</span>
             </Link>
 
-            {/* Right: Cart & Menu */}
+            {/* Right: Wishlist, Cart & Menu */}
             <div className="flex items-center space-x-4">
+              <Link to="/wishlist" className={`relative ${textColor} hover:opacity-70 transition-opacity`}>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-montserrat">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Link>
+              
               <Link to="/cart" className={`relative ${textColor} hover:opacity-70 transition-opacity`}>
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -86,22 +88,6 @@ const Navbar = () => {
             </div>
           </div>
         </div>
-
-        {/* Search Bar */}
-        {isSearchOpen && (
-          <div className="bg-beige-50 border-t border-beige-200 px-6 py-4">
-            <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search for perfumes..."
-                className="w-full px-6 py-3 bg-white text-black focus:ring-2 focus:ring-black focus:outline-none font-montserrat"
-                autoFocus
-              />
-            </form>
-          </div>
-        )}
       </nav>
 
       {/* Sidebar Menu */}
@@ -125,47 +111,46 @@ const Navbar = () => {
               <h2 className="text-2xl font-bold mb-8 font-playfair text-black">Menu</h2>
 
               <nav className="space-y-5">
-                <Link 
-                  to="/" 
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black"
-                >
+                <Link to="/" onClick={() => setIsSidebarOpen(false)} className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black">
                   Home
                 </Link>
-                <Link 
-                  to="/category/bottles" 
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black"
-                >
+                <Link to="/category/bottles" onClick={() => setIsSidebarOpen(false)} className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black">
                   Full Bottles
                 </Link>
-                <Link 
-                  to="/category/winter-samples" 
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black"
-                >
+                <Link to="/category/winter-samples" onClick={() => setIsSidebarOpen(false)} className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black">
                   Winter Samples
                 </Link>
-                <Link 
-                  to="/category/summer-samples" 
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black"
-                >
+                <Link to="/category/summer-samples" onClick={() => setIsSidebarOpen(false)} className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black">
                   Summer Samples
                 </Link>
-                <Link 
-                  to="/category/bundles" 
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black"
-                >
+                <Link to="/category/bundles" onClick={() => setIsSidebarOpen(false)} className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black">
                   Bundles
                 </Link>
-                <Link 
-                  to="/cart" 
-                  onClick={() => setIsSidebarOpen(false)}
-                  className="block text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black"
-                >
-                  Cart
+                
+                <div className="border-t border-gray-200 pt-5 mt-5">
+                  <Link to="/order-tracking" onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-3 text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black relative">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    <span>Track Order</span>
+                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded font-montserrat font-semibold ml-auto">
+                      New
+                    </span>
+                  </Link>
+                </div>
+                
+                <Link to="/wishlist" onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-3 text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                  Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
+                </Link>
+                
+                <Link to="/cart" onClick={() => setIsSidebarOpen(false)} className="flex items-center gap-3 text-lg font-medium hover:opacity-70 transition-opacity font-montserrat text-black">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  Cart {cartCount > 0 && `(${cartCount})`}
                 </Link>
               </nav>
             </div>

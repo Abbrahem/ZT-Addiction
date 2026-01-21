@@ -471,30 +471,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleOrderStatusUpdate = async (orderId, newStatus) => {
-    try {
-      console.log('Updating order status:', orderId, 'to:', newStatus);
-      console.log('Sending request body:', { status: newStatus });
-
-      const response = await axios.patch('/api/orders',
-        { orderId: orderId, status: newStatus },
-        {
-          withCredentials: true,
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      console.log('Order status update response:', response.data);
-      fetchOrders(); // Refresh the orders list
-    } catch (error) {
-      console.error('Error updating order status:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-    }
-  };
-
   const handleDeleteOrder = async (orderId) => {
     try {
       const result = await Swal.fire({
@@ -541,6 +517,47 @@ const AdminDashboard = () => {
         title: 'Error',
         text: 'Failed to delete order. Please try again.'
       });
+    }
+  };
+
+  const handleOrderStatusUpdate = async (orderId, newStatus) => {
+    try {
+      console.log('Updating order status:', orderId, 'to:', newStatus);
+      
+      // Update in database
+      const response = await axios.patch('/api/orders',
+        { orderId: orderId, status: newStatus },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('Order status update response:', response.data);
+
+      // Update local state
+      setOrders(orders.map(order => 
+        order._id.toString() === orderId.toString() ? { ...order, status: newStatus } : order
+      ));
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Status Updated',
+        text: `Order status changed to ${newStatus}`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Failed to update order status. Please try again.'
+      });
+      // Refresh to get correct status
+      fetchOrders();
     }
   };
 

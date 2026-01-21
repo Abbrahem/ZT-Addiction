@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import ProductCard from '../components/ProductCard';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { mockProducts } from '../data/mockData';
@@ -201,43 +201,6 @@ const Products = () => {
     );
   }
 
-  const ProductCard = ({ product }) => (
-    <div className="group relative">
-      <Link to={`/products/${product._id}`} className="block">
-        <div className="relative overflow-hidden mb-4" style={{ paddingBottom: '120%' }}>
-          <img
-            src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
-            alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-          {product.soldOut && (
-            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-              <span className="bg-red-600 text-white px-3 py-2 rounded text-sm font-medium">SOLD OUT</span>
-            </div>
-          )}
-        </div>
-        <h3 className="font-montserrat text-base md:text-lg mb-2 text-black leading-tight">{product.name}</h3>
-        <p className="font-montserrat text-base md:text-lg font-semibold text-black">
-          {product.isBundle 
-            ? (product.priceEGP || ((product.bundlePerfume1?.sizesWithPrices?.[0]?.price || 0) + (product.bundlePerfume2?.sizesWithPrices?.[0]?.price || 0)))
-            : (product.sizesWithPrices?.[0]?.price || product.priceEGP || 0)
-          } EGP
-        </p>
-      </Link>
-      
-      {!product.soldOut && (
-        <button
-          onClick={(e) => { e.stopPropagation(); handleQuickAdd(product); }}
-          className="absolute top-3 right-3 bg-white text-black p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-          </svg>
-        </button>
-      )}
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-beige-50 py-24">
       <div className="max-w-7xl mx-auto px-6">
@@ -265,7 +228,7 @@ const Products = () => {
         ) : (
           <div className="grid grid-cols-2 gap-6 md:gap-10">
             {filteredProducts.map((product) => (
-              <ProductCard key={product._id} product={product} />
+              <ProductCard key={product._id} product={product} onQuickAdd={handleQuickAdd} />
             ))}
           </div>
         )}

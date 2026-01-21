@@ -145,8 +145,29 @@ module.exports = async function handler(req, res) {
   const isOrderIdEndpoint = req.params?.id;
 
   try {
-    // GET /api/orders - Get all orders (admin only)
+    // GET /api/orders - Get all orders (admin only) OR search by orderId (public)
     if (req.method === 'GET' && !isOrderIdEndpoint) {
+      // Check if there's an orderId query parameter (for public order tracking)
+      const urlParams = new URLSearchParams(req.url.split('?')[1]);
+      const searchOrderId = urlParams.get('orderId');
+      
+      if (searchOrderId) {
+        // Public order tracking - no auth required
+        let order;
+        try {
+          order = await db.collection('orders').findOne({ _id: new ObjectId(searchOrderId) });
+        } catch (error) {
+          order = await db.collection('orders').findOne({ _id: searchOrderId });
+        }
+
+        if (!order) {
+          return res.status(404).json({ message: 'Order not found' });
+        }
+
+        return res.status(200).json([order]);
+      }
+      
+      // Admin: Get all orders
       return requireAuth(req, res, async () => {
         const orders = await db.collection('orders').find({}).sort({ createdAt: -1 }).toArray();
         return res.status(200).json(orders);
