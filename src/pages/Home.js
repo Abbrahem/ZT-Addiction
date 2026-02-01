@@ -5,10 +5,8 @@ import { useWishlist } from '../context/WishlistContext';
 import ProductCard from '../components/ProductCard';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { mockProducts } from '../data/mockData';
 
 const Home = () => {
-  const [bestSellingProducts, setBestSellingProducts] = useState([]);
   const [bestSellerProducts, setBestSellerProducts] = useState([]);
   const [bestReviewProducts, setBestReviewProducts] = useState([]);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
@@ -41,22 +39,9 @@ const Home = () => {
   };
 
   useEffect(() => {
-    fetchBestSellingProducts();
     fetchBestSellerProducts();
     fetchBestReviewProducts();
   }, []);
-
-  const fetchBestSellingProducts = async () => {
-    try {
-      const response = await axios.get('/api/products?limit=10&random=true');
-      setBestSellingProducts(response.data);
-    } catch (error) {
-      console.log('Using mock data for development');
-      // Shuffle mock products randomly
-      const shuffled = [...mockProducts].sort(() => Math.random() - 0.5);
-      setBestSellingProducts(shuffled.slice(0, 10));
-    }
-  };
 
   const fetchBestSellerProducts = async () => {
     try {
