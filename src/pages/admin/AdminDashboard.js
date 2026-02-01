@@ -418,6 +418,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleBestReviewToggle = async (productId, currentStatus) => {
+    try {
+      const response = await axios.patch(`/api/products/${productId}/soldout?action=bestreview`, {
+        isBestReview: !currentStatus,
+        action: 'bestreview'
+      }, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('BestReview toggle response:', response.data);
+      fetchProducts();
+    } catch (error) {
+      console.error('BestReview toggle error:', error);
+      const errorMsg = error.response?.data?.message || 'Failed to update best review status';
+      Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
+    }
+  };
+
   const handleSizeSoldOutToggle = async (productId, size, currentStatus) => {
     try {
       const response = await axios.patch(`/api/products/${productId}/soldout?action=sizeSoldout`, {
@@ -1304,6 +1325,15 @@ const AdminDashboard = () => {
                           }`}
                       >
                         BEST
+                      </button>
+                      <button
+                        onClick={() => handleBestReviewToggle(product._id, product.isBestReview)}
+                        className={`flex-1 px-3 py-2 rounded text-sm font-medium ${product.isBestReview
+                          ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                          : 'bg-gray-300 hover:bg-gray-400 text-gray-700'
+                          }`}
+                      >
+                        REVIEW
                       </button>
                     </div>
                   </div>

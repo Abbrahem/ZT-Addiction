@@ -57,6 +57,45 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // Handle bestreview action
+    if (action === 'bestreview') {
+      const { isBestReview } = req.body;
+
+      if (typeof isBestReview !== 'boolean') {
+        return res.status(400).json({ message: 'isBestReview must be a boolean value' });
+      }
+
+      // If setting as best review, check if we already have 4
+      if (isBestReview) {
+        const bestReviewCount = await db.collection('products').countDocuments({ isBestReview: true });
+        if (bestReviewCount >= 4) {
+          return res.status(400).json({ message: 'Maximum 4 best reviews allowed. Remove one first.' });
+        }
+      }
+
+      let result;
+      try {
+        result = await db.collection('products').updateOne(
+          { _id: new ObjectId(productId) },
+          { $set: { isBestReview, updatedAt: new Date() } }
+        );
+      } catch (error) {
+        result = await db.collection('products').updateOne(
+          { _id: productId },
+          { $set: { isBestReview, updatedAt: new Date() } }
+        );
+      }
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      return res.status(200).json({ 
+        message: 'Best review status updated successfully',
+        isBestReview 
+      });
+    }
+
     // Handle size soldout action
     if (action === 'sizeSoldout') {
       const { size, isSoldOut } = req.body;

@@ -10,6 +10,7 @@ import { mockProducts } from '../data/mockData';
 const Home = () => {
   const [bestSellingProducts, setBestSellingProducts] = useState([]);
   const [bestSellerProducts, setBestSellerProducts] = useState([]);
+  const [bestReviewProducts, setBestReviewProducts] = useState([]);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
   const [quickAddPrice, setQuickAddPrice] = useState(0);
@@ -42,6 +43,7 @@ const Home = () => {
   useEffect(() => {
     fetchBestSellingProducts();
     fetchBestSellerProducts();
+    fetchBestReviewProducts();
   }, []);
 
   const fetchBestSellingProducts = async () => {
@@ -64,6 +66,17 @@ const Home = () => {
     } catch (error) {
       console.log('Error fetching best sellers');
       setBestSellerProducts([]);
+    }
+  };
+
+  const fetchBestReviewProducts = async () => {
+    try {
+      const response = await axios.get('/api/products');
+      const bestReviews = response.data.filter(p => p.isBestReview === true);
+      setBestReviewProducts(bestReviews.slice(0, 4));
+    } catch (error) {
+      console.log('Error fetching best reviews');
+      setBestReviewProducts([]);
     }
   };
 
@@ -398,16 +411,18 @@ const Home = () => {
         </section>
       )}
 
-      {/* Some Products Section */}
-      <section className="py-20 px-6 max-w-7xl mx-auto">
-        <h2 className="text-4xl font-playfair text-center mb-16 text-black">SOME PRODUCTS</h2>
-        
-        <div className="grid grid-cols-2 gap-6 md:gap-10">
-          {bestSellingProducts.map((product) => (
-            <ProductCard key={product._id} product={product} onQuickAdd={handleQuickAdd} />
-          ))}
-        </div>
-      </section>
+      {/* Best Reviews Section */}
+      {bestReviewProducts.length > 0 && (
+        <section className="py-20 px-6 max-w-6xl mx-auto">
+          <h2 className="text-4xl font-playfair text-center mb-16 text-black">BEST REVIEWS</h2>
+          
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">
+            {bestReviewProducts.map((product) => (
+              <ProductCard key={product._id} product={product} onQuickAdd={handleQuickAdd} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Quick Add Modal */}
       {quickAddProduct && (

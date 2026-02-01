@@ -176,6 +176,7 @@ module.exports = async function handler(req, res) {
         }
 
         const result = await db.collection('products').insertOne(product);
+        
         return res.status(201).json({
           message: 'Product created successfully',
           productId: result.insertedId
