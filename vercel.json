@@ -25,6 +25,14 @@
       "destination": "/api/products"
     },
     {
+      "source": "/api/orders/save-fcm-token",
+      "destination": "/api/orders"
+    },
+    {
+      "source": "/api/orders/promo",
+      "destination": "/api/orders"
+    },
+    {
       "source": "/api/orders/(.*)",
       "destination": "/api/orders"
     },
