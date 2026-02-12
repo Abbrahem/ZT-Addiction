@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
+import { saveTrackedOrder } from '../utils/notifications';
 
 const OrderTracking = () => {
+  const [searchParams] = useSearchParams();
   const [orderId, setOrderId] = useState('');
   const [orderData, setOrderData] = useState(null);
   const [notFound, setNotFound] = useState(false);
+
+  // Check if orderId is in URL (from notification click)
+  useEffect(() => {
+    const orderIdFromUrl = searchParams.get('orderId');
+    if (orderIdFromUrl) {
+      setOrderId(orderIdFromUrl);
+      // Auto-search
+      searchOrder(orderIdFromUrl);
+    }
+  }, [searchParams]);
 
   // Status messages in Arabic
   const getStatusMessage = (status) => {
@@ -18,12 +31,10 @@ const OrderTracking = () => {
     return messages[status] || 'جاري المعالجة';
   };
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    
+  const searchOrder = async (id) => {
     // Try to get order from database
     try {
-      const response = await axios.get(`/api/orders?orderId=${orderId.trim()}`);
+      const response = await axios.get(`/api/orders?orderId=${id.trim()}`);
       if (response.data && response.data.length > 0) {
         const order = response.data[0];
         setOrderData({
@@ -35,6 +46,13 @@ const OrderTracking = () => {
           items: order.items
         });
         setNotFound(false);
+        
+        // Save order to tracked orders for notifications
+        saveTrackedOrder(order._id.toString());
+        
+        // Save initial status
+        localStorage.setItem(`order_${order._id.toString()}_status`, order.status || 'pending');
+        
         return;
       }
     } catch (error) {
@@ -44,6 +62,11 @@ const OrderTracking = () => {
     // Order not found
     setOrderData(null);
     setNotFound(true);
+  };
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+    await searchOrder(orderId);
   };
 
   return (

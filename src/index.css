@@ -52,3 +52,63 @@ h1, h2, h3, h4, h5, h6 {
     display: none;
   }
 }
+
+/* Quiz Modal Styles */
+.quiz-modal {
+  border-radius: 20px !important;
+  padding: 0 !important;
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+.quiz-modal .swal2-title {
+  font-family: 'Playfair Display', serif !important;
+  font-size: 32px !important;
+  font-weight: 700 !important;
+  color: #000 !important;
+  margin-bottom: 10px !important;
+}
+
+.quiz-modal .swal2-html-container {
+  margin: 0 !important;
+  padding: 0 20px 20px !important;
+}
+
+.quiz-confirm-btn {
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  padding: 14px 40px !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+.quiz-confirm-btn:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2) !important;
+}
+
+.quiz-cancel-btn {
+  font-size: 16px !important;
+  padding: 12px 30px !important;
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+.quiz-cancel-btn:hover {
+  background-color: #666 !important;
+}
+
+/* Animation for fade in */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out;
+}

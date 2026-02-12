@@ -1,0 +1,103 @@
+// Firebase Cloud Messaging Service Worker
+// ⚠️ هذا الملف يجب أن يكون في public/ folder
+
+// Import Firebase scripts
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyD62na9JCu3-2Ml7X3uGzrRbbrAFY5nJWQ",
+  authDomain: "zt-additction.firebaseapp.com",
+  projectId: "zt-additction",
+  storageBucket: "zt-additction.firebasestorage.app",
+  messagingSenderId: "510114095648",
+  appId: "1:510114095648:web:429cbb7ee940316eb99245"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+// Get messaging instance
+const messaging = firebase.messaging();
+
+// Handle background messages
+messaging.onBackgroundMessage((payload) => {
+  console.log('📩 Background message received:', payload);
+  console.log('📦 Payload notification:', payload.notification);
+  console.log('📦 Payload data:', payload.data);
+  
+  // Get title and body from notification or data
+  const notificationTitle = payload.notification?.title || payload.data?.title || 'ZT ADDICTION';
+  const notificationBody = payload.notification?.body || payload.data?.body || 'لديك إشعار جديد';
+  
+  // Build URL with orderId if present
+  let clickUrl = payload.data?.url || '/';
+  const orderId = payload.data?.orderId;
+  
+  if (orderId && clickUrl.includes('order-tracking')) {
+    clickUrl = `/order-tracking?orderId=${orderId}`;
+  }
+  
+  console.log('🔗 Will open URL on click:', clickUrl);
+  console.log('📝 Title:', notificationTitle);
+  console.log('📝 Body:', notificationBody);
+  
+  const notificationOptions = {
+    body: notificationBody,
+    icon: '/c1.jpg',
+    badge: '/c1.jpg',
+    data: {
+      ...payload.data,
+      clickUrl: clickUrl
+    },
+    vibrate: [200, 100, 200],
+    tag: payload.data?.tag || 'default',
+    requireInteraction: false
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  console.log('🔔 Notification clicked:', event);
+  console.log('📦 Notification data:', event.notification.data);
+  
+  event.notification.close();
+  
+  const notificationData = event.notification.data || {};
+  
+  // Build the full URL
+  let urlToOpen = notificationData.url || '/';
+  const orderId = notificationData.orderId;
+  
+  if (orderId && urlToOpen.includes('order-tracking')) {
+    urlToOpen = `/order-tracking?orderId=${orderId}`;
+  }
+  
+  console.log('🔗 Opening URL:', urlToOpen);
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window' })
+      .then((clientList) => {
+        // If there's an open window, focus it and navigate
+        if (clientList.length > 0) {
+          const client = clientList[0];
+          console.log('📍 Focusing existing window and navigating to:', urlToOpen);
+          client.focus();
+          // Send message to the client to navigate
+          client.postMessage({
+            type: 'NOTIFICATION_CLICK',
+            url: urlToOpen
+          });
+          return client;
+        }
+        // Otherwise open a new window
+        if (clients.openWindow) {
+          console.log('🆕 Opening new window:', urlToOpen);
+          return clients.openWindow(urlToOpen);
+        }
+      })
+  );
+});

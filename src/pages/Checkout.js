@@ -199,7 +199,8 @@ const Checkout = () => {
           amount: paymentData.amount,
           senderPhone: paymentData.senderPhone,
           screenshot: paymentData.screenshot
-        }
+        },
+        customerToken: localStorage.getItem('fcmToken') || null // Add customer FCM token
       };
 
       console.log('Sending order with payment:', orderData.payment);
@@ -293,7 +294,8 @@ const Checkout = () => {
         shippingFee,
         total,
         promoCode: appliedPromo?.code,
-        discount: appliedPromo?.discount
+        discount: appliedPromo?.discount,
+        customerToken: localStorage.getItem('fcmToken') || null // Add customer FCM token
       };
 
       const response = await axios.post('/api/orders', orderData);

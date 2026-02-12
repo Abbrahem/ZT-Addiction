@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { showLocalNotification, requestNotificationPermission, registerServiceWorker } from '../../utils/notifications';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -61,6 +62,33 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     checkAuth();
+    
+    // Request notification permission for admin
+    const setupAdminNotifications = async () => {
+      try {
+        // Import requestFCMToken
+        const { requestFCMToken } = await import('../../firebase-config');
+        
+        // Get FCM token
+        const token = await requestFCMToken();
+        
+        if (token) {
+          console.log('✅ Admin FCM token:', token);
+          
+          // Save token to database
+          await axios.post('/api/orders/save-fcm-token', {
+            token,
+            userType: 'admin'
+          });
+          
+          console.log('✅ Admin token saved to database');
+        }
+      } catch (error) {
+        console.error('❌ Error setting up admin notifications:', error);
+      }
+    };
+    setupAdminNotifications();
+    
     if (activeTab === 'manage-products') {
       fetchProducts();
     }
@@ -70,6 +98,18 @@ const AdminDashboard = () => {
     if (activeTab === 'promo-codes') {
       fetchPromoCodes();
     }
+    
+    // Poll for new orders every 30 seconds when on orders tab
+    let orderInterval;
+    if (activeTab === 'orders') {
+      orderInterval = setInterval(() => {
+        checkForNewOrders();
+      }, 30000);
+    }
+    
+    return () => {
+      if (orderInterval) clearInterval(orderInterval);
+    };
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuth = async () => {
@@ -117,6 +157,43 @@ const AdminDashboard = () => {
     } catch (error) {
       console.error('Error fetching orders:', error);
       setOrders([]);
+    }
+  };
+
+  // Check for new orders and notify admin
+  const checkForNewOrders = async () => {
+    try {
+      const response = await axios.get('/api/orders', { withCredentials: true });
+      const currentOrders = response.data || [];
+      
+      // Get last order count from localStorage
+      const lastOrderCount = parseInt(localStorage.getItem('adminLastOrderCount') || '0');
+      
+      if (currentOrders.length > lastOrderCount) {
+        // New order(s) detected
+        const newOrdersCount = currentOrders.length - lastOrderCount;
+        
+        showLocalNotification('🎉 طلب جديد!', {
+          body: `لديك ${newOrdersCount} طلب جديد`,
+          data: { url: '/admin/dashboard' }
+        });
+        
+        // Play notification sound (optional)
+        try {
+          const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGGS57OihUBELTKXh8bllHAU2jdXvzn0vBSh+zPDajzsKElyx6OyrWBUIQ5zd8sFuJAUuhM/z24k2Bhxqvu7mnlARDFCn4/C2YxwGOJHX8sx5LAUkd8fw3ZBACRVetOnrqFUUCkaf4PK+bCEFK4HO8tmJNggYZLns6KFQEQtMpeHxuWUcBTaN1e/OfS8FKH7M8NqPOwsSXLHo7KtYFQhDnN3ywW4kBS6Ez/PbiTYGHGq+7uaeUBEMUKfj8LZjHAY4kdfyzHksBSR3x/DdkEAJFV606euoVRQKRp/g8r5sIQUrgc7y2Yk2CBhkuezooVARC0yl4fG5ZRwFNo3V7859LwUofsz');
+          audio.play().catch(() => {});
+        } catch (e) {}
+      }
+      
+      // Update last order count
+      localStorage.setItem('adminLastOrderCount', currentOrders.length.toString());
+      
+      // Update orders state if on orders tab
+      if (activeTab === 'orders') {
+        setOrders(currentOrders);
+      }
+    } catch (error) {
+      console.error('Error checking for new orders:', error);
     }
   };
 
@@ -191,6 +268,12 @@ const AdminDashboard = () => {
       } else {
         const response = await axios.post('/api/products', submitData, { withCredentials: true });
         const productId = response.data.productId;
+
+        // Notify all users about new product
+        showLocalNotification('✨ منتج جديد!', {
+          body: `تم إضافة ${productForm.name} - تصفح الآن`,
+          data: { url: `/products/${productId}` }
+        });
 
         Swal.fire({
           icon: 'success',

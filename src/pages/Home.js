@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import ProductCard from '../components/ProductCard';
@@ -7,6 +7,7 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const Home = () => {
+  const navigate = useNavigate();
   const [bestSellerProducts, setBestSellerProducts] = useState([]);
   const [bestReviewProducts, setBestReviewProducts] = useState([]);
   const [quickAddProduct, setQuickAddProduct] = useState(null);
@@ -41,6 +42,12 @@ const Home = () => {
   useEffect(() => {
     fetchBestSellerProducts();
     fetchBestReviewProducts();
+    
+    // Show quiz modal on every page load
+    setTimeout(() => {
+      showQuizModal();
+    }, 2000); // Show after 2 seconds
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchBestSellerProducts = async () => {
@@ -63,6 +70,40 @@ const Home = () => {
       console.log('Error fetching best reviews');
       setBestReviewProducts([]);
     }
+  };
+
+  const showQuizModal = () => {
+    Swal.fire({
+      title: '✨ اكتشف عطرك المثالي',
+      html: `
+        <div style="text-align: center; padding: 20px;">
+          <div style="font-size: 60px; margin-bottom: 20px;">🌹</div>
+          <p style="font-size: 18px; color: #666; margin-bottom: 20px; line-height: 1.6;">
+            اختر عطرك على حسب ذوقك وشخصيتك<br/>
+            أجب على بعض الأسئلة البسيطة وسنساعدك في اختيار العطر المناسب لك
+          </p>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: '✨ ابدأ الآن',
+      cancelButtonText: 'تخطي',
+      confirmButtonColor: '#000',
+      cancelButtonColor: '#999',
+      customClass: {
+        popup: 'quiz-modal',
+        confirmButton: 'quiz-confirm-btn',
+        cancelButton: 'quiz-cancel-btn'
+      },
+      backdrop: `
+        rgba(0,0,0,0.7)
+        left top
+        no-repeat
+      `
+    }).then((result) => {
+      if (result.isConfirmed) {
+        navigate('/perfume-quiz');
+      }
+    });
   };
 
   const handleQuickAdd = (product) => {

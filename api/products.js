@@ -2,6 +2,54 @@ const { ObjectId } = require('mongodb');
 const clientPromise = require('./lib/mongodb');
 const { requireAuth } = require('./lib/auth');
 
+// Firebase Admin SDK for sending notifications
+let admin;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    admin = require('firebase-admin');
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+    }
+  }
+} catch (error) {
+  console.log('⚠️ Firebase Admin not initialized in products.js');
+}
+
+// Helper function to send notification to all users
+async function sendNotificationToAll(title, body, data = {}) {
+  if (!admin) return;
+  
+  try {
+    const client = await clientPromise;
+    const db = client.db('danger-sneakers');
+    
+    // Get all user tokens
+    const tokens = await db.collection('fcmTokens').find({ userType: 'user' }).toArray();
+    
+    if (tokens.length === 0) {
+      console.log('⚠️ No user tokens found');
+      return;
+    }
+    
+    const tokenList = tokens.map(t => t.token);
+    
+    const message = {
+      notification: { title, body },
+      data,
+      tokens: tokenList
+    };
+    
+    const response = await admin.messaging().sendMulticast(message);
+    console.log(`✅ Sent to ${response.successCount} users`);
+  } catch (error) {
+    console.error('❌ Error sending notification:', error.message);
+  }
+}
+
 module.exports = async function handler(req, res) {
   const client = await clientPromise;
   const db = client.db('danger-sneakers');
@@ -176,6 +224,21 @@ module.exports = async function handler(req, res) {
         }
 
         const result = await db.collection('products').insertOne(product);
+        
+        // Send notification to all users about new product
+        try {
+          await sendNotificationToAll(
+            '✨ منتج جديد!',
+            `تم إضافة ${name} - تصفح الآن`,
+            {
+              type: 'new_product',
+              productId: result.insertedId.toString(),
+              url: `/products/${result.insertedId}`
+            }
+          );
+        } catch (notifError) {
+          console.log('⚠️ Could not send notification:', notifError.message);
+        }
         
         return res.status(201).json({
           message: 'Product created successfully',
