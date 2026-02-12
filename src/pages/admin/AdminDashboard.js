@@ -82,9 +82,16 @@ const AdminDashboard = () => {
           });
           
           console.log('✅ Admin token saved to database');
+        } else {
+          console.log('⚠️ No FCM token received - user may have denied permission');
         }
       } catch (error) {
         console.error('❌ Error setting up admin notifications:', error);
+        console.error('Error details:', {
+          message: error.message,
+          code: error.code,
+          response: error.response?.data
+        });
       }
     };
     setupAdminNotifications();
