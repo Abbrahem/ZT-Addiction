@@ -197,6 +197,51 @@ module.exports = async function handler(req, res) {
   const isOrderIdEndpoint = req.params?.id;
 
   try {
+    // POST /api/orders/save-fcm-token - Save FCM token (CHECK THIS FIRST!)
+    if (req.method === 'POST' && req.url.includes('save-fcm-token')) {
+      try {
+        console.log('📥 Save FCM token request received');
+        console.log('Request body:', req.body);
+        console.log('Request body type:', typeof req.body);
+        
+        const { token, userType } = req.body || {};
+        
+        if (!token) {
+          console.log('❌ No token in request body');
+          return res.status(400).json({ message: 'Token required', receivedBody: req.body });
+        }
+        
+        console.log('✅ Token received:', token.substring(0, 20) + '...');
+        
+        // Check if token exists
+        const existing = await db.collection('fcmTokens').findOne({ token });
+        
+        if (existing) {
+          console.log('📝 Updating existing token');
+          // Update lastUsed
+          await db.collection('fcmTokens').updateOne(
+            { token },
+            { $set: { lastUsed: new Date() } }
+          );
+        } else {
+          console.log('➕ Inserting new token');
+          // Insert new token
+          await db.collection('fcmTokens').insertOne({
+            token,
+            userType: userType || 'user',
+            createdAt: new Date(),
+            lastUsed: new Date()
+          });
+        }
+        
+        console.log('✅ Token saved successfully');
+        return res.status(200).json({ success: true });
+      } catch (error) {
+        console.error('❌ Error saving FCM token:', error);
+        return res.status(500).json({ message: 'Server error', error: error.message });
+      }
+    }
+    
     // GET /api/orders - Get all orders (admin only) OR search by orderId (public)
     if (req.method === 'GET' && !isOrderIdEndpoint) {
       // Check if there's an orderId query parameter (for public order tracking)
@@ -461,44 +506,13 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // POST /api/orders/save-fcm-token - Save FCM token
-    if (req.method === 'POST' && req.url.includes('save-fcm-token')) {
-      try {
-        const { token, userType } = req.body;
-        
-        if (!token) {
-          return res.status(400).json({ message: 'Token required' });
-        }
-        
-        // Check if token exists
-        const existing = await db.collection('fcmTokens').findOne({ token });
-        
-        if (existing) {
-          // Update lastUsed
-          await db.collection('fcmTokens').updateOne(
-            { token },
-            { $set: { lastUsed: new Date() } }
-          );
-        } else {
-          // Insert new token
-          await db.collection('fcmTokens').insertOne({
-            token,
-            userType: userType || 'user',
-            createdAt: new Date(),
-            lastUsed: new Date()
-          });
-        }
-        
-        return res.status(200).json({ success: true });
-      } catch (error) {
-        console.error('Error saving FCM token:', error);
-        return res.status(500).json({ message: 'Server error' });
-      }
-    }
-
     return res.status(405).json({ message: 'Method not allowed' });
 
   } catch (error) {
+    console.error('Orders API error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};  } catch (error) {
     console.error('Orders API error:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
