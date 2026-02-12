@@ -10,9 +10,11 @@
     "seed": "node seed-products.js",
     "seed-admin": "node -e \"require('./api/lib/seedAdmin').seedAdmin().then(() => process.exit(0))\"",
     "test-db": "node test-mongodb.js",
-    "build": "react-scripts build",
+    "build": "react-scripts build && node copy-sw.js",
+    "vercel-build": "npm install && react-scripts build && node copy-sw.js",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "setup-firebase": "node setup-firebase.js"
   },
   "dependencies": {
     "axios": "^1.7.7",
@@ -21,6 +23,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "firebase": "^10.14.1",
+    "firebase-admin": "^12.7.0",
     "gridfs-stream": "^1.1.1",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.9.0",

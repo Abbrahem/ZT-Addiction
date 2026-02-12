@@ -1,0 +1,97 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/auth/login",
+      "destination": "/api/auth"
+    },
+    {
+      "source": "/api/auth/logout", 
+      "destination": "/api/auth"
+    },
+    {
+      "source": "/api/auth/check",
+      "destination": "/api/auth"
+    },
+    {
+      "source": "/api/products/(.*)/soldout",
+      "destination": "/api/products"
+    },
+    {
+      "source": "/api/products/(.*)",
+      "destination": "/api/products"
+    },
+    {
+      "source": "/api/products",
+      "destination": "/api/products"
+    },
+    {
+      "source": "/api/orders/(.*)",
+      "destination": "/api/orders"
+    },
+    {
+      "source": "/api/orders",
+      "destination": "/api/orders"
+    },
+    {
+      "source": "/api/images/(.*)",
+      "destination": "/api/images"
+    },
+    {
+      "source": "/api/upload",
+      "destination": "/api/upload"
+    },
+    {
+      "source": "/api/seed",
+      "destination": "/api/seed"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
+    {
+      "source": "/service-worker.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/firebase-messaging-sw.js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    }
+  ]
+}
