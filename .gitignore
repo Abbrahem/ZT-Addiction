@@ -30,3 +30,17 @@ yarn-error.log*
 
 # Vercel
 .vercel
+
+# Firebase service account files (sensitive!)
+firebase-service-account-oneline.txt
+zt-additction-firebase-adminsdk-fbsvc-*.json
+
+# Test and setup files
+test-*.js
+check-*.js
+clear-*.js
+fix-*.js
+seed-*.js
+setup-*.js
+json-to-oneline.js
+mock-data.json
