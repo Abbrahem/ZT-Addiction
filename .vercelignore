@@ -14,7 +14,6 @@ fix-*.js
 seed-*.js
 setup-*.js
 json-to-oneline.js
-copy-sw.js
 dev-index.html
 mock-data.json
 netlify.toml
