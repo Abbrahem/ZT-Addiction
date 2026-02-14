@@ -225,19 +225,24 @@ module.exports = async function handler(req, res) {
 
         const result = await db.collection('products').insertOne(product);
         
-        // Send notification to all users about new product
-        try {
-          await sendNotificationToAll(
-            '✨ منتج جديد!',
-            `تم إضافة ${name} - تصفح الآن`,
-            {
-              type: 'new_product',
-              productId: result.insertedId.toString(),
-              url: `/products/${result.insertedId}`
-            }
-          );
-        } catch (notifError) {
-          console.log('⚠️ Could not send notification:', notifError.message);
+        // Send notification to all users about new product via notification service
+        const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL;
+        const NOTIFICATION_API_KEY = process.env.NOTIFICATION_API_KEY;
+        
+        if (NOTIFICATION_SERVICE_URL) {
+          fetch(`${NOTIFICATION_SERVICE_URL}/api/notifications/new-product`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': NOTIFICATION_API_KEY
+            },
+            body: JSON.stringify({
+              productName: name,
+              price: product.sizesWithPrices?.[0]?.price || product.priceEGP || 0,
+              category: collection,
+              productId: result.insertedId.toString()
+            })
+          }).catch(err => console.error('Notification failed:', err));
         }
         
         return res.status(201).json({

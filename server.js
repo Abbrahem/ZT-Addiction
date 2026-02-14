@@ -83,8 +83,14 @@ function loadApiRoutes(dir, basePath = '/api') {
           if (file === 'products.js') {
             app.all(`${basePath}/products/:id`, route);
             app.all(`${basePath}/products/:id/soldout`, route);
+            app.all(`${basePath}/products/:id/bestseller`, route);
+            app.all(`${basePath}/products/:id/review`, route);
+            app.all(`${basePath}/products/:id/reviews`, route);
             console.log(`✅ Loaded API route: ${basePath}/products/:id (ALL methods)`);
             console.log(`✅ Loaded API route: ${basePath}/products/:id/soldout (ALL methods)`);
+            console.log(`✅ Loaded API route: ${basePath}/products/:id/bestseller (ALL methods)`);
+            console.log(`✅ Loaded API route: ${basePath}/products/:id/review (ALL methods)`);
+            console.log(`✅ Loaded API route: ${basePath}/products/:id/reviews (ALL methods)`);
           }
           
           // Special handling for auth - add auth sub-routes

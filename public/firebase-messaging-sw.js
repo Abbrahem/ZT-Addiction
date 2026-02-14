@@ -43,6 +43,39 @@ messaging.onBackgroundMessage((payload) => {
   console.log('📝 Title:', notificationTitle);
   console.log('📝 Body:', notificationBody);
   
+  // Save notification to localStorage for notifications page
+  try {
+    const notification = {
+      id: Date.now().toString(),
+      title: notificationTitle,
+      body: notificationBody,
+      type: payload.data?.type || 'general',
+      url: clickUrl,
+      timestamp: Date.now(),
+      read: false
+    };
+    
+    // Get existing notifications
+    const existingNotifications = JSON.parse(localStorage.getItem('userNotifications') || '[]');
+    existingNotifications.unshift(notification);
+    
+    // Keep only last 50 notifications
+    const trimmed = existingNotifications.slice(0, 50);
+    localStorage.setItem('userNotifications', JSON.stringify(trimmed));
+    
+    // Notify app about new notification
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'NEW_NOTIFICATION',
+          notification: notification
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Error saving notification:', error);
+  }
+  
   const notificationOptions = {
     body: notificationBody,
     icon: '/c1.jpg',

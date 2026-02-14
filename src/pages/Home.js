@@ -284,20 +284,6 @@ const Home = () => {
             <h3 className="text-xl sm:text-2xl md:text-3xl font-playfair text-center text-black">Bundles</h3>
           </Link>
         </div>
-
-        {/* Third Row: Quantities With Bottle (centered) */}
-        <div className="flex justify-center mt-12">
-          <Link to="/category/quantities-with-bottle" className="group block w-full sm:w-3/4 md:w-1/2">
-            <div className="relative overflow-hidden mb-4" style={{ paddingBottom: '70%' }}>
-              <img
-                src="/Quantities.jpg"
-                alt="Quantities With Bottle"
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-            </div>
-            <h3 className="text-xl sm:text-2xl md:text-3xl font-playfair text-center text-black">Quantities With Bottle</h3>
-          </Link>
-        </div>
       </section>
 
       {/* Bottles Section */}

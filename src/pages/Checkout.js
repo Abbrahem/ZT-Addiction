@@ -219,6 +219,9 @@ const Checkout = () => {
       });
       localStorage.setItem('orders', JSON.stringify(orders));
       
+      // Trigger event to update orders badge
+      window.dispatchEvent(new Event('newOrder'));
+      
       clearCart();
       setShowPaymentModal(false);
       
@@ -325,6 +328,9 @@ const Checkout = () => {
         customerInfo: orderData.customer
       });
       localStorage.setItem('orders', JSON.stringify(orders));
+      
+      // Trigger event to update orders badge
+      window.dispatchEvent(new Event('newOrder'));
       
       clearCart();
       

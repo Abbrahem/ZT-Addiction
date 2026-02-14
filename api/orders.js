@@ -376,23 +376,30 @@ module.exports = async function handler(req, res) {
           return res.status(404).json({ message: 'Order not found' });
         }
 
-        // إرسال إشعار للعميل عن تغيير حالة الطلب
+        // جلب الطلب عشان نشوف لو في customerToken
         let order;
         try {
           order = await db.collection('orders').findOne({ _id: new ObjectId(targetOrderId) });
         } catch (error) {
           order = await db.collection('orders').findOne({ _id: targetOrderId });
         }
-        
-        if (order && order.customer) {
-          // إرسال إشعار عن طريق خدمة الإشعارات
-          sendNotificationViaService('order-status', {
-            userId: order.customer.phone1, // استخدام رقم الهاتف كـ userId
+
+        // إرسال إشعار للعميل لو عنده token
+        if (order && order.customerToken) {
+          sendNotificationViaService('order-status-guest', {
+            token: order.customerToken,
             orderId: targetOrderId.toString(),
-            status: status,
-            orderNumber: targetOrderId.toString()
-          }).catch(err => console.error('Status notification failed:', err));
+            status: status
+          }).catch(err => console.error('Customer notification failed:', err));
         }
+
+        // إرسال إشعار للأدمن كمان
+        sendNotificationViaService('new-order', {
+          orderId: targetOrderId.toString(),
+          customerName: `تم تغيير حالة الطلب إلى: ${status}`,
+          total: '0',
+          items: 0
+        }).catch(err => console.error('Admin notification failed:', err));
 
         return res.status(200).json({
           message: 'Order status updated successfully',

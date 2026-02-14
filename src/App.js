@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import Navbar from './components/Navbar';
+import BottomNav from './components/BottomNav';
 import Home from './pages/Home';
 import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
@@ -11,6 +12,8 @@ import Checkout from './pages/Checkout';
 import Category from './pages/Category';
 import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
+import Notifications from './pages/Notifications';
+import MyOrders from './pages/MyOrders';
 // PerfumeQuiz removed
 import Settings from './pages/Settings';
 import AdminLogin from './pages/admin/AdminLogin';
@@ -49,13 +52,16 @@ function App() {
     
     registerFirebaseServiceWorker();
     
-    // Listen for messages from service worker (notification clicks)
+    // Listen for messages from service worker (notification clicks and new notifications)
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
         console.log('📨 Message from service worker:', event.data);
         if (event.data.type === 'NOTIFICATION_CLICK' && event.data.url) {
           console.log('🔗 Navigating to:', event.data.url);
           window.location.href = event.data.url;
+        } else if (event.data.type === 'NEW_NOTIFICATION') {
+          // Trigger event to update notification badge
+          window.dispatchEvent(new Event('newNotification'));
         }
       });
     }
@@ -154,8 +160,11 @@ function App() {
                     <Route path="/checkout" element={<Checkout />} />
                     <Route path="/order-tracking" element={<OrderTracking />} />
                     <Route path="/wishlist" element={<Wishlist />} />
+                    <Route path="/notifications" element={<Notifications />} />
+                    <Route path="/my-orders" element={<MyOrders />} />
                     <Route path="/settings" element={<Settings />} />
                   </Routes>
+                  <BottomNav />
                 </>
               } />
             </Routes>
