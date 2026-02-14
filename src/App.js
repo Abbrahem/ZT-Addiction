@@ -11,7 +11,7 @@ import Checkout from './pages/Checkout';
 import Category from './pages/Category';
 import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
-import PerfumeQuiz from './pages/PerfumeQuiz';
+// PerfumeQuiz removed
 import Settings from './pages/Settings';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -21,12 +21,26 @@ import axios from 'axios';
 
 function App() {
   useEffect(() => {
-    // Register Firebase service worker
+    // Register Firebase service worker with proper scope
     const registerFirebaseServiceWorker = async () => {
       if ('serviceWorker' in navigator) {
         try {
-          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+          // Unregister any existing service workers first
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (let registration of registrations) {
+            await registration.unregister();
+          }
+          
+          // Register with explicit scope
+          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+            scope: '/'
+          });
+          
           console.log('✅ Firebase Service Worker registered:', registration);
+          
+          // Wait for service worker to be active
+          await navigator.serviceWorker.ready;
+          console.log('✅ Service Worker is ready');
         } catch (error) {
           console.error('❌ Firebase Service Worker registration failed:', error);
         }
@@ -132,7 +146,7 @@ function App() {
                   <Navbar />
                   <Routes>
                     <Route path="/" element={<Home />} />
-                    <Route path="/perfume-quiz" element={<PerfumeQuiz />} />
+                    {/* PerfumeQuiz route removed */}
                     <Route path="/products" element={<Products />} />
                     <Route path="/products/:id" element={<ProductDetail />} />
                     <Route path="/category/:category" element={<Category />} />

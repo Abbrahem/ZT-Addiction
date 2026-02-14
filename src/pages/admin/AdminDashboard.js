@@ -24,6 +24,7 @@ const AdminDashboard = () => {
     name: '',
     description: '',
     collection: '',
+    subcategory: '', // For Bottles: Niche, Designer, Arabic
     images: [],
     sizesWithPrices: [], // Array of {size: '5ml', price: 450}
     // Bundle specific fields - up to 4 perfumes (3 & 4 are optional)
@@ -58,6 +59,7 @@ const AdminDashboard = () => {
   const [imageModal, setImageModal] = useState(null);
 
   const collections = ['Summer Samples', 'Winter Samples', 'Bundles', 'Bottles', 'Quantities With Bottle'];
+  const bottleSubcategories = ['Niche', 'Designer', 'Arabic'];
   const availableSizes = ['3ml', '5ml', '10ml', '20ml', '25ml', '30ml', '35ml', '40ml', '45ml', '50ml', '60ml', '65ml', '70ml', '80ml', '100ml', '200ml'];
 
   useEffect(() => {
@@ -213,6 +215,12 @@ const AdminDashboard = () => {
       return;
     }
 
+    // Validate subcategory for Bottles
+    if (productForm.collection === 'Bottles' && !productForm.subcategory) {
+      Swal.fire({ icon: 'error', title: 'Missing Info', text: 'Please select a bottle type (Niche, Designer, or Arabic)' });
+      return;
+    }
+
     // For Bundles, validate bundle data
     if (productForm.collection === 'Bundles') {
       if (!productForm.bundlePerfume1?.name || !productForm.bundlePerfume2?.name) {
@@ -254,10 +262,26 @@ const AdminDashboard = () => {
     }
     
     console.log('Submitting product:', submitData);
+    console.log('Subcategory:', submitData.subcategory);
 
     try {
       if (editingProduct) {
-        await axios.put(`/api/products/${editingProduct._id}`, submitData, { withCredentials: true });
+        const response = await axios.put(
+          `/api/products/${editingProduct._id}`, 
+          submitData, 
+          { 
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        console.log('✅ Update response:', response.data);
+        
+        // Refresh products list
+        await fetchProducts();
+        
         Swal.fire({
           icon: 'success',
           title: 'Product Updated Successfully!',
@@ -308,9 +332,11 @@ const AdminDashboard = () => {
       }
 
       setProductForm({
-        name: '', description: '', collection: '', images: [], sizesWithPrices: [],
-        bundlePerfume1: { name: '', sizes: [] },
-        bundlePerfume2: { name: '', sizes: [] }
+        name: '', description: '', collection: '', subcategory: '', images: [], sizesWithPrices: [],
+        bundlePerfume1: { name: '', sizesWithPrices: [] },
+        bundlePerfume2: { name: '', sizesWithPrices: [] },
+        bundlePerfume3: { name: '', sizesWithPrices: [] },
+        bundlePerfume4: { name: '', sizesWithPrices: [] }
       });
       setTempPrice('');
 
@@ -430,6 +456,7 @@ const AdminDashboard = () => {
       name: product.name,
       description: product.description || '',
       collection: product.collection,
+      subcategory: product.subcategory || '',
       images: product.images || [],
       sizesWithPrices: product.sizesWithPrices || (product.size && product.priceEGP ? [{ size: product.size, price: product.priceEGP }] : []),
       bundlePerfume1: product.bundlePerfume1 || { name: '', sizesWithPrices: [] },
@@ -750,7 +777,7 @@ const AdminDashboard = () => {
                   <label className="block text-sm font-medium mb-2">Collection</label>
                   <select
                     value={productForm.collection}
-                    onChange={(e) => setProductForm({ ...productForm, collection: e.target.value })}
+                    onChange={(e) => setProductForm({ ...productForm, collection: e.target.value, subcategory: '' })}
                     className="input-field"
                     required
                   >
@@ -760,6 +787,24 @@ const AdminDashboard = () => {
                     ))}
                   </select>
                 </div>
+
+                {/* Subcategory - Only show when Bottles is selected */}
+                {productForm.collection === 'Bottles' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Bottle Type</label>
+                    <select
+                      value={productForm.subcategory}
+                      onChange={(e) => setProductForm({ ...productForm, subcategory: e.target.value })}
+                      className="input-field"
+                      required
+                    >
+                      <option value="">Select Type</option>
+                      {bottleSubcategories.map(sub => (
+                        <option key={sub} value={sub}>{sub}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Bundle Perfumes - Only show when Bundles is selected */}
                 {productForm.collection === 'Bundles' && (

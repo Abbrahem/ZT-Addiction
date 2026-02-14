@@ -10,6 +10,7 @@ const Category = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubcategory, setSelectedSubcategory] = useState('all'); // For Bottles subcategories
   const [quickAddProduct, setQuickAddProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState('');
   const [quickAddPrice, setQuickAddPrice] = useState(0);
@@ -44,13 +45,16 @@ const Category = () => {
     'quantities-with-bottle': 'Quantities With Bottle'
   };
 
+  const bottleSubcategories = ['Niche', 'Designer', 'Arabic'];
+
   useEffect(() => {
     fetchProducts();
+    setSelectedSubcategory('all'); // Reset subcategory when category changes
   }, [category]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     filterProducts();
-  }, [products, searchTerm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [products, searchTerm, selectedSubcategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchProducts = async () => {
     try {
@@ -70,12 +74,20 @@ const Category = () => {
 
   const filterProducts = () => {
     let filtered = products;
+    
+    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(product =>
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.collection?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+    
+    // Filter by subcategory for Bottles
+    if (category === 'bottles' && selectedSubcategory !== 'all') {
+      filtered = filtered.filter(product => product.subcategory === selectedSubcategory);
+    }
+    
     setFilteredProducts(filtered);
   };
 
@@ -241,28 +253,100 @@ const Category = () => {
           {categoryTitles[category] || 'Products'}
         </h1>
 
-        {/* Search Bar */}
-        <div className="mb-12 max-w-3xl mx-auto">
-          <input
-            type="text"
-            placeholder="Search for perfumes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-6 py-4 bg-white text-black border border-gray-300 focus:ring-2 focus:ring-black focus:outline-none font-montserrat"
-          />
-        </div>
-
-        {/* Products Grid */}
-        {filteredProducts.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-lg text-gray-600 font-montserrat">No products found</p>
+        {/* Subcategory Cards - Only show for Bottles when no subcategory selected */}
+        {category === 'bottles' && selectedSubcategory === 'all' ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="grid grid-cols-1 gap-8 max-w-lg w-full px-4">
+              {bottleSubcategories.map((sub, index) => {
+                const gradients = {
+                  'Niche': 'from-purple-600 via-purple-700 to-indigo-800',
+                  'Designer': 'from-blue-600 via-blue-700 to-cyan-800',
+                  'Arabic': 'from-amber-600 via-orange-700 to-red-800'
+                };
+                const icons = {
+                  'Niche': '💎',
+                  'Designer': '✨',
+                  'Arabic': '🌙'
+                };
+                return (
+                  <button
+                    key={sub}
+                    onClick={() => setSelectedSubcategory(sub)}
+                    className="group relative overflow-hidden rounded-2xl transition-all duration-500 hover:scale-105 hover:shadow-2xl transform"
+                    style={{ 
+                      height: '140px',
+                      animationDelay: `${index * 100}ms`
+                    }}
+                  >
+                    {/* Gradient Background */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${gradients[sub]} transition-all duration-500 group-hover:scale-110`}></div>
+                    
+                    {/* Shine Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transition-opacity duration-500 transform -skew-x-12 group-hover:translate-x-full" style={{ transition: 'transform 0.8s' }}></div>
+                    
+                    {/* Content */}
+                    <div className="absolute inset-0 flex items-center justify-center gap-4">
+                      <span className="text-5xl transform group-hover:scale-110 transition-transform duration-300">
+                        {icons[sub]}
+                      </span>
+                      <h3 className="text-4xl font-playfair font-bold text-white drop-shadow-lg">
+                        {sub}
+                      </h3>
+                    </div>
+                    
+                    {/* Arrow */}
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-white opacity-0 group-hover:opacity-100 transform translate-x-2 group-hover:translate-x-0 transition-all duration-300">
+                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-6 md:gap-10">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product._id} product={product} />
-            ))}
-          </div>
+          <>
+            {/* Back button for Bottles */}
+            {category === 'bottles' && selectedSubcategory !== 'all' && (
+              <div className="mb-8 text-center">
+                <button
+                  onClick={() => setSelectedSubcategory('all')}
+                  className="inline-flex items-center gap-2 text-sm font-montserrat text-gray-600 hover:text-black transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to Categories
+                </button>
+                <h2 className="text-2xl font-playfair mt-2 text-black">{selectedSubcategory}</h2>
+              </div>
+            )}
+
+            {/* Search Bar */}
+            <div className="mb-12 max-w-3xl mx-auto">
+              <input
+                type="text"
+                placeholder="Search for perfumes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full px-6 py-4 bg-white text-black border border-gray-300 focus:ring-2 focus:ring-black focus:outline-none font-montserrat"
+              />
+            </div>
+
+            {/* Products Grid */}
+            {filteredProducts.length === 0 ? (
+              <div className="text-center py-16">
+                <p className="text-lg text-gray-600 font-montserrat">No products found</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-6 md:gap-10">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product._id} product={product} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 

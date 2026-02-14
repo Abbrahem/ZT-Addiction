@@ -222,6 +222,9 @@ const Checkout = () => {
       clearCart();
       setShowPaymentModal(false);
       
+      // Get first product ID for rating
+      const firstProductId = items[0]?.id || items[0]?._id;
+      
       Swal.fire({
         icon: 'success',
         title: 'Order Placed Successfully!',
@@ -236,10 +239,20 @@ const Checkout = () => {
           <p>• Other governorates: 3-5 days</p>
           <br>
           <p><strong>Return Policy:</strong> 3 days</p>
+          <br>
+          <p style="color: #f59e0b; font-weight: bold;">⭐ نرجو تقييم منتجاتنا!</p>
         `,
-        confirmButtonText: 'Continue Shopping'
-      }).then(() => {
-        navigate('/');
+        showDenyButton: true,
+        confirmButtonText: 'تقييم المنتجات',
+        denyButtonText: 'متابعة التسوق',
+        confirmButtonColor: '#f59e0b',
+        denyButtonColor: '#000'
+      }).then((result) => {
+        if (result.isConfirmed && firstProductId) {
+          navigate(`/products/${firstProductId}?scrollToReviews=true`);
+        } else {
+          navigate('/');
+        }
       });
       
     } catch (error) {
@@ -315,6 +328,9 @@ const Checkout = () => {
       
       clearCart();
       
+      // Get first product ID for rating
+      const firstProductId = items[0]?.id || items[0]?._id;
+      
       Swal.fire({
         icon: 'success',
         title: 'Order Placed Successfully!',
@@ -329,10 +345,20 @@ const Checkout = () => {
           <p><strong>Return Policy:</strong> 3 days</p>
           <br>
           <p><em>Please save your Order ID for future reference</em></p>
+          <br>
+          <p style="color: #f59e0b; font-weight: bold;">⭐ نرجو تقييم منتجاتنا!</p>
         `,
-        confirmButtonText: 'Continue Shopping'
-      }).then(() => {
-        navigate('/');
+        showDenyButton: true,
+        confirmButtonText: 'تقييم المنتجات',
+        denyButtonText: 'متابعة التسوق',
+        confirmButtonColor: '#f59e0b',
+        denyButtonColor: '#000'
+      }).then((result) => {
+        if (result.isConfirmed && firstProductId) {
+          navigate(`/products/${firstProductId}?scrollToReviews=true`);
+        } else {
+          navigate('/');
+        }
       });
       
     } catch (error) {

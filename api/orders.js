@@ -2,55 +2,37 @@ const { ObjectId } = require('mongodb');
 const clientPromise = require('./lib/mongodb');
 const { requireAuth } = require('./lib/auth');
 
-// Firebase Admin SDK for sending notifications
-let admin;
-try {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
-    admin = require('firebase-admin');
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    
-    if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-      });
-    }
-    console.log('✅ Firebase Admin initialized');
-  }
-} catch (error) {
-  console.log('⚠️ Firebase Admin not initialized:', error.message);
-}
+// استخدام خدمة الإشعارات المنفصلة
+const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL;
+const NOTIFICATION_API_KEY = process.env.NOTIFICATION_API_KEY;
 
-// Helper function to send notification
-async function sendNotification(token, title, body, data = {}) {
-  if (!admin) {
-    console.log('⚠️ Firebase Admin not available, skipping notification');
+// Helper function to send notification via external service
+async function sendNotificationViaService(endpoint, data) {
+  if (!NOTIFICATION_SERVICE_URL) {
+    console.log('⚠️ Notification service not configured');
     return;
   }
   
   try {
-    // Convert all data values to strings (Firebase requirement)
-    const stringData = {};
-    Object.keys(data).forEach(key => {
-      stringData[key] = String(data[key]);
+    const response = await fetch(`${NOTIFICATION_SERVICE_URL}/api/notifications/${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': NOTIFICATION_API_KEY
+      },
+      body: JSON.stringify(data)
     });
     
-    const message = {
-      notification: { 
-        title, 
-        body
-      },
-      data: stringData,
-      token
-    };
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
     
-    console.log('📤 Sending notification with data:', stringData);
-    
-    const response = await admin.messaging().send(message);
-    console.log('✅ Notification sent:', response);
-    return response;
+    const result = await response.json();
+    console.log('✅ Notification sent via service:', result);
+    return result;
   } catch (error) {
-    console.error('❌ Error sending notification:', error.message);
-    throw error;
+    console.error('❌ Notification service error:', error.message);
+    // لا نرمي الخطأ - الإشعار فشل لكن الطلب نجح
   }
 }
 
@@ -344,40 +326,13 @@ module.exports = async function handler(req, res) {
 
       const result = await db.collection('orders').insertOne(order);
       
-      // Send notification to admin about new order
-      try {
-        // Get admin FCM token from database
-        const adminTokenDoc = await db.collection('fcmTokens').findOne({ 
-          userType: 'admin' 
-        }, { 
-          sort: { lastUsed: -1 } // Get most recent token
-        });
-        
-        if (adminTokenDoc && adminTokenDoc.token) {
-          console.log('📤 Sending notification to admin...');
-          await sendNotification(
-            adminTokenDoc.token,
-            '🎉 طلب جديد!',
-            `طلب جديد بقيمة ${total} جنيه`,
-            {
-              type: 'new_order',
-              orderId: result.insertedId.toString(),
-              url: '/admin/dashboard'
-            }
-          );
-        } else {
-          console.log('⚠️ No admin token found in database');
-        }
-      } catch (notifError) {
-        console.error('❌ Could not send notification:', notifError.message);
-        // If token is invalid, remove it from database
-        if (notifError.message.includes('NotRegistered') || notifError.message.includes('InvalidRegistration')) {
-          try {
-            await db.collection('fcmTokens').deleteOne({ userType: 'admin' });
-            console.log('🗑️ Removed invalid admin token');
-          } catch (e) {}
-        }
-      }
+      // إرسال إشعار للأدمن عن طريق خدمة الإشعارات المنفصلة
+      sendNotificationViaService('new-order', {
+        orderId: result.insertedId.toString(),
+        customerName: customer.name,
+        total: total.toString(),
+        items: items.length
+      }).catch(err => console.error('Notification failed:', err));
       
       return res.status(201).json({
         message: 'Order created successfully',
@@ -421,57 +376,22 @@ module.exports = async function handler(req, res) {
           return res.status(404).json({ message: 'Order not found' });
         }
 
-        // Send notification to customer about status change
+        // إرسال إشعار للعميل عن تغيير حالة الطلب
+        let order;
         try {
-          // Get order details to find customer token
-          let order;
-          try {
-            order = await db.collection('orders').findOne({ _id: new ObjectId(targetOrderId) });
-          } catch (error) {
-            order = await db.collection('orders').findOne({ _id: targetOrderId });
-          }
-          
-          // Get customer FCM token if saved with order
-          if (order && order.customerToken) {
-            console.log('📤 Sending status update notification to customer...');
-            
-            const statusMessages = {
-              pending: 'طلبك قيد المراجعة',
-              processing: 'جاري تجهيز طلبك',
-              shipped: 'تم شحن طلبك',
-              delivered: 'تم توصيل طلبك',
-              cancelled: 'تم إلغاء طلبك'
-            };
-            
-            const statusTitle = statusMessages[status] || 'تم تحديث حالة طلبك';
-            const messageBody = `رقم الطلب: ${targetOrderId.toString()}`;
-            
-            await sendNotification(
-              order.customerToken,
-              `📦 ${statusTitle}`,
-              messageBody,
-              {
-                type: 'order_update',
-                orderId: targetOrderId.toString(),
-                status: status,
-                url: '/order-tracking'
-              }
-            );
-          } else {
-            console.log('⚠️ No customer token found for this order');
-          }
-        } catch (notifError) {
-          console.error('❌ Could not send status notification:', notifError.message);
-          // If token is invalid, remove it from order
-          if (notifError.message.includes('NotRegistered') || notifError.message.includes('InvalidRegistration')) {
-            try {
-              await db.collection('orders').updateOne(
-                { _id: new ObjectId(targetOrderId) },
-                { $unset: { customerToken: "" } }
-              );
-              console.log('🗑️ Removed invalid customer token from order');
-            } catch (e) {}
-          }
+          order = await db.collection('orders').findOne({ _id: new ObjectId(targetOrderId) });
+        } catch (error) {
+          order = await db.collection('orders').findOne({ _id: targetOrderId });
+        }
+        
+        if (order && order.customer) {
+          // إرسال إشعار عن طريق خدمة الإشعارات
+          sendNotificationViaService('order-status', {
+            userId: order.customer.phone1, // استخدام رقم الهاتف كـ userId
+            orderId: targetOrderId.toString(),
+            status: status,
+            orderNumber: targetOrderId.toString()
+          }).catch(err => console.error('Status notification failed:', err));
         }
 
         return res.status(200).json({

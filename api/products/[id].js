@@ -41,17 +41,17 @@ module.exports = async function handler(req, res) {
     // PUT /api/products/[id] - Update product
     if (req.method === 'PUT' && !isSoldOutEndpoint) {
       return requireAuth(req, res, async () => {
-        const { name, priceEGP, description, collection, size, images } = req.body;
-
+        console.log('📝 Updating product in [id].js:', productId);
+        console.log('📦 Update data:', req.body);
+        console.log('🏷️ Subcategory:', req.body.subcategory);
+        
         const updateData = {
-          ...(name && { name }),
-          ...(priceEGP && { priceEGP: parseFloat(priceEGP) }),
-          ...(description !== undefined && { description }),
-          ...(collection && { collection }),
-          ...(size && { size, sizes: [size] }),
-          ...(images && { images }),
+          ...req.body, // Take all fields from request body
           updatedAt: new Date()
         };
+        
+        // Remove _id if it exists in the body
+        delete updateData._id;
 
         let result;
         try {
@@ -70,6 +70,7 @@ module.exports = async function handler(req, res) {
           return res.status(404).json({ message: 'Product not found' });
         }
 
+        console.log('✅ Product updated successfully in [id].js');
         return res.status(200).json({ message: 'Product updated successfully' });
       });
     }

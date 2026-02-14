@@ -5,6 +5,7 @@ import { useWishlist } from '../context/WishlistContext';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { mockProducts } from '../data/mockData';
+import ProductReviews from '../components/ProductReviews';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -29,6 +30,19 @@ const ProductDetail = () => {
   const [selectedBundleSize4, setSelectedBundleSize4] = useState('');
   const [activePerfume, setActivePerfume] = useState(1);
 
+  // Scroll to reviews if URL has scrollToReviews parameter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('scrollToReviews') === 'true') {
+      setTimeout(() => {
+        const reviewsSection = document.getElementById('reviews-section');
+        if (reviewsSection) {
+          reviewsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 500);
+    }
+  }, []);
+
   // Helper functions for sold out handling
   const hasAvailableSizes = (perfume) => {
     if (!perfume?.sizesWithPrices || perfume.sizesWithPrices.length === 0) return false;
@@ -49,8 +63,14 @@ const ProductDetail = () => {
     fetchProduct();
     fetchOtherProducts();
     loadRecentlyViewed();
-    saveToRecentlyViewed();
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save to recently viewed after product is loaded
+  useEffect(() => {
+    if (product) {
+      saveToRecentlyViewed();
+    }
+  }, [product]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchProduct = async () => {
     try {
@@ -790,6 +810,11 @@ const ProductDetail = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div id="reviews-section">
+          <ProductReviews productId={id} />
         </div>
 
         {/* Related Products */}

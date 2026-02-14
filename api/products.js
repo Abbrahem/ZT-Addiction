@@ -250,17 +250,17 @@ module.exports = async function handler(req, res) {
     // PUT /api/products/[id] - Update product
     if (req.method === 'PUT' && productId && !isSoldOutEndpoint) {
       return requireAuth(req, res, async () => {
-        const { name, priceEGP, description, collection, size, images } = req.body;
-
+        console.log('📝 Updating product:', productId);
+        console.log('📦 Update data:', req.body);
+        console.log('🏷️ Subcategory:', req.body.subcategory);
+        
         const updateData = {
-          ...(name && { name }),
-          ...(priceEGP && { priceEGP: parseFloat(priceEGP) }),
-          ...(description !== undefined && { description }),
-          ...(collection && { collection }),
-          ...(size && { size, sizes: [size] }),
-          ...(images && { images }),
+          ...req.body, // Take all fields from request body
           updatedAt: new Date()
         };
+        
+        // Remove _id if it exists in the body
+        delete updateData._id;
 
         let result;
         try {
@@ -279,6 +279,7 @@ module.exports = async function handler(req, res) {
           return res.status(404).json({ message: 'Product not found' });
         }
 
+        console.log('✅ Product updated successfully');
         return res.status(200).json({ message: 'Product updated successfully' });
       });
     }
@@ -373,6 +374,90 @@ module.exports = async function handler(req, res) {
         }
 
         return res.status(200).json({ message: 'Product deleted successfully' });
+      });
+    }
+
+    // POST /api/products/[id]/review - Add review
+    if (req.method === 'POST' && productId && req.url.includes('/review')) {
+      const { rating, comment, userName, userEmail } = req.body;
+
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+      }
+
+      if (!comment || comment.trim().length === 0) {
+        return res.status(400).json({ message: 'Comment is required' });
+      }
+
+      const review = {
+        _id: new ObjectId(),
+        rating: parseInt(rating),
+        comment: comment.trim(),
+        userName: userName || userEmail?.split('@')[0] || 'Anonymous',
+        userEmail: userEmail || 'anonymous@example.com',
+        createdAt: new Date()
+      };
+
+      let result;
+      try {
+        result = await db.collection('products').updateOne(
+          { _id: new ObjectId(productId) },
+          { 
+            $push: { reviews: review },
+            $inc: { reviewCount: 1 }
+          }
+        );
+      } catch (error) {
+        result = await db.collection('products').updateOne(
+          { _id: productId },
+          { 
+            $push: { reviews: review },
+            $inc: { reviewCount: 1 }
+          }
+        );
+      }
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      // Calculate new average rating
+      let product;
+      try {
+        product = await db.collection('products').findOne({ _id: new ObjectId(productId) });
+      } catch (error) {
+        product = await db.collection('products').findOne({ _id: productId });
+      }
+
+      if (product && product.reviews) {
+        const avgRating = product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length;
+        await db.collection('products').updateOne(
+          { _id: product._id },
+          { $set: { averageRating: Math.round(avgRating * 10) / 10 } }
+        );
+      }
+
+      return res.status(201).json({ message: 'Review added successfully', review });
+    }
+
+    // GET /api/products/[id]/reviews - Get all reviews for a product
+    if (req.method === 'GET' && productId && req.url.includes('/reviews')) {
+      let product;
+      try {
+        product = await db.collection('products').findOne({ _id: new ObjectId(productId) });
+      } catch (error) {
+        product = await db.collection('products').findOne({ _id: productId });
+      }
+
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      const reviews = product.reviews || [];
+      return res.status(200).json({ 
+        reviews: reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
+        averageRating: product.averageRating || 0,
+        reviewCount: reviews.length
       });
     }
 
