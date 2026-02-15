@@ -271,21 +271,54 @@
                     return;
                 }
 
-                const notification = new Notification('Test Notification', {
-                    body: 'This is a simple test notification from JavaScript',
-                    icon: '/c1.jpg',
-                    badge: '/c1.jpg',
-                    vibrate: [200, 100, 200],
-                    tag: 'test-' + Date.now()
-                });
+                // On mobile with service worker, use serviceWorkerRegistration.showNotification
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registration = await navigator.serviceWorker.ready;
+                        log('Using Service Worker for notification', '⚙️');
+                        
+                        await registration.showNotification('Test Notification', {
+                            body: 'This is a test notification (via Service Worker)',
+                            icon: '/c1.jpg',
+                            badge: '/c1.jpg',
+                            vibrate: [200, 100, 200],
+                            tag: 'test-' + Date.now(),
+                            data: {
+                                url: '/',
+                                timestamp: Date.now()
+                            }
+                        });
 
-                notification.onclick = () => {
-                    log('Notification clicked!', '👆');
-                    notification.close();
-                };
+                        log('Notification sent via Service Worker!', '✅');
+                        updateStatus('Notification sent!', 'success', '✅');
+                        return;
+                    } catch (swError) {
+                        log(`Service Worker method failed: ${swError.message}`, '⚠️');
+                        log('Trying fallback method...', '🔄');
+                    }
+                }
 
-                log('Simple notification sent!', '✅');
-                updateStatus('Notification sent!', 'success', '✅');
+                // Fallback: Try direct notification (may not work on mobile with SW)
+                try {
+                    const notification = new Notification('Test Notification', {
+                        body: 'This is a simple test notification from JavaScript',
+                        icon: '/c1.jpg',
+                        badge: '/c1.jpg',
+                        vibrate: [200, 100, 200],
+                        tag: 'test-' + Date.now()
+                    });
+
+                    notification.onclick = () => {
+                        log('Notification clicked!', '👆');
+                        notification.close();
+                    };
+
+                    log('Simple notification sent!', '✅');
+                    updateStatus('Notification sent!', 'success', '✅');
+                } catch (directError) {
+                    log(`Direct notification failed: ${directError.message}`, '❌');
+                    updateStatus('Use Service Worker notification instead', 'warning', '⚠️');
+                }
             } catch (error) {
                 log(`Error: ${error.message}`, '❌');
                 updateStatus(`Error: ${error.message}`, 'error', '❌');
