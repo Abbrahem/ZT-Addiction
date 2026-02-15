@@ -77,7 +77,7 @@ const MyOrders = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ar-EG', {
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
@@ -89,7 +89,7 @@ const MyOrders = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center pb-20 md:pb-0">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600">جاري التحميل...</p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -105,7 +105,7 @@ const MyOrders = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-2xl font-bold">طلباتي</h1>
+          <h1 className="text-2xl font-bold">My Orders</h1>
         </div>
       </div>
 
@@ -118,13 +118,13 @@ const MyOrders = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-gray-700 mb-2">لا توجد طلبات</h3>
-            <p className="text-gray-500 mb-6">لم تقم بأي طلبات بعد</p>
+            <h3 className="text-2xl font-bold text-gray-700 mb-2">No Orders Yet</h3>
+            <p className="text-gray-500 mb-6">You haven't placed any orders</p>
             <button
               onClick={() => navigate('/')}
               className="bg-black text-white px-8 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium"
             >
-              تسوق الآن
+              Shop Now
             </button>
           </div>
         ) : (
@@ -141,13 +141,13 @@ const MyOrders = () => {
                       {index + 1}
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">رقم الطلب</p>
+                      <p className="text-sm text-gray-500">Order ID</p>
                       <p className="font-mono font-semibold text-sm">{order.orderId?.toString().slice(-8)}</p>
                     </div>
                   </div>
                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${getStatusColor(order.status)}`}>
                     {getStatusIcon(order.status)}
-                    <span className="text-sm font-medium">{order.status || 'قيد المعالجة'}</span>
+                    <span className="text-sm font-medium">{order.status || 'Processing'}</span>
                   </div>
                 </div>
 
@@ -162,14 +162,14 @@ const MyOrders = () => {
                       <span className="text-sm">{formatDate(order.date)}</span>
                     </div>
                     <div className="text-left">
-                      <p className="text-sm text-gray-500">الإجمالي</p>
-                      <p className="text-xl font-bold text-black">{order.total} جنيه</p>
+                      <p className="text-sm text-gray-500">Total</p>
+                      <p className="text-xl font-bold text-black">{order.total} EGP</p>
                     </div>
                   </div>
 
                   {/* Items */}
                   <div className="space-y-2 mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">المنتجات ({order.items?.length || 0})</p>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Products ({order.items?.length || 0})</p>
                     {order.items?.slice(0, 3).map((item, idx) => (
                       <div key={idx} className="flex items-center gap-3 bg-gray-50 p-2 rounded-lg">
                         <div className="w-12 h-12 bg-gray-200 rounded flex-shrink-0 overflow-hidden">
@@ -187,12 +187,12 @@ const MyOrders = () => {
                             {item.size} × {item.quantity}
                           </p>
                         </div>
-                        <p className="text-sm font-semibold text-gray-900">{item.price} جنيه</p>
+                        <p className="text-sm font-semibold text-gray-900">{item.price} EGP</p>
                       </div>
                     ))}
                     {order.items?.length > 3 && (
                       <p className="text-xs text-gray-500 text-center">
-                        +{order.items.length - 3} منتجات أخرى
+                        +{order.items.length - 3} more items
                       </p>
                     )}
                   </div>
@@ -200,7 +200,7 @@ const MyOrders = () => {
                   {/* Customer Info */}
                   {order.customerInfo && (
                     <div className="bg-gray-50 p-3 rounded-lg mb-4">
-                      <p className="text-sm font-medium text-gray-700 mb-2">معلومات التوصيل</p>
+                      <p className="text-sm font-medium text-gray-700 mb-2">Delivery Info</p>
                       <div className="space-y-1 text-sm text-gray-600">
                         <p>📍 {order.customerInfo.address}</p>
                         <p>📱 {order.customerInfo.phone1}</p>
@@ -215,7 +215,7 @@ const MyOrders = () => {
                       onClick={() => navigate(`/order-tracking?orderId=${order.orderId}`)}
                       className="flex-1 bg-black text-white py-2.5 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm"
                     >
-                      تتبع الطلب
+                      Track Order
                     </button>
                     {(order.items?.[0]?.id || order.items?.[0]?._id) && (
                       <button
@@ -225,7 +225,7 @@ const MyOrders = () => {
                         }}
                         className="flex-1 border-2 border-black text-black py-2.5 rounded-lg hover:bg-black hover:text-white transition-colors font-medium text-sm"
                       >
-                        تقييم المنتجات
+                        Rate Products
                       </button>
                     )}
                   </div>

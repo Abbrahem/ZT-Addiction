@@ -1,9 +1,13 @@
 // Firebase Cloud Messaging Service Worker
 // ⚠️ هذا الملف يجب أن يكون في public/ folder
 
+console.log('🔧 Service Worker: Loading...');
+
 // Import Firebase scripts
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
+
+console.log('✅ Service Worker: Firebase scripts loaded');
 
 // Firebase configuration
 const firebaseConfig = {
@@ -17,9 +21,29 @@ const firebaseConfig = {
 
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
+console.log('✅ Service Worker: Firebase initialized');
 
 // Get messaging instance
 const messaging = firebase.messaging();
+console.log('✅ Service Worker: Messaging instance created');
+
+// Service Worker Install Event
+self.addEventListener('install', (event) => {
+  console.log('🔧 Service Worker: Installing...');
+  self.skipWaiting(); // Activate immediately
+});
+
+// Service Worker Activate Event
+self.addEventListener('activate', (event) => {
+  console.log('✅ Service Worker: Activated');
+  event.waitUntil(self.clients.claim()); // Take control of all pages
+});
+
+// Service Worker Fetch Event (required for PWA)
+self.addEventListener('fetch', (event) => {
+  // Just pass through, don't cache anything
+  event.respondWith(fetch(event.request));
+});
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
@@ -96,6 +120,7 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', (event) => {
   console.log('🔔 Notification clicked:', event);
   console.log('📦 Notification data:', event.notification.data);
+  console.log('🌐 Current clients:', self.clients);
   
   event.notification.close();
   
@@ -112,8 +137,9 @@ self.addEventListener('notificationclick', (event) => {
   console.log('🔗 Opening URL:', urlToOpen);
   
   event.waitUntil(
-    clients.matchAll({ type: 'window' })
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
+        console.log('📱 Found clients:', clientList.length);
         // If there's an open window, focus it and navigate
         if (clientList.length > 0) {
           const client = clientList[0];
@@ -131,6 +157,9 @@ self.addEventListener('notificationclick', (event) => {
           console.log('🆕 Opening new window:', urlToOpen);
           return clients.openWindow(urlToOpen);
         }
+      })
+      .catch(error => {
+        console.error('❌ Error handling notification click:', error);
       })
   );
 });

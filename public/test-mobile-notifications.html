@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Notification Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            opacity: 0.9;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .status.info { background: #e3f2fd; color: #1976d2; }
+        .status.success { background: #e8f5e9; color: #388e3c; }
+        .status.error { background: #ffebee; color: #d32f2f; }
+        .status.warning { background: #fff3e0; color: #f57c00; }
+        
+        button {
+            width: 100%;
+            padding: 18px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: #fff;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+            font-weight: 500;
+        }
+        .log {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            word-break: break-all;
+        }
+        .emoji {
+            font-size: 24px;
+            margin-bottom: 10px;
+            display: block;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔔 Notification Test</h1>
+        <p class="subtitle">Mobile-Optimized Testing</p>
+
+        <div class="card">
+            <div id="mainStatus" class="status info">
+                <span class="emoji">⏳</span>
+                <div id="statusText">Initializing...</div>
+            </div>
+
+            <div class="info-item">
+                <span class="info-label">Permission:</span>
+                <span class="info-value" id="permission">Checking...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Service Worker:</span>
+                <span class="info-value" id="swStatus">Checking...</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Platform:</span>
+                <span class="info-value" id="platform">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Browser:</span>
+                <span class="info-value" id="browser">-</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <button class="btn-primary" onclick="requestPermission()">
+                🔓 Request Permission
+            </button>
+            <button class="btn-success" onclick="testSimpleNotification()">
+                📱 Test Simple Notification
+            </button>
+            <button class="btn-success" onclick="testServiceWorkerNotification()">
+                ⚙️ Test Service Worker
+            </button>
+            <button class="btn-secondary" onclick="checkStatus()">
+                🔍 Check Status
+            </button>
+            <button class="btn-danger" onclick="clearLogs()">
+                🗑️ Clear Logs
+            </button>
+        </div>
+
+        <div class="card">
+            <div class="log" id="logs"></div>
+        </div>
+    </div>
+
+    <script>
+        let logCount = 0;
+
+        function log(message, emoji = '📝') {
+            const logs = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString();
+            logCount++;
+            logs.innerHTML = `<div class="log-entry">${emoji} [${time}] ${message}</div>` + logs.innerHTML;
+            console.log(message);
+        }
+
+        function updateStatus(text, type = 'info', emoji = '⏳') {
+            const statusDiv = document.getElementById('mainStatus');
+            const statusText = document.getElementById('statusText');
+            statusDiv.className = 'status ' + type;
+            statusDiv.innerHTML = `<span class="emoji">${emoji}</span><div>${text}</div>`;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+            logCount = 0;
+            log('Logs cleared', '🗑️');
+        }
+
+        async function checkStatus() {
+            log('Checking status...', '🔍');
+            
+            // Check permission
+            const permission = Notification.permission;
+            document.getElementById('permission').textContent = permission;
+            log(`Permission: ${permission}`, permission === 'granted' ? '✅' : '❌');
+
+            // Check service worker
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    const swStatus = registrations.length > 0 ? `${registrations.length} registered` : 'None';
+                    document.getElementById('swStatus').textContent = swStatus;
+                    log(`Service Workers: ${swStatus}`, registrations.length > 0 ? '✅' : '❌');
+                    
+                    if (registrations.length > 0) {
+                        registrations.forEach((reg, i) => {
+                            log(`SW ${i+1}: ${reg.scope}`, '📍');
+                        });
+                    }
+                } catch (error) {
+                    log(`SW Error: ${error.message}`, '❌');
+                }
+            } else {
+                document.getElementById('swStatus').textContent = 'Not supported';
+                log('Service Worker not supported', '❌');
+            }
+
+            // Update main status
+            if (permission === 'granted') {
+                updateStatus('Ready to send notifications!', 'success', '✅');
+            } else if (permission === 'denied') {
+                updateStatus('Notifications blocked', 'error', '🚫');
+            } else {
+                updateStatus('Permission not requested', 'warning', '⚠️');
+            }
+        }
+
+        async function requestPermission() {
+            try {
+                log('Requesting permission...', '🔓');
+                updateStatus('Requesting permission...', 'info', '⏳');
+                
+                const permission = await Notification.requestPermission();
+                document.getElementById('permission').textContent = permission;
+                
+                if (permission === 'granted') {
+                    log('Permission granted!', '✅');
+                    updateStatus('Permission granted!', 'success', '✅');
+                } else {
+                    log('Permission denied', '❌');
+                    updateStatus('Permission denied', 'error', '🚫');
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`, '❌');
+                updateStatus('Error requesting permission', 'error', '❌');
+            }
+        }
+
+        async function testSimpleNotification() {
+            try {
+                log('Testing simple notification...', '📱');
+                
+                if (Notification.permission !== 'granted') {
+                    log('Permission not granted', '❌');
+                    updateStatus('Please grant permission first', 'warning', '⚠️');
+                    return;
+                }
+
+                const notification = new Notification('Test Notification', {
+                    body: 'This is a simple test notification from JavaScript',
+                    icon: '/c1.jpg',
+                    badge: '/c1.jpg',
+                    vibrate: [200, 100, 200],
+                    tag: 'test-' + Date.now()
+                });
+
+                notification.onclick = () => {
+                    log('Notification clicked!', '👆');
+                    notification.close();
+                };
+
+                log('Simple notification sent!', '✅');
+                updateStatus('Notification sent!', 'success', '✅');
+            } catch (error) {
+                log(`Error: ${error.message}`, '❌');
+                updateStatus(`Error: ${error.message}`, 'error', '❌');
+            }
+        }
+
+        async function testServiceWorkerNotification() {
+            try {
+                log('Testing service worker notification...', '⚙️');
+                
+                if (Notification.permission !== 'granted') {
+                    log('Permission not granted', '❌');
+                    updateStatus('Please grant permission first', 'warning', '⚠️');
+                    return;
+                }
+
+                if (!('serviceWorker' in navigator)) {
+                    log('Service Worker not supported', '❌');
+                    updateStatus('Service Worker not supported', 'error', '❌');
+                    return;
+                }
+
+                const registration = await navigator.serviceWorker.ready;
+                log('Service Worker ready', '✅');
+
+                await registration.showNotification('Service Worker Test', {
+                    body: 'This notification is from the service worker',
+                    icon: '/c1.jpg',
+                    badge: '/c1.jpg',
+                    vibrate: [200, 100, 200],
+                    tag: 'sw-test-' + Date.now(),
+                    data: {
+                        url: '/',
+                        timestamp: Date.now()
+                    }
+                });
+
+                log('Service Worker notification sent!', '✅');
+                updateStatus('SW notification sent!', 'success', '✅');
+            } catch (error) {
+                log(`Error: ${error.message}`, '❌');
+                updateStatus(`Error: ${error.message}`, 'error', '❌');
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            log('Page loaded', '🚀');
+            
+            // Detect platform
+            const platform = navigator.platform || 'Unknown';
+            document.getElementById('platform').textContent = platform;
+            log(`Platform: ${platform}`, '💻');
+
+            // Detect browser
+            const ua = navigator.userAgent;
+            let browser = 'Unknown';
+            if (ua.includes('Chrome')) browser = 'Chrome';
+            else if (ua.includes('Safari')) browser = 'Safari';
+            else if (ua.includes('Firefox')) browser = 'Firefox';
+            else if (ua.includes('Edge')) browser = 'Edge';
+            document.getElementById('browser').textContent = browser;
+            log(`Browser: ${browser}`, '🌐');
+
+            // Check initial status
+            checkStatus();
+        });
+    </script>
+</body>
+</html>

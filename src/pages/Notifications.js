@@ -87,11 +87,11 @@ const Notifications = () => {
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'الآن';
-    if (minutes < 60) return `منذ ${minutes} دقيقة`;
-    if (hours < 24) return `منذ ${hours} ساعة`;
-    if (days < 7) return `منذ ${days} يوم`;
-    return date.toLocaleDateString('ar-EG');
+    if (minutes < 1) return 'Now';
+    if (minutes < 60) return `${minutes}m ago`;
+    if (hours < 24) return `${hours}h ago`;
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString('en-US');
   };
 
   return (
@@ -105,14 +105,14 @@ const Notifications = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="text-2xl font-bold">الإشعارات</h1>
+            <h1 className="text-2xl font-bold">Notifications</h1>
           </div>
           {notifications.length > 0 && (
             <button
               onClick={clearAll}
               className="text-sm text-red-600 hover:text-red-700 font-medium"
             >
-              مسح الكل
+              Clear All
             </button>
           )}
         </div>
@@ -127,8 +127,8 @@ const Notifications = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </div>
-            <h3 className="text-xl font-medium text-gray-700 mb-2">لا توجد إشعارات</h3>
-            <p className="text-gray-500">سنرسل لك إشعاراً عند وجود تحديثات جديدة</p>
+            <h3 className="text-xl font-medium text-gray-700 mb-2">No Notifications</h3>
+            <p className="text-gray-500">We'll notify you when there are updates</p>
           </div>
         ) : (
           <div className="space-y-3">

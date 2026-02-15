@@ -28,18 +28,18 @@ function App() {
     const registerFirebaseServiceWorker = async () => {
       if ('serviceWorker' in navigator) {
         try {
-          // Unregister any existing service workers first
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          for (let registration of registrations) {
-            await registration.unregister();
+          // Check if service worker is already registered
+          const existingRegistration = await navigator.serviceWorker.getRegistration('/');
+          
+          if (existingRegistration) {
+            console.log('✅ Service Worker already registered:', existingRegistration);
+          } else {
+            // Register with explicit scope
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+              scope: '/'
+            });
+            console.log('✅ Firebase Service Worker registered:', registration);
           }
-          
-          // Register with explicit scope
-          const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-            scope: '/'
-          });
-          
-          console.log('✅ Firebase Service Worker registered:', registration);
           
           // Wait for service worker to be active
           await navigator.serviceWorker.ready;
@@ -80,19 +80,19 @@ function App() {
       // Wait 5 seconds after page load (give service worker time to register)
       setTimeout(async () => {
         const result = await Swal.fire({
-          title: '🔔 تفعيل الإشعارات',
+          title: '🔔 Enable Notifications',
           html: `
-            <p style="margin-bottom: 10px;">احصل على إشعارات فورية عند:</p>
-            <ul style="text-align: right; list-style: none; padding: 0;">
-              <li>✨ نزول منتجات جديدة</li>
-              <li>📦 تحديث حالة طلبك</li>
-              <li>🎁 العروض الخاصة</li>
+            <p style="margin-bottom: 10px;">Get instant notifications for:</p>
+            <ul style="text-align: left; list-style: none; padding: 0;">
+              <li>✨ New products</li>
+              <li>📦 Order updates</li>
+              <li>🎁 Special offers</li>
             </ul>
           `,
           icon: 'question',
           showCancelButton: true,
-          confirmButtonText: 'تفعيل الإشعارات',
-          cancelButtonText: 'ليس الآن',
+          confirmButtonText: 'Enable Notifications',
+          cancelButtonText: 'Not Now',
           confirmButtonColor: '#000',
           cancelButtonColor: '#6b7280'
         });
@@ -119,16 +119,16 @@ function App() {
             
             Swal.fire({
               icon: 'success',
-              title: 'تم التفعيل!',
-              text: 'سنرسل لك إشعارات بكل جديد',
+              title: 'Enabled!',
+              text: 'You will receive notifications for updates',
               timer: 2000,
               showConfirmButton: false
             });
           } else {
             Swal.fire({
               icon: 'info',
-              title: 'لم يتم التفعيل',
-              text: 'يمكنك تفعيل الإشعارات لاحقاً من إعدادات المتصفح',
+              title: 'Not Enabled',
+              text: 'You can enable notifications later from browser settings',
               confirmButtonColor: '#000'
             });
           }
