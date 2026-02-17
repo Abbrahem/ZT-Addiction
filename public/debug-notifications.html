@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Notifications</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Notifications System</h1>
+    
+    <div id="status"></div>
+    
+    <h2>Actions:</h2>
+    <button onclick="checkPermission()">1. Check Permission</button>
+    <button onclick="checkServiceWorker()">2. Check Service Worker</button>
+    <button onclick="requestToken()">3. Request FCM Token</button>
+    <button onclick="checkDatabase()">4. Check Database</button>
+    <button onclick="testNotification()">5. Test Local Notification</button>
+    
+    <h2>Results:</h2>
+    <div id="results"></div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getMessaging, getToken } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD62na9JCu3-2Ml7X3uGzrRbbrAFY5nJWQ",
+            authDomain: "zt-additction.firebaseapp.com",
+            projectId: "zt-additction",
+            storageBucket: "zt-additction.firebasestorage.app",
+            messagingSenderId: "510114095648",
+            appId: "1:510114095648:web:429cbb7ee940316eb99245"
+        };
+
+        const vapidKey = "BOGLUDDAb9tn1gS-BzGtxarGgB7yx-JiLDAUGYAQudAzt34lqdG1wDsFe-kPpR0Oy5pDD2t2Cxk4m1eh15EUiuM";
+
+        let app, messaging;
+        
+        try {
+            app = initializeApp(firebaseConfig);
+            messaging = getMessaging(app);
+            log('✅ Firebase initialized', 'success');
+        } catch (error) {
+            log('❌ Firebase init error: ' + error.message, 'error');
+        }
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = 'status ' + type;
+            div.textContent = message;
+            document.getElementById('status').appendChild(div);
+            console.log(message);
+        }
+
+        function showResult(title, data) {
+            const div = document.createElement('div');
+            div.innerHTML = `<h3>${title}</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            document.getElementById('results').appendChild(div);
+        }
+
+        window.checkPermission = async () => {
+            const permission = Notification.permission;
+            log(`📋 Notification Permission: ${permission}`, permission === 'granted' ? 'success' : 'error');
+            showResult('Permission Status', { permission });
+        };
+
+        window.checkServiceWorker = async () => {
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    log(`✅ Found ${registrations.length} service worker(s)`, 'success');
+                    showResult('Service Workers', registrations.map(r => ({
+                        scope: r.scope,
+                        active: !!r.active,
+                        waiting: !!r.waiting,
+                        installing: !!r.installing
+                    })));
+                } catch (error) {
+                    log('❌ Service Worker error: ' + error.message, 'error');
+                }
+            } else {
+                log('❌ Service Worker not supported', 'error');
+            }
+        };
+
+        window.requestToken = async () => {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    log('❌ Permission denied', 'error');
+                    return;
+                }
+
+                const registration = await navigator.serviceWorker.ready;
+                log('✅ Service Worker ready', 'success');
+
+                const token = await getToken(messaging, {
+                    vapidKey,
+                    serviceWorkerRegistration: registration
+                });
+
+                log('✅ FCM Token received!', 'success');
+                showResult('FCM Token', { 
+                    token: token.substring(0, 50) + '...',
+                    fullToken: token 
+                });
+
+                // Save to localStorage
+                localStorage.setItem('fcmToken', token);
+                log('✅ Token saved to localStorage', 'success');
+
+                // Try to save to database
+                try {
+                    const response = await fetch('/api/orders/save-fcm-token', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, userType: 'test' })
+                    });
+                    const data = await response.json();
+                    log('✅ Token saved to database', 'success');
+                    showResult('Database Save', data);
+                } catch (error) {
+                    log('❌ Database save error: ' + error.message, 'error');
+                }
+            } catch (error) {
+                log('❌ Token request error: ' + error.message, 'error');
+                showResult('Error Details', { error: error.message, stack: error.stack });
+            }
+        };
+
+        window.checkDatabase = async () => {
+            const token = localStorage.getItem('fcmToken');
+            if (!token) {
+                log('❌ No token in localStorage', 'error');
+                return;
+            }
+
+            log('📋 Token in localStorage: ' + token.substring(0, 30) + '...', 'info');
+            showResult('LocalStorage Token', { token: token.substring(0, 50) + '...' });
+        };
+
+        window.testNotification = () => {
+            if (Notification.permission === 'granted') {
+                new Notification('🧪 Test Notification', {
+                    body: 'This is a local test notification',
+                    icon: '/c1.jpg'
+                });
+                log('✅ Local notification sent', 'success');
+            } else {
+                log('❌ Permission not granted', 'error');
+            }
+        };
+
+        // Auto-run checks on load
+        window.addEventListener('load', () => {
+            checkPermission();
+            checkServiceWorker();
+        });
+    </script>
+</body>
+</html>

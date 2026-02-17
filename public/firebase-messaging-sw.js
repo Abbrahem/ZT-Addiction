@@ -79,13 +79,13 @@ messaging.onBackgroundMessage((payload) => {
       read: false
     };
     
-    // Get existing notifications
-    const existingNotifications = JSON.parse(localStorage.getItem('userNotifications') || '[]');
+    // Save to adminNotifications (for admin users)
+    const existingNotifications = JSON.parse(localStorage.getItem('adminNotifications') || '[]');
     existingNotifications.unshift(notification);
     
     // Keep only last 50 notifications
     const trimmed = existingNotifications.slice(0, 50);
-    localStorage.setItem('userNotifications', JSON.stringify(trimmed));
+    localStorage.setItem('adminNotifications', JSON.stringify(trimmed));
     
     // Notify app about new notification
     self.clients.matchAll().then(clients => {

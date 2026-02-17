@@ -24,6 +24,29 @@ const Checkout = () => {
       setFormData(parsed);
       setSaveInfo(true);
     }
+
+    // Request FCM token for customer notifications
+    const setupCustomerNotifications = async () => {
+      try {
+        const { requestFCMToken } = await import('../firebase-config');
+        const token = await requestFCMToken();
+        
+        if (token) {
+          console.log('✅ Customer FCM token:', token.substring(0, 20) + '...');
+          localStorage.setItem('fcmToken', token);
+          
+          // Save to database
+          await axios.post('/api/orders/save-fcm-token', {
+            token,
+            userType: 'customer'
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error setting up customer notifications:', error);
+      }
+    };
+    
+    setupCustomerNotifications();
   }, []);
   
   // Promo code state

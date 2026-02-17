@@ -3,14 +3,25 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { showLocalNotification } from '../../utils/notifications';
+import AdminNotifications from './AdminNotifications';
+import AdminProfile from './AdminProfile';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('add-product');
+  const [activeView, setActiveView] = useState('dashboard'); // dashboard, notifications, profile
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [promoCodes, setPromoCodes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    totalPromoCodes: 0
+  });
 
   // Promo code form state
   const [promoForm, setPromoForm] = useState({
@@ -64,6 +75,16 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     checkAuth();
+    
+    // Load notifications count
+    loadNotificationCount();
+    
+    // Listen for new notifications
+    navigator.serviceWorker?.addEventListener('message', (event) => {
+      if (event.data.type === 'NEW_NOTIFICATION') {
+        loadNotificationCount();
+      }
+    });
     
     // Request notification permission for admin
     const setupAdminNotifications = async () => {
@@ -120,6 +141,17 @@ const AdminDashboard = () => {
       if (orderInterval) clearInterval(orderInterval);
     };
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadNotificationCount = () => {
+    try {
+      const stored = localStorage.getItem('adminNotifications') || '[]';
+      const parsed = JSON.parse(stored);
+      const unread = parsed.filter(n => !n.read).length;
+      setUnreadCount(unread);
+    } catch (error) {
+      console.error('Error loading notification count:', error);
+    }
+  };
 
   const checkAuth = async () => {
     try {
@@ -517,8 +549,7 @@ const AdminDashboard = () => {
   const handleBestSellerToggle = async (productId, currentStatus) => {
     try {
       const response = await axios.patch(`/api/products/${productId}/soldout?action=bestseller`, {
-        isBestSeller: !currentStatus,
-        action: 'bestseller'
+        isBestSeller: !currentStatus
       }, {
         withCredentials: true,
         headers: {
@@ -538,8 +569,7 @@ const AdminDashboard = () => {
   const handleBestReviewToggle = async (productId, currentStatus) => {
     try {
       const response = await axios.patch(`/api/products/${productId}/soldout?action=bestreview`, {
-        isBestReview: !currentStatus,
-        action: 'bestreview'
+        isBestReview: !currentStatus
       }, {
         withCredentials: true,
         headers: {
@@ -560,8 +590,7 @@ const AdminDashboard = () => {
     try {
       const response = await axios.patch(`/api/products/${productId}/soldout?action=sizeSoldout`, {
         size: size,
-        isSoldOut: !currentStatus,
-        action: 'sizeSoldout'
+        isSoldOut: !currentStatus
       }, {
         withCredentials: true,
         headers: {
@@ -585,8 +614,7 @@ const AdminDashboard = () => {
       const requestBody = {
         perfumeNumber: perfumeNumber,
         size: size,
-        isSoldOut: !currentStatus,
-        action: 'bundleSizeSoldout'
+        isSoldOut: !currentStatus
       };
       
       console.log('Request body:', requestBody);
@@ -713,32 +741,44 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="border-b border-gray-200 overflow-x-auto">
-          <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
-            {[
-              { id: 'add-product', label: 'Add New Product' },
-              { id: 'manage-products', label: 'Manage Products' },
-              { id: 'orders', label: 'Orders' },
-              { id: 'promo-codes', label: 'Promo Codes' }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-3 sm:px-4 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab.id
-                  ? 'border-gray-900 text-gray-900'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </nav>
+      {/* Navigation Tabs - Only show in dashboard view */}
+      {activeView === 'dashboard' && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="border-b border-gray-200 overflow-x-auto">
+            <nav className="-mb-px flex space-x-4 sm:space-x-8 min-w-max">
+              {[
+                { id: 'add-product', label: 'Add New Product' },
+                { id: 'manage-products', label: 'Manage Products' },
+                { id: 'orders', label: 'Orders' },
+                { id: 'promo-codes', label: 'Promo Codes' }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`py-2 px-3 sm:px-4 border-b-2 font-medium text-sm whitespace-nowrap ${activeTab === tab.id
+                    ? 'border-gray-900 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </nav>
+          </div>
         </div>
+      )}
 
+      {/* Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Tab Content */}
         <div className="mt-8">
+          {/* Show different views based on activeView */}
+          {activeView === 'notifications' ? (
+            <AdminNotifications />
+          ) : activeView === 'profile' ? (
+            <AdminProfile />
+          ) : (
+            <>
           {/* Add/Edit Product Tab */}
           {activeTab === 'add-product' && (
             <div className="card p-6">
@@ -1807,6 +1847,8 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
       </div>
 
@@ -1834,6 +1876,58 @@ const AdminDashboard = () => {
           </div>
         </>
       )}
+
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 shadow-lg z-40">
+        <div className="max-w-md mx-auto flex justify-around items-center py-3">
+          <button
+            onClick={() => setActiveView('dashboard')}
+            className={`flex flex-col items-center px-6 py-2 rounded-lg transition-colors ${
+              activeView === 'dashboard'
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            <span className="text-2xl mb-1">📊</span>
+            <span className="text-xs font-semibold">Dashboard</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveView('notifications');
+              loadNotificationCount();
+            }}
+            className={`flex flex-col items-center px-6 py-2 rounded-lg transition-colors relative ${
+              activeView === 'notifications'
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            <span className="text-2xl mb-1">🔔</span>
+            <span className="text-xs font-semibold">Notifications</span>
+            {unreadCount > 0 && (
+              <span className="absolute top-0 right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setActiveView('profile')}
+            className={`flex flex-col items-center px-6 py-2 rounded-lg transition-colors ${
+              activeView === 'profile'
+                ? 'text-blue-600 bg-blue-50'
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            <span className="text-2xl mb-1">👤</span>
+            <span className="text-xs font-semibold">Profile</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Add padding at bottom to prevent content from being hidden by bottom nav */}
+      <div className="h-20"></div>
     </div>
   );
 };

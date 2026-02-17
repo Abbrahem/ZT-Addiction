@@ -2,37 +2,89 @@ const { ObjectId } = require('mongodb');
 const clientPromise = require('./lib/mongodb');
 const { requireAuth } = require('./lib/auth');
 
-// استخدام خدمة الإشعارات المنفصلة
-const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL;
-const NOTIFICATION_API_KEY = process.env.NOTIFICATION_API_KEY;
+// Firebase Admin SDK للإشعارات (مدمج هنا عشان نوفر ملف)
+const admin = require('firebase-admin');
+let firebaseAdmin = null;
 
-// Helper function to send notification via external service
-async function sendNotificationViaService(endpoint, data) {
-  if (!NOTIFICATION_SERVICE_URL) {
-    console.log('⚠️ Notification service not configured');
-    return;
+function getFirebaseAdmin() {
+  if (firebaseAdmin) {
+    return firebaseAdmin;
+  }
+  try {
+    console.log('🔧 Initializing Firebase Admin...');
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}');
+    
+    console.log('📋 Service Account Project ID:', serviceAccount.project_id);
+    
+    if (!serviceAccount.project_id) {
+      console.warn('⚠️ Firebase Admin SDK not configured - FIREBASE_SERVICE_ACCOUNT missing');
+      return null;
+    }
+    firebaseAdmin = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: serviceAccount.project_id
+    });
+    console.log('✅ Firebase Admin SDK initialized successfully');
+    return firebaseAdmin;
+  } catch (error) {
+    console.error('❌ Error initializing Firebase Admin:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    return null;
+  }
+}
+
+async function sendNotificationToToken(token, title, body, data = {}) {
+  console.log('📤 Attempting to send notification...');
+  console.log('📋 Token:', token.substring(0, 30) + '...');
+  console.log('📋 Title:', title);
+  console.log('📋 Body:', body);
+  
+  const app = getFirebaseAdmin();
+  if (!app) {
+    console.error('❌ Firebase Admin not available - cannot send notification');
+    return { success: false, error: 'Firebase not configured' };
   }
   
   try {
-    const response = await fetch(`${NOTIFICATION_SERVICE_URL}/api/notifications/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': NOTIFICATION_API_KEY
-      },
-      body: JSON.stringify(data)
-    });
+    const message = {
+      notification: { title, body },
+      data: { title, body, timestamp: Date.now().toString(), ...data },
+      token,
+      webpush: { fcmOptions: { link: data.url || '/' } }
+    };
     
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    
-    const result = await response.json();
-    console.log('✅ Notification sent via service:', result);
-    return result;
+    console.log('📦 Sending message:', JSON.stringify(message, null, 2));
+    const response = await admin.messaging().send(message);
+    console.log('✅ Notification sent successfully! Message ID:', response);
+    return { success: true, messageId: response };
   } catch (error) {
-    console.error('❌ Notification service error:', error.message);
-    // لا نرمي الخطأ - الإشعار فشل لكن الطلب نجح
+    console.error('❌ Error sending notification:', error.message);
+    console.error('❌ Error code:', error.code);
+    console.error('❌ Error stack:', error.stack);
+    return { success: false, error: error.message };
+  }
+}
+
+async function sendNotificationToAdmins(title, body, data = {}) {
+  const app = getFirebaseAdmin();
+  if (!app) return { success: false, error: 'Firebase not configured' };
+  try {
+    const client = await clientPromise;
+    const db = client.db('danger-sneakers');
+    const adminTokens = await db.collection('fcmTokens')
+      .find({ userType: 'admin', token: { $exists: true, $ne: null } })
+      .sort({ lastUsed: -1 })
+      .toArray();
+    console.log(`📤 Sending to ${adminTokens.length} admin(s)`);
+    const results = [];
+    for (const tokenDoc of adminTokens) {
+      const result = await sendNotificationToToken(tokenDoc.token, title, body, data);
+      results.push(result);
+    }
+    return { success: true, results };
+  } catch (error) {
+    console.error('❌ Error sending to admins:', error.message);
+    return { success: false, error: error.message };
   }
 }
 
@@ -326,13 +378,27 @@ module.exports = async function handler(req, res) {
 
       const result = await db.collection('orders').insertOne(order);
       
-      // إرسال إشعار للأدمن عن طريق خدمة الإشعارات المنفصلة
-      sendNotificationViaService('new-order', {
-        orderId: result.insertedId.toString(),
-        customerName: customer.name,
-        total: total.toString(),
-        items: items.length
-      }).catch(err => console.error('Notification failed:', err));
+      console.log('📦 Order created with ID:', result.insertedId);
+      console.log('🔔 Attempting to send admin notification...');
+      
+      // إرسال إشعار للأدمن مباشرة عن طريق Firebase Admin
+      sendNotificationToAdmins(
+        '🛍️ طلب جديد!',
+        `طلب من ${customer.name} - ${total} جنيه`,
+        {
+          type: 'new_order',
+          orderId: result.insertedId.toString(),
+          url: `/admin/dashboard`
+        }
+      )
+      .then(result => {
+        console.log('✅ Admin notification sent successfully:', result);
+      })
+      .catch(err => {
+        console.error('❌ Admin notification failed:', err);
+        console.error('❌ Error details:', err.message);
+        console.error('❌ Error stack:', err.stack);
+      });
       
       return res.status(201).json({
         message: 'Order created successfully',
@@ -386,20 +452,27 @@ module.exports = async function handler(req, res) {
 
         // إرسال إشعار للعميل لو عنده token
         if (order && order.customerToken) {
-          sendNotificationViaService('order-status-guest', {
-            token: order.customerToken,
-            orderId: targetOrderId.toString(),
-            status: status
-          }).catch(err => console.error('Customer notification failed:', err));
-        }
+          const statusMessages = {
+            pending: '⏳ طلبك قيد المراجعة',
+            confirmed: '✅ تم تأكيد طلبك',
+            processing: '📦 جاري تجهيز طلبك',
+            shipped: '🚚 طلبك في الطريق إليك',
+            delivered: '🎉 تم توصيل طلبك بنجاح',
+            cancelled: '❌ تم إلغاء طلبك'
+          };
 
-        // إرسال إشعار للأدمن كمان
-        sendNotificationViaService('new-order', {
-          orderId: targetOrderId.toString(),
-          customerName: `تم تغيير حالة الطلب إلى: ${status}`,
-          total: '0',
-          items: 0
-        }).catch(err => console.error('Admin notification failed:', err));
+          sendNotificationToToken(
+            order.customerToken,
+            'تحديث حالة الطلب',
+            statusMessages[status] || `حالة طلبك: ${status}`,
+            {
+              type: 'order_update',
+              orderId: targetOrderId.toString(),
+              status: status,
+              url: `/order-tracking?orderId=${targetOrderId}`
+            }
+          ).catch(err => console.error('Customer notification failed:', err));
+        }
 
         return res.status(200).json({
           message: 'Order status updated successfully',
