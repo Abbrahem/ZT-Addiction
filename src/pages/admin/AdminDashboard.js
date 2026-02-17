@@ -10,18 +10,11 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('add-product');
   const [activeView, setActiveView] = useState('dashboard'); // dashboard, notifications, profile
-  const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [promoCodes, setPromoCodes] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({
-    totalProducts: 0,
-    totalOrders: 0,
-    totalRevenue: 0,
-    totalPromoCodes: 0
-  });
 
   // Promo code form state
   const [promoForm, setPromoForm] = useState({

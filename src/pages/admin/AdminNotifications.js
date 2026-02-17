@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 
 const AdminNotifications = () => {
   const [notifications, setNotifications] = useState([]);
