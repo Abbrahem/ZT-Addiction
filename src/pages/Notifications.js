@@ -7,39 +7,56 @@ const Notifications = () => {
 
   useEffect(() => {
     loadNotifications();
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(loadNotifications, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadNotifications = () => {
-    const stored = JSON.parse(localStorage.getItem('userNotifications') || '[]');
-    // Sort by date, newest first
-    const sorted = stored.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    setNotifications(sorted);
+    // 1. جلب إشعارات المنتجات الجديدة (للكل)
+    const productNotifications = JSON.parse(localStorage.getItem('adminProductNotifications') || '[]')
+      .filter(n => n.type === 'new_product')
+      .map(n => ({
+        ...n,
+        id: `user-${n.id}`, // عشان ميتعارضش مع الأدمن
+        read: false
+      }));
     
-    // Mark all as read
-    const updated = sorted.map(n => ({ ...n, read: true }));
-    localStorage.setItem('userNotifications', JSON.stringify(updated));
+    // 2. جلب إشعارات الأوردرات الخاصة بالعميل
+    const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]'); // الأوردرات الي العميل عملها
+    const orderNotifications = myOrders.map(orderId => {
+      const orderNotif = JSON.parse(localStorage.getItem(`order-${orderId}-notifications`) || '[]');
+      return orderNotif;
+    }).flat();
     
-    // Trigger event to update badge
-    window.dispatchEvent(new Event('newNotification'));
+    // 3. دمج كل الإشعارات
+    const allNotifications = [...productNotifications, ...orderNotifications]
+      .sort((a, b) => b.timestamp - a.timestamp);
+    
+    setNotifications(allNotifications);
   };
 
   const clearAll = () => {
-    localStorage.setItem('userNotifications', JSON.stringify([]));
-    setNotifications([]);
-    window.dispatchEvent(new Event('newNotification'));
+    // مسح إشعارات الأوردرات بس، المنتجات تفضل
+    const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    myOrders.forEach(orderId => {
+      localStorage.removeItem(`order-${orderId}-notifications`);
+    });
+    loadNotifications();
   };
 
   const deleteNotification = (id) => {
-    const updated = notifications.filter(n => n.id !== id);
-    setNotifications(updated);
-    localStorage.setItem('userNotifications', JSON.stringify(updated));
-    window.dispatchEvent(new Event('newNotification'));
-  };
-
-  const handleNotificationClick = (notification) => {
-    if (notification.url) {
-      navigate(notification.url);
-    }
+    // لو إشعار أوردر، امسحه من localStorage
+    const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+    myOrders.forEach(orderId => {
+      const orderNotifs = JSON.parse(localStorage.getItem(`order-${orderId}-notifications`) || '[]');
+      const updated = orderNotifs.filter(n => n.id !== id);
+      localStorage.setItem(`order-${orderId}-notifications`, JSON.stringify(updated));
+    });
+    
+    loadNotifications();
   };
 
   const getNotificationIcon = (type) => {
@@ -135,10 +152,7 @@ const Notifications = () => {
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`bg-white rounded-lg p-4 shadow-sm border ${
-                  notification.url ? 'cursor-pointer hover:shadow-md' : ''
-                } transition-shadow ${!notification.read ? 'border-l-4 border-l-blue-500' : 'border-gray-200'}`}
+                className={`bg-white rounded-lg p-4 shadow-sm border border-gray-200 transition-shadow`}
               >
                 <div className="flex items-start gap-4">
                   {getNotificationIcon(notification.type)}
@@ -146,7 +160,28 @@ const Notifications = () => {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-gray-900 mb-1">{notification.title}</h3>
                     <p className="text-gray-600 text-sm mb-2">{notification.body}</p>
-                    <div className="flex items-center justify-between">
+                    
+                    {/* زرار تتبع الأوردر */}
+                    {notification.type === 'order_update' && notification.orderId && (
+                      <button
+                        onClick={() => navigate(`/order-tracking?orderId=${notification.orderId}`)}
+                        className="mt-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        تتبع الطلب
+                      </button>
+                    )}
+                    
+                    {/* زرار عرض المنتج */}
+                    {notification.type === 'new_product' && notification.productId && (
+                      <button
+                        onClick={() => navigate(`/products/${notification.productId}`)}
+                        className="mt-2 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        عرض المنتج
+                      </button>
+                    )}
+                    
+                    <div className="flex items-center justify-between mt-3">
                       <span className="text-xs text-gray-400">{formatDate(notification.timestamp)}</span>
                       <button
                         onClick={(e) => {

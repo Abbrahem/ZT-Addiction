@@ -242,6 +242,13 @@ const Checkout = () => {
       });
       localStorage.setItem('orders', JSON.stringify(orders));
       
+      // حفظ orderId في قائمة الأوردرات الخاصة بالعميل
+      const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+      if (!myOrders.includes(orderId)) {
+        myOrders.push(orderId);
+        localStorage.setItem('myOrders', JSON.stringify(myOrders));
+      }
+      
       // Trigger event to update orders badge
       window.dispatchEvent(new Event('newOrder'));
       
@@ -351,6 +358,13 @@ const Checkout = () => {
         customerInfo: orderData.customer
       });
       localStorage.setItem('orders', JSON.stringify(orders));
+      
+      // حفظ orderId في قائمة الأوردرات الخاصة بالعميل
+      const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+      if (!myOrders.includes(orderId)) {
+        myOrders.push(orderId);
+        localStorage.setItem('myOrders', JSON.stringify(myOrders));
+      }
       
       // Trigger event to update orders badge
       window.dispatchEvent(new Event('newOrder'));

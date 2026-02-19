@@ -1,7 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const clientPromise = require('./lib/mongodb');
-const { seedAdmin } = require('./lib/seedAdmin');
 
 // Authentication middleware
 const requireAuth = async (req, res, next) => {
@@ -53,11 +52,23 @@ module.exports = async function handler(req, res) {
       }
 
       // Seed admin if no users exist
-      try {
-        await seedAdmin();
-      } catch (seedError) {
-        console.error('Seed admin error:', seedError);
-        // Continue even if seeding fails
+      const adminCount = await db.collection('admins').countDocuments();
+      if (adminCount === 0) {
+        console.log('🔐 Creating admin user...');
+        const adminEmail = process.env.ADMIN_EMAIL || 'zt@gmail.com';
+        const adminPassword = process.env.ADMIN_PASSWORD || 'zt123456';
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        
+        const adminUser = {
+          email: adminEmail,
+          password: hashedPassword,
+          role: 'admin',
+          createdAt: new Date()
+        };
+        
+        await db.collection('admins').insertOne(adminUser);
+        await db.collection('users').insertOne({ ...adminUser });
+        console.log('✅ Admin user created:', adminEmail);
       }
 
       // Check both users and admins collections

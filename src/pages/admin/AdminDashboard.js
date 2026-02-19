@@ -69,48 +69,49 @@ const AdminDashboard = () => {
   useEffect(() => {
     checkAuth();
     
-    // Load notifications count
-    loadNotificationCount();
-    
-    // Listen for new notifications
-    navigator.serviceWorker?.addEventListener('message', (event) => {
-      if (event.data.type === 'NEW_NOTIFICATION') {
-        loadNotificationCount();
-      }
-    });
-    
-    // Request notification permission for admin
-    const setupAdminNotifications = async () => {
+    // طلب إذن الإشعارات وحفظ FCM token للأدمن
+    const setupAdminFCM = async () => {
       try {
-        // Import requestFCMToken
+        console.log('🔧 Setting up Admin FCM...');
+        
+        // Import Firebase functions
         const { requestFCMToken } = await import('../../firebase-config');
         
-        // Get FCM token
+        // Request permission and get token
         const token = await requestFCMToken();
         
         if (token) {
-          console.log('✅ Admin FCM token:', token);
+          console.log('✅ Admin FCM Token:', token.substring(0, 30) + '...');
           
           // Save token to database
           await axios.post('/api/orders/save-fcm-token', {
             token,
             userType: 'admin'
+          }, {
+            withCredentials: true,
+            headers: {
+              'Content-Type': 'application/json'
+            }
           });
           
-          console.log('✅ Admin token saved to database');
+          console.log('✅ Admin FCM token saved to database');
         } else {
-          console.log('⚠️ No FCM token received - user may have denied permission');
+          console.warn('⚠️ No FCM token - user may have denied permission');
         }
       } catch (error) {
-        console.error('❌ Error setting up admin notifications:', error);
-        console.error('Error details:', {
-          message: error.message,
-          code: error.code,
-          response: error.response?.data
-        });
+        console.error('❌ Error setting up Admin FCM:', error);
       }
     };
-    setupAdminNotifications();
+    
+    setupAdminFCM();
+    
+    // Load notifications count
+    loadNotificationCount();
+    
+    // Refresh notification count every 30 seconds
+    const notificationInterval = setInterval(() => {
+      loadNotificationCount();
+    }, 30000);
     
     if (activeTab === 'manage-products') {
       fetchProducts();
@@ -132,17 +133,20 @@ const AdminDashboard = () => {
     
     return () => {
       if (orderInterval) clearInterval(orderInterval);
+      clearInterval(notificationInterval);
     };
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadNotificationCount = () => {
+  const loadNotificationCount = async () => {
     try {
-      const stored = localStorage.getItem('adminNotifications') || '[]';
-      const parsed = JSON.parse(stored);
-      const unread = parsed.filter(n => !n.read).length;
-      setUnreadCount(unread);
+      // جلب عدد الأوردرات الجديدة (pending)
+      const response = await axios.get('/api/orders', { withCredentials: true });
+      const orders = response.data || [];
+      const pendingOrders = orders.filter(order => order.status === 'pending');
+      setUnreadCount(pendingOrders.length);
     } catch (error) {
       console.error('Error loading notification count:', error);
+      setUnreadCount(0);
     }
   };
 
@@ -324,6 +328,23 @@ const AdminDashboard = () => {
       } else {
         const response = await axios.post('/api/products', submitData, { withCredentials: true });
         const productId = response.data.productId;
+
+        // إضافة إشعار للأدمن في صفحة الإشعارات
+        const productNotifications = JSON.parse(localStorage.getItem('adminProductNotifications') || '[]');
+        productNotifications.unshift({
+          id: `product-${productId}-${Date.now()}`,
+          type: 'new_product',
+          title: '✨ تم إضافة منتج جديد',
+          body: `${productForm.name} - ${productForm.collection}`,
+          timestamp: Date.now(),
+          productName: productForm.name,
+          collection: productForm.collection,
+          productId: productId
+        });
+        localStorage.setItem('adminProductNotifications', JSON.stringify(productNotifications));
+        
+        // Trigger event to update notification badge
+        window.dispatchEvent(new Event('newNotification'));
 
         // Notify all users about new product
         showLocalNotification('✨ منتج جديد!', {
@@ -530,6 +551,27 @@ const AdminDashboard = () => {
       });
 
       console.log('SoldOut toggle response:', response.data);
+      
+      // إضافة إشعار للأدمن
+      const product = products.find(p => p._id === productId);
+      if (product) {
+        const productNotifications = JSON.parse(localStorage.getItem('adminProductNotifications') || '[]');
+        productNotifications.unshift({
+          id: `soldout-${productId}-${Date.now()}`,
+          type: !currentStatus ? 'sold_out' : 'back_in_stock',
+          title: !currentStatus ? '❌ منتج نفذ' : '✅ منتج متاح مرة أخرى',
+          body: `${product.name} - ${!currentStatus ? 'نفذ من المخزون' : 'متاح الآن'}`,
+          timestamp: Date.now(),
+          productName: product.name,
+          collection: product.collection,
+          productId: productId
+        });
+        localStorage.setItem('adminProductNotifications', JSON.stringify(productNotifications));
+        
+        // Trigger event to update notification badge
+        window.dispatchEvent(new Event('newNotification'));
+      }
+      
       fetchProducts(); // Refresh the products list
     } catch (error) {
       console.error('SoldOut toggle error:', error);
@@ -701,6 +743,30 @@ const AdminDashboard = () => {
         order._id.toString() === orderId.toString() ? { ...order, status: newStatus } : order
       ));
 
+      // إضافة إشعار للعميل في localStorage
+      const statusMessages = {
+        pending: '⏳ طلبك قيد المراجعة',
+        processing: '📦 جاري تجهيز طلبك',
+        shipped: '🚚 طلبك في الطريق إليك',
+        delivered: '🎉 تم توصيل طلبك بنجاح',
+        cancelled: '❌ تم إلغاء طلبك'
+      };
+      
+      const orderNotifications = JSON.parse(localStorage.getItem(`order-${orderId}-notifications`) || '[]');
+      orderNotifications.unshift({
+        id: `order-status-${orderId}-${Date.now()}`,
+        type: 'order_update',
+        title: 'تحديث حالة الطلب',
+        body: statusMessages[newStatus] || `حالة طلبك: ${newStatus}`,
+        timestamp: Date.now(),
+        orderId: orderId,
+        status: newStatus
+      });
+      localStorage.setItem(`order-${orderId}-notifications`, JSON.stringify(orderNotifications));
+      
+      // Trigger event to update notification badge
+      window.dispatchEvent(new Event('newNotification'));
+
       Swal.fire({
         icon: 'success',
         title: 'Status Updated',
@@ -727,9 +793,25 @@ const AdminDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <button onClick={handleLogout} className="btn-secondary">
-              Logout
-            </button>
+            <div className="flex items-center gap-4">
+              {/* Notifications Button */}
+              <button
+                onClick={() => setActiveView(activeView === 'notifications' ? 'dashboard' : 'notifications')}
+                className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                title="الإشعارات"
+              >
+                <span className="text-2xl">🔔</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              
+              <button onClick={handleLogout} className="btn-secondary">
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

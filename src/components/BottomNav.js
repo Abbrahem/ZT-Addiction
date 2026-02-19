@@ -8,9 +8,25 @@ const BottomNav = () => {
 
   useEffect(() => {
     // Load notification count from localStorage
-    const notifications = JSON.parse(localStorage.getItem('userNotifications') || '[]');
-    const unreadCount = notifications.filter(n => !n.read).length;
-    setNotificationCount(unreadCount);
+    const loadNotificationCount = () => {
+      // 1. إشعارات المنتجات الجديدة
+      const productNotifications = JSON.parse(localStorage.getItem('adminProductNotifications') || '[]')
+        .filter(n => n.type === 'new_product');
+      
+      // 2. إشعارات الأوردرات الخاصة بالعميل
+      const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+      let orderNotificationsCount = 0;
+      myOrders.forEach(orderId => {
+        const orderNotifs = JSON.parse(localStorage.getItem(`order-${orderId}-notifications`) || '[]');
+        orderNotificationsCount += orderNotifs.length;
+      });
+      
+      // 3. إجمالي الإشعارات
+      const totalCount = productNotifications.length + orderNotificationsCount;
+      setNotificationCount(totalCount);
+    };
+    
+    loadNotificationCount();
 
     // Load orders count
     const orders = JSON.parse(localStorage.getItem('orders') || '[]');
@@ -18,9 +34,7 @@ const BottomNav = () => {
 
     // Listen for new notifications
     const handleNewNotification = () => {
-      const updatedNotifications = JSON.parse(localStorage.getItem('userNotifications') || '[]');
-      const unread = updatedNotifications.filter(n => !n.read).length;
-      setNotificationCount(unread);
+      loadNotificationCount();
     };
 
     // Listen for new orders
@@ -32,9 +46,13 @@ const BottomNav = () => {
     window.addEventListener('newNotification', handleNewNotification);
     window.addEventListener('newOrder', handleNewOrder);
     
+    // Refresh count every 30 seconds
+    const interval = setInterval(loadNotificationCount, 30000);
+    
     return () => {
       window.removeEventListener('newNotification', handleNewNotification);
       window.removeEventListener('newOrder', handleNewOrder);
+      clearInterval(interval);
     };
   }, []);
 

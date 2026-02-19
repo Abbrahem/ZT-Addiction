@@ -379,9 +379,23 @@ module.exports = async function handler(req, res) {
       const result = await db.collection('orders').insertOne(order);
       
       console.log('📦 Order created with ID:', result.insertedId);
-      console.log('🔔 Attempting to send admin notification...');
+      console.log('🔔 Attempting to send notifications...');
       
-      // إرسال إشعار للأدمن مباشرة عن طريق Firebase Admin
+      // Get the complete order with ID for Telegram
+      const completeOrder = { ...order, _id: result.insertedId };
+      
+      // إرسال إشعار Telegram (أولوية أولى - الأضمن)
+      try {
+        const { sendNewOrderNotification } = require('../utils/telegram');
+        const telegramResult = await sendNewOrderNotification(completeOrder);
+        if (telegramResult.success) {
+          console.log('✅ Telegram notification sent successfully');
+        }
+      } catch (error) {
+        console.error('⚠️ Telegram notification failed (but order created):', error.message);
+      }
+      
+      // إرسال إشعار Firebase Admin (احتياطي)
       sendNotificationToAdmins(
         '🛍️ طلب جديد!',
         `طلب من ${customer.name} - ${total} جنيه`,
@@ -392,12 +406,10 @@ module.exports = async function handler(req, res) {
         }
       )
       .then(result => {
-        console.log('✅ Admin notification sent successfully:', result);
+        console.log('✅ Firebase notification sent successfully:', result);
       })
       .catch(err => {
-        console.error('❌ Admin notification failed:', err);
-        console.error('❌ Error details:', err.message);
-        console.error('❌ Error stack:', err.stack);
+        console.error('⚠️ Firebase notification failed:', err.message);
       });
       
       return res.status(201).json({
