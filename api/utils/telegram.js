@@ -9,8 +9,17 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
  */
 async function sendTelegramNotification(title, message, data = {}) {
   // Check if Telegram is configured
+  console.log('🔍 Telegram config check:', {
+    hasToken: !!TELEGRAM_BOT_TOKEN,
+    hasChatId: !!TELEGRAM_CHAT_ID,
+    tokenLength: TELEGRAM_BOT_TOKEN?.length,
+    chatId: TELEGRAM_CHAT_ID
+  });
+  
   if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
     console.log('⚠️ Telegram not configured - skipping notification');
+    console.log('⚠️ TELEGRAM_BOT_TOKEN:', TELEGRAM_BOT_TOKEN ? 'exists' : 'missing');
+    console.log('⚠️ TELEGRAM_CHAT_ID:', TELEGRAM_CHAT_ID ? 'exists' : 'missing');
     return { success: false, error: 'Not configured' };
   }
 
