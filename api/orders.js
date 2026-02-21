@@ -386,7 +386,7 @@ module.exports = async function handler(req, res) {
       
       // إرسال إشعار Telegram (أولوية أولى - الأضمن)
       try {
-        const { sendNewOrderNotification } = require('../utils/telegram');
+        const { sendNewOrderNotification } = require('./utils/telegram');
         const telegramResult = await sendNewOrderNotification(completeOrder);
         if (telegramResult.success) {
           console.log('✅ Telegram notification sent successfully');
