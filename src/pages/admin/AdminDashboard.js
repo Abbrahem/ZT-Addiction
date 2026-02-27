@@ -538,17 +538,16 @@ const AdminDashboard = () => {
 
   const handleSoldOutToggle = async (productId, currentStatus) => {
     try {
-      console.log('Toggling soldOut for product:', productId, 'current status:', currentStatus);
-      console.log('Sending request body:', { soldOut: !currentStatus });
-
-      const response = await axios.patch(`/api/products/${productId}/soldout`, {
-        soldOut: !currentStatus
-      }, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await axios.patch(
+        `/api/products/${productId}/soldout?soldOut=${!currentStatus}`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       console.log('SoldOut toggle response:', response.data);
       
@@ -583,14 +582,16 @@ const AdminDashboard = () => {
 
   const handleBestSellerToggle = async (productId, currentStatus) => {
     try {
-      const response = await axios.patch(`/api/products/${productId}/soldout?action=bestseller`, {
-        isBestSeller: !currentStatus
-      }, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await axios.patch(
+        `/api/products/${productId}/soldout?action=bestseller&isBestSeller=${!currentStatus}`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       console.log('BestSeller toggle response:', response.data);
       fetchProducts();
@@ -603,14 +604,16 @@ const AdminDashboard = () => {
 
   const handleBestReviewToggle = async (productId, currentStatus) => {
     try {
-      const response = await axios.patch(`/api/products/${productId}/soldout?action=bestreview`, {
-        isBestReview: !currentStatus
-      }, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await axios.patch(
+        `/api/products/${productId}/soldout?action=bestreview&isBestReview=${!currentStatus}`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       console.log('BestReview toggle response:', response.data);
       fetchProducts();
@@ -623,15 +626,16 @@ const AdminDashboard = () => {
 
   const handleSizeSoldOutToggle = async (productId, size, currentStatus) => {
     try {
-      const response = await axios.patch(`/api/products/${productId}/soldout?action=sizeSoldout`, {
-        size: size,
-        isSoldOut: !currentStatus
-      }, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await axios.patch(
+        `/api/products/${productId}/soldout?action=sizeSoldout&size=${encodeURIComponent(size)}&isSoldOut=${!currentStatus}`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       console.log('Size SoldOut toggle response:', response.data);
       fetchProducts();
@@ -644,29 +648,21 @@ const AdminDashboard = () => {
 
   const handleBundleSizeSoldOutToggle = async (productId, perfumeNumber, size, currentStatus) => {
     try {
-      console.log('Toggling bundle size soldOut:', { productId, perfumeNumber, size, currentStatus });
-      
-      const requestBody = {
-        perfumeNumber: perfumeNumber,
-        size: size,
-        isSoldOut: !currentStatus
-      };
-      
-      console.log('Request body:', requestBody);
-
-      const response = await axios.patch(`/api/products/${productId}/soldout?action=bundleSizeSoldout`, requestBody, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await axios.patch(
+        `/api/products/${productId}/soldout?action=bundleSizeSoldout&perfumeNumber=${perfumeNumber}&size=${encodeURIComponent(size)}&isSoldOut=${!currentStatus}`,
+        {},
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json'
+          }
         }
-      });
+      );
 
       console.log('Bundle Size SoldOut toggle response:', response.data);
       fetchProducts();
     } catch (error) {
       console.error('Bundle Size SoldOut toggle error:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
       const errorMsg = error.response?.data?.message || 'Failed to update bundle size status';
       Swal.fire({ icon: 'error', title: 'Error', text: errorMsg });
     }

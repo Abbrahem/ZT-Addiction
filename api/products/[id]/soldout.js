@@ -37,11 +37,7 @@ module.exports = async function handler(req, res) {
       
       // Handle bestseller action
       if (action === 'bestseller') {
-        const { isBestSeller } = req.body;
-
-        if (typeof isBestSeller !== 'boolean') {
-          return res.status(400).json({ message: 'isBestSeller must be a boolean value' });
-        }
+        const isBestSeller = req.query.isBestSeller === 'true' || req.body.isBestSeller === true;
 
         // If setting as best seller, check if we already have 6
         if (isBestSeller) {
@@ -69,11 +65,7 @@ module.exports = async function handler(req, res) {
 
       // Handle bestreview action
       if (action === 'bestreview') {
-        const { isBestReview } = req.body;
-
-        if (typeof isBestReview !== 'boolean') {
-          return res.status(400).json({ message: 'isBestReview must be a boolean value' });
-        }
+        const isBestReview = req.query.isBestReview === 'true' || req.body.isBestReview === true;
 
         // If setting as best review, check if we already have 4
         if (isBestReview) {
@@ -101,14 +93,11 @@ module.exports = async function handler(req, res) {
 
       // Handle size soldout action
       if (action === 'sizeSoldout') {
-        const { size, isSoldOut } = req.body;
+        const size = req.query.size || req.body.size;
+        const isSoldOut = req.query.isSoldOut === 'true' || req.body.isSoldOut === true;
 
         if (!size) {
           return res.status(400).json({ message: 'Size is required' });
-        }
-
-        if (typeof isSoldOut !== 'boolean') {
-          return res.status(400).json({ message: 'isSoldOut must be a boolean value' });
         }
 
         // Get the product first
@@ -142,14 +131,12 @@ module.exports = async function handler(req, res) {
 
       // Handle bundle size soldout action
       if (action === 'bundleSizeSoldout') {
-        const { perfumeNumber, size, isSoldOut } = req.body;
+        const perfumeNumber = parseInt(req.query.perfumeNumber || req.body.perfumeNumber);
+        const size = req.query.size || req.body.size;
+        const isSoldOut = req.query.isSoldOut === 'true' || req.body.isSoldOut === true;
 
         if (!perfumeNumber || !size) {
           return res.status(400).json({ message: 'Perfume number and size are required' });
-        }
-
-        if (typeof isSoldOut !== 'boolean') {
-          return res.status(400).json({ message: 'isSoldOut must be a boolean value' });
         }
 
         // Get the product first
@@ -200,11 +187,7 @@ module.exports = async function handler(req, res) {
       }
       
       // Handle soldout action (default) - for whole product
-      const { soldOut } = req.body;
-
-      if (typeof soldOut !== 'boolean') {
-        return res.status(400).json({ message: 'soldOut must be a boolean value' });
-      }
+      const soldOut = req.query.soldOut === 'true' || req.body.soldOut === true;
 
       const result = await db.collection('products').updateOne(
         { _id: getObjectId(productId) },
