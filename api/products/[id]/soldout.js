@@ -19,6 +19,13 @@ module.exports = async function handler(req, res) {
       // Check action type from query or body
       const action = req.query?.action || req.body?.action || 'soldout';
       
+      console.log('📝 Request details:', {
+        action,
+        query: req.query,
+        body: req.body,
+        productId
+      });
+      
       // Helper function to convert ID
       const getObjectId = (id) => {
         try {
