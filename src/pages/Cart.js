@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 
 const Cart = () => {
   const { items, removeFromCart, getCartTotal } = useCart();
-  const shippingFee = 100;
+  const shippingFee = 110;
   const subtotal = getCartTotal();
   const total = subtotal + (items.length > 0 ? shippingFee : 0);
 

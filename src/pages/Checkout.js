@@ -70,7 +70,7 @@ const Checkout = () => {
     { id: 'telda', name: 'Telda', image: '/telda.png', phone: '01272558833' }
   ];
 
-  const shippingFee = 100;
+  const shippingFee = 110;
   const subtotal = getCartTotal();
   const discount = appliedPromo ? Math.round(subtotal * (appliedPromo.discount / 100)) : 0;
   const total = subtotal + (items.length > 0 ? shippingFee : 0) - discount;
