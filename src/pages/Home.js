@@ -243,80 +243,80 @@ const Home = () => {
       </section>
 
       {/* Samples Section */}
-      <section className="py-20 px-6 max-w-6xl mx-auto">
-        <h2 className="text-4xl font-playfair text-center mb-16 text-black">Samples</h2>
+      <section className="py-12 md:py-20 px-4 md:px-6 max-w-6xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-playfair text-center mb-12 md:mb-16 text-black">Samples</h2>
         
         {/* First Row: Winter & Summer - Larger */}
-        <div className="grid grid-cols-2 gap-8 sm:gap-10 md:gap-16 mb-12">
+        <div className="grid grid-cols-2 gap-4 sm:gap-8 md:gap-16 mb-8 md:mb-12">
           <Link to="/category/winter-samples" className="group block">
-            <div className="relative overflow-hidden mb-6" style={{ paddingBottom: '120%' }}>
+            <div className="relative overflow-hidden mb-3 md:mb-6" style={{ paddingBottom: '120%' }}>
               <img
                 src="/winter.jpg"
                 alt="Winter Samples"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
-            <h3 className="text-2xl sm:text-3xl md:text-4xl font-playfair text-center text-black">Winter Samples</h3>
+            <h3 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-playfair text-center text-black">Winter Samples</h3>
           </Link>
 
           <Link to="/category/summer-samples" className="group block">
-            <div className="relative overflow-hidden mb-6" style={{ paddingBottom: '120%' }}>
+            <div className="relative overflow-hidden mb-3 md:mb-6" style={{ paddingBottom: '120%' }}>
               <img
                 src="/summer.jpg"
                 alt="Summer Samples"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
-            <h3 className="text-2xl sm:text-3xl md:text-4xl font-playfair text-center text-black">Summer Samples</h3>
+            <h3 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-playfair text-center text-black">Summer Samples</h3>
           </Link>
         </div>
 
         {/* Second Row: Bundles (centered) */}
         <div className="flex justify-center">
           <Link to="/category/bundles" className="group block w-full sm:w-3/4 md:w-1/2">
-            <div className="relative overflow-hidden mb-4" style={{ paddingBottom: '70%' }}>
+            <div className="relative overflow-hidden mb-3 md:mb-4" style={{ paddingBottom: '70%' }}>
               <img
                 src="/Bundeles.jpg"
                 alt="Bundles"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
-            <h3 className="text-xl sm:text-2xl md:text-3xl font-playfair text-center text-black">Bundles</h3>
+            <h3 className="text-base sm:text-xl md:text-2xl lg:text-3xl font-playfair text-center text-black">Bundles</h3>
           </Link>
         </div>
       </section>
 
       {/* Bottles Section */}
-      <section className="py-20 px-6 max-w-7xl mx-auto">
-        <h2 className="text-4xl font-playfair text-center mb-16 text-black">Bottles</h2>
+      <section className="py-12 md:py-20 px-4 md:px-6 max-w-7xl mx-auto">
+        <h2 className="text-3xl md:text-4xl font-playfair text-center mb-12 md:mb-16 text-black">Bottles</h2>
         
         <Link to="/category/bottles" className="group block max-w-2xl mx-auto">
-          <div className="relative overflow-hidden mb-4" style={{ paddingBottom: '50%' }}>
+          <div className="relative overflow-hidden mb-3 md:mb-4" style={{ paddingBottom: '50%' }}>
             <img
               src="/Bottles.jpg"
               alt="Full Bottles"
               className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
             />
           </div>
-          <h3 className="text-2xl font-playfair text-center text-black">Full Bottles</h3>
+          <h3 className="text-xl md:text-2xl font-playfair text-center text-black">Full Bottles</h3>
         </Link>
       </section>
 
       {/* Best Selling Horizontal Scroll Section */}
       {bestSellerProducts.length > 0 && (
-        <section className="py-20 px-6">
-          <h2 className="text-4xl font-playfair text-center mb-16 text-black">BEST SELLING</h2>
+        <section className="py-12 md:py-20 px-4 md:px-6">
+          <h2 className="text-3xl md:text-4xl font-playfair text-center mb-12 md:mb-16 text-black">BEST SELLING</h2>
           
           <div className="overflow-x-auto scrollbar-hide">
             <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
               {bestSellerProducts.map((product) => (
                 <div key={product._id} className="group relative flex-shrink-0" style={{ width: '280px' }}>
                   <Link to={`/products/${product._id}`} className="block">
-                    <div className="relative overflow-hidden mb-4" style={{ paddingBottom: '120%' }}>
+                    <div className="relative overflow-hidden mb-4 bg-gray-50" style={{ paddingBottom: '133%' }}>
                       <img
                         src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
                         alt={product.name}
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                       />
                       {product.soldOut && (
                         <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
@@ -402,10 +402,10 @@ const Home = () => {
 
       {/* Best Reviews Section */}
       {bestReviewProducts.length > 0 && (
-        <section className="py-20 px-6 max-w-6xl mx-auto">
-          <h2 className="text-4xl font-playfair text-center mb-16 text-black">BEST REVIEWS</h2>
+        <section className="py-12 md:py-20 px-4 md:px-6 max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-playfair text-center mb-12 md:mb-16 text-black">BEST REVIEWS</h2>
           
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 lg:gap-10">
             {bestReviewProducts.map((product) => (
               <ProductCard key={product._id} product={product} onQuickAdd={handleQuickAdd} />
             ))}
