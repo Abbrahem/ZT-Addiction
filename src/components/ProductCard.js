@@ -31,11 +31,11 @@ const ProductCard = ({ product, onQuickAdd }) => {
   return (
     <div className="group relative">
       <Link to={`/products/${product._id}`} className="block">
-        <div className="relative overflow-hidden mb-3" style={{ paddingBottom: '75%' }}>
+        <div className="relative overflow-hidden mb-3 bg-gray-50" style={{ paddingBottom: '133%' }}>
           <img
             src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
             alt={product.name}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
           />
           {product.soldOut && (
             <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
@@ -54,7 +54,7 @@ const ProductCard = ({ product, onQuickAdd }) => {
       </Link>
       
       {/* Action Buttons */}
-      <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+      <div className="absolute top-2 right-2 flex flex-col gap-1.5 z-10">
         {/* Quick Add Button (if provided) */}
         {onQuickAdd && !product.soldOut && (
           <button
@@ -63,9 +63,9 @@ const ProductCard = ({ product, onQuickAdd }) => {
               e.stopPropagation();
               onQuickAdd(product);
             }}
-            className="bg-white text-black p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
+            className="bg-white text-black p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
             </svg>
           </button>
@@ -74,10 +74,10 @@ const ProductCard = ({ product, onQuickAdd }) => {
         {/* Wishlist Heart Icon */}
         <button
           onClick={handleWishlistClick}
-          className="bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
+          className="bg-white p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
         >
           <svg 
-            className="w-5 h-5" 
+            className="w-4 h-4" 
             fill={isInWishlist(product._id) ? '#ef4444' : 'none'} 
             stroke={isInWishlist(product._id) ? '#ef4444' : 'currentColor'} 
             viewBox="0 0 24 24"
@@ -88,14 +88,14 @@ const ProductCard = ({ product, onQuickAdd }) => {
       </div>
       
       {/* Rate Button - Top Left */}
-      <div className="absolute top-3 left-3 z-10">
+      <div className="absolute top-2 left-2 z-10">
         <Link
           to={`/products/${product._id}?rate=true`}
           onClick={(e) => e.stopPropagation()}
-          className="bg-amber-500 text-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110 hover:bg-amber-600 flex items-center justify-center"
+          className="bg-amber-500 text-white p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110 hover:bg-amber-600 flex items-center justify-center"
           title="Rate this product"
         >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
           </svg>
         </Link>
