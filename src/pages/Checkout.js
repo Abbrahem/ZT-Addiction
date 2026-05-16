@@ -10,6 +10,7 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
+    email: '',
     address: '',
     phone1: '',
     phone2: ''
@@ -76,10 +77,22 @@ const Checkout = () => {
   const total = subtotal + (items.length > 0 ? shippingFee : 0) - discount;
 
   const validateForm = () => {
-    const { fullName, address, phone1, phone2 } = formData;
+    const { fullName, email, address, phone1, phone2 } = formData;
     
     if (!fullName.trim()) {
       Swal.fire({ icon: 'error', title: 'Missing Information', text: 'Please enter your full name' });
+      return false;
+    }
+    
+    if (!email.trim()) {
+      Swal.fire({ icon: 'error', title: 'Missing Information', text: 'Please enter your email' });
+      return false;
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Swal.fire({ icon: 'error', title: 'Invalid Email', text: 'Please enter a valid email address' });
       return false;
     }
     
@@ -124,7 +137,7 @@ const Checkout = () => {
     
     setPromoLoading(true);
     try {
-      const response = await axios.patch('/api/promo', { code: promoCode.toUpperCase() });
+      const response = await axios.post('/api/products/promo/validate', { code: promoCode.toUpperCase() });
       setAppliedPromo(response.data);
       Swal.fire({
         icon: 'success',
@@ -208,6 +221,7 @@ const Checkout = () => {
         })),
         customer: {
           name: formData.fullName,
+          email: formData.email,
           address: formData.address,
           phone1: formData.phone1,
           phone2: formData.phone2
@@ -333,6 +347,7 @@ const Checkout = () => {
         })),
         customer: {
           name: formData.fullName,
+          email: formData.email,
           address: formData.address,
           phone1: formData.phone1,
           phone2: formData.phone2
@@ -555,6 +570,21 @@ const Checkout = () => {
                 placeholder="Full Name"
                 required
               />
+            </div>
+
+            <div>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="input-field font-montserrat"
+                placeholder="Email Address"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-1 font-montserrat">
+                سنرسل لك تحديثات الطلب على هذا الإيميل
+              </p>
             </div>
 
             <div>

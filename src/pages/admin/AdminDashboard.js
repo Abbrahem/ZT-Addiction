@@ -139,11 +139,11 @@ const AdminDashboard = () => {
 
   const loadNotificationCount = async () => {
     try {
-      // جلب عدد الأوردرات الجديدة (pending)
+      // جلب عدد الأوردرات الجديدة (processing)
       const response = await axios.get('/api/orders', { withCredentials: true });
       const orders = response.data || [];
-      const pendingOrders = orders.filter(order => order.status === 'pending');
-      setUnreadCount(pendingOrders.length);
+      const processingOrders = orders.filter(order => order.status === 'processing');
+      setUnreadCount(processingOrders.length);
     } catch (error) {
       console.error('Error loading notification count:', error);
       setUnreadCount(0);
@@ -178,7 +178,7 @@ const AdminDashboard = () => {
 
   const fetchPromoCodes = async () => {
     try {
-      const response = await axios.get('/api/promo', { withCredentials: true });
+      const response = await axios.get('/api/products/promo/list', { withCredentials: true });
       setPromoCodes(response.data);
     } catch (error) {
       console.error('Error fetching promo codes:', error);
@@ -741,11 +741,9 @@ const AdminDashboard = () => {
 
       // إضافة إشعار للعميل في localStorage
       const statusMessages = {
-        pending: '⏳ طلبك قيد المراجعة',
         processing: '📦 جاري تجهيز طلبك',
         shipped: '🚚 طلبك في الطريق إليك',
-        delivered: '🎉 تم توصيل طلبك بنجاح',
-        cancelled: '❌ تم إلغاء طلبك'
+        delivered: '🎉 تم توصيل طلبك بنجاح'
       };
       
       const orderNotifications = JSON.parse(localStorage.getItem(`order-${orderId}-notifications`) || '[]');
@@ -1720,11 +1718,9 @@ const AdminDashboard = () => {
                           onChange={(e) => handleOrderStatusUpdate(order._id, e.target.value)}
                           className="input-field max-w-xs"
                         >
-                          <option value="pending">Pending</option>
                           <option value="processing">Processing</option>
                           <option value="shipped">Shipped</option>
                           <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
                         </select>
                       </div>
 
@@ -1777,7 +1773,7 @@ const AdminDashboard = () => {
                 <form onSubmit={async (e) => {
                   e.preventDefault();
                   try {
-                    const response = await axios.post('/api/promo', promoForm, { withCredentials: true });
+                    const response = await axios.post('/api/products/promo/create', promoForm, { withCredentials: true });
                     Swal.fire({
                       icon: 'success',
                       title: 'Promo Code Created!',
@@ -1895,7 +1891,7 @@ const AdminDashboard = () => {
 
                               if (result.isConfirmed) {
                                 try {
-                                  await axios.delete('/api/promo', {
+                                  await axios.delete('/api/products/promo/delete', {
                                     data: { code: promo.code },
                                     withCredentials: true
                                   });

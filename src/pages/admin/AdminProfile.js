@@ -7,7 +7,7 @@ const AdminProfile = () => {
     totalOrders: 0,
     totalRevenue: 0,
     totalPromoCodes: 0,
-    pendingOrders: 0,
+    processingOrders: 0,
     deliveredOrders: 0
   });
   const [loading, setLoading] = useState(true);
@@ -34,7 +34,7 @@ const AdminProfile = () => {
 
       // Calculate stats
       const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
-      const pendingOrders = orders.filter(o => o.status === 'pending').length;
+      const processingOrders = orders.filter(o => o.status === 'processing').length;
       const deliveredOrders = orders.filter(o => o.status === 'delivered').length;
 
       setStats({
@@ -42,7 +42,7 @@ const AdminProfile = () => {
         totalOrders: orders.length,
         totalRevenue,
         totalPromoCodes: promoCodes.length,
-        pendingOrders,
+        processingOrders,
         deliveredOrders
       });
     } catch (error) {
@@ -102,7 +102,7 @@ const AdminProfile = () => {
           icon="🛍️"
           title="Total Orders"
           value={stats.totalOrders}
-          subtitle={`${stats.pendingOrders} pending`}
+          subtitle={`${stats.processingOrders} processing`}
           color="green"
         />
 
@@ -122,8 +122,8 @@ const AdminProfile = () => {
 
         <StatCard
           icon="⏳"
-          title="Pending Orders"
-          value={stats.pendingOrders}
+          title="Processing Orders"
+          value={stats.processingOrders}
           color="red"
         />
 
@@ -167,8 +167,8 @@ const AdminProfile = () => {
             <div className="text-sm opacity-90">Orders</div>
           </div>
           <div>
-            <div className="text-3xl font-bold">{stats.pendingOrders}</div>
-            <div className="text-sm opacity-90">Pending</div>
+            <div className="text-3xl font-bold">{stats.processingOrders}</div>
+            <div className="text-sm opacity-90">Processing</div>
           </div>
           <div>
             <div className="text-3xl font-bold">{stats.totalPromoCodes}</div>
