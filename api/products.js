@@ -58,12 +58,89 @@ module.exports = async function handler(req, res) {
   const urlParts = req.url.split('/');
   const productId = req.params?.id || (urlParts.length > 3 ? urlParts[3].split('?')[0] : null);
   const isSoldOutEndpoint = req.url.includes('/soldout');
+  
+  // Check if this is a promo endpoint
+  const isPromoEndpoint = req.url.includes('/promo/');
 
-  console.log('🔍 Products API called:', req.method, req.url, 'ProductID:', productId);
+  console.log('🔍 Products API called:', req.method, req.url, 'ProductID:', productId, 'IsPromo:', isPromoEndpoint);
 
   try {
+    // ==================== PROMO CODES ENDPOINTS ====================
+    
+    // GET /api/products/promo/list - Get all promo codes (admin only)
+    if (req.method === 'GET' && isPromoEndpoint && req.url.includes('/list')) {
+      return requireAuth(req, res, async () => {
+        const promoCodes = await db.collection('promoCodes').find({}).sort({ createdAt: -1 }).toArray();
+        return res.status(200).json(promoCodes);
+      });
+    }
+
+    // POST /api/products/promo/create - Create promo code (admin only)
+    if (req.method === 'POST' && isPromoEndpoint && req.url.includes('/create')) {
+      return requireAuth(req, res, async () => {
+        const { discount, maxUses, expiryDays } = req.body;
+
+        if (!discount || !maxUses || !expiryDays) {
+          return res.status(400).json({ message: 'All fields required' });
+        }
+
+        const code = 'ZT' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + parseInt(expiryDays));
+
+        const promoCode = {
+          code,
+          discount: parseInt(discount),
+          maxUses: parseInt(maxUses),
+          currentUses: 0,
+          expiryDate,
+          active: true,
+          createdAt: new Date()
+        };
+
+        await db.collection('promoCodes').insertOne(promoCode);
+        return res.status(201).json({ message: 'Success', promoCode });
+      });
+    }
+
+    // POST /api/products/promo/validate - Validate promo code (public)
+    if (req.method === 'POST' && isPromoEndpoint && req.url.includes('/validate')) {
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: 'Code required' });
+      }
+
+      const promoCode = await db.collection('promoCodes').findOne({ code: code.toUpperCase() });
+      if (!promoCode) {
+        return res.status(404).json({ message: 'Invalid code' });
+      }
+
+      if (!promoCode.active || new Date() > new Date(promoCode.expiryDate) || promoCode.currentUses >= promoCode.maxUses) {
+        return res.status(400).json({ message: 'Code expired or used up' });
+      }
+
+      return res.status(200).json({ valid: true, discount: promoCode.discount, code: promoCode.code });
+    }
+
+    // DELETE /api/products/promo/delete - Delete promo code (admin only)
+    if (req.method === 'DELETE' && isPromoEndpoint && req.url.includes('/delete')) {
+      return requireAuth(req, res, async () => {
+        const { code } = req.body;
+        if (!code) {
+          return res.status(400).json({ message: 'Code required' });
+        }
+
+        const result = await db.collection('promoCodes').deleteOne({ code: code.toUpperCase() });
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: 'Code not found' });
+        }
+
+        return res.status(200).json({ message: 'Deleted' });
+      });
+    }
+    
     // GET /api/products - Get all products
-    if (req.method === 'GET' && !productId) {
+    if (req.method === 'GET' && !productId && !isPromoEndpoint) {
       const limit = req.query?.limit ? parseInt(req.query.limit) : undefined;
       const random = req.query?.random === 'true';
       const excludeId = req.query?.exclude;
@@ -650,80 +727,6 @@ module.exports = async function handler(req, res) {
         reviews: reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
         averageRating: product.averageRating || 0,
         reviewCount: reviews.length
-      });
-    }
-
-    // ==================== PROMO CODES ENDPOINTS ====================
-    
-    // GET /api/products/promo/list - Get all promo codes (admin only)
-    if (req.method === 'GET' && req.url.includes('/promo/list')) {
-      return requireAuth(req, res, async () => {
-        const promoCodes = await db.collection('promoCodes').find({}).sort({ createdAt: -1 }).toArray();
-        return res.status(200).json(promoCodes);
-      });
-    }
-
-    // POST /api/products/promo/create - Create promo code (admin only)
-    if (req.method === 'POST' && req.url.includes('/promo/create')) {
-      return requireAuth(req, res, async () => {
-        const { discount, maxUses, expiryDays } = req.body;
-
-        if (!discount || !maxUses || !expiryDays) {
-          return res.status(400).json({ message: 'All fields required' });
-        }
-
-        const code = 'ZT' + Math.random().toString(36).substring(2, 8).toUpperCase();
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + parseInt(expiryDays));
-
-        const promoCode = {
-          code,
-          discount: parseInt(discount),
-          maxUses: parseInt(maxUses),
-          currentUses: 0,
-          expiryDate,
-          active: true,
-          createdAt: new Date()
-        };
-
-        await db.collection('promoCodes').insertOne(promoCode);
-        return res.status(201).json({ message: 'Success', promoCode });
-      });
-    }
-
-    // POST /api/products/promo/validate - Validate promo code (public)
-    if (req.method === 'POST' && req.url.includes('/promo/validate')) {
-      const { code } = req.body;
-      if (!code) {
-        return res.status(400).json({ message: 'Code required' });
-      }
-
-      const promoCode = await db.collection('promoCodes').findOne({ code: code.toUpperCase() });
-      if (!promoCode) {
-        return res.status(404).json({ message: 'Invalid code' });
-      }
-
-      if (!promoCode.active || new Date() > new Date(promoCode.expiryDate) || promoCode.currentUses >= promoCode.maxUses) {
-        return res.status(400).json({ message: 'Code expired or used up' });
-      }
-
-      return res.status(200).json({ valid: true, discount: promoCode.discount, code: promoCode.code });
-    }
-
-    // DELETE /api/products/promo/delete - Delete promo code (admin only)
-    if (req.method === 'DELETE' && req.url.includes('/promo/delete')) {
-      return requireAuth(req, res, async () => {
-        const { code } = req.body;
-        if (!code) {
-          return res.status(400).json({ message: 'Code required' });
-        }
-
-        const result = await db.collection('promoCodes').deleteOne({ code: code.toUpperCase() });
-        if (result.deletedCount === 0) {
-          return res.status(404).json({ message: 'Code not found' });
-        }
-
-        return res.status(200).json({ message: 'Deleted' });
       });
     }
 
