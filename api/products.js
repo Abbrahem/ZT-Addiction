@@ -225,6 +225,30 @@ module.exports = async function handler(req, res) {
 
         const result = await db.collection('products').insertOne(product);
         
+        // إرسال إيميل للعملاء السابقين عن المنتج الجديد
+        try {
+          const { sendNewProductEmail } = require('./utils/email');
+          
+          // جلب كل الإيميلات من الأوردرات السابقة
+          const orders = await db.collection('orders').find({
+            'customer.email': { $exists: true, $ne: null, $ne: '' }
+          }).toArray();
+          
+          // استخراج الإيميلات الفريدة
+          const uniqueEmails = [...new Set(orders.map(o => o.customer.email.toLowerCase()))];
+          
+          console.log(`📧 Sending new product emails to ${uniqueEmails.length} customers from orders`);
+          
+          // إرسال الإيميلات (بدون انتظار عشان ما نأخر الـ response)
+          const productWithId = { ...product, _id: result.insertedId };
+          uniqueEmails.forEach(email => {
+            sendNewProductEmail(email, productWithId)
+              .catch(err => console.error(`Failed to send to ${email}:`, err.message));
+          });
+        } catch (error) {
+          console.error('⚠️ Error sending new product emails:', error.message);
+        }
+        
         // Send notification to all users about new product via notification service
         const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL;
         const NOTIFICATION_API_KEY = process.env.NOTIFICATION_API_KEY;
@@ -626,6 +650,80 @@ module.exports = async function handler(req, res) {
         reviews: reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
         averageRating: product.averageRating || 0,
         reviewCount: reviews.length
+      });
+    }
+
+    // ==================== PROMO CODES ENDPOINTS ====================
+    
+    // GET /api/products/promo/list - Get all promo codes (admin only)
+    if (req.method === 'GET' && req.url.includes('/promo/list')) {
+      return requireAuth(req, res, async () => {
+        const promoCodes = await db.collection('promoCodes').find({}).sort({ createdAt: -1 }).toArray();
+        return res.status(200).json(promoCodes);
+      });
+    }
+
+    // POST /api/products/promo/create - Create promo code (admin only)
+    if (req.method === 'POST' && req.url.includes('/promo/create')) {
+      return requireAuth(req, res, async () => {
+        const { discount, maxUses, expiryDays } = req.body;
+
+        if (!discount || !maxUses || !expiryDays) {
+          return res.status(400).json({ message: 'All fields required' });
+        }
+
+        const code = 'ZT' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + parseInt(expiryDays));
+
+        const promoCode = {
+          code,
+          discount: parseInt(discount),
+          maxUses: parseInt(maxUses),
+          currentUses: 0,
+          expiryDate,
+          active: true,
+          createdAt: new Date()
+        };
+
+        await db.collection('promoCodes').insertOne(promoCode);
+        return res.status(201).json({ message: 'Success', promoCode });
+      });
+    }
+
+    // POST /api/products/promo/validate - Validate promo code (public)
+    if (req.method === 'POST' && req.url.includes('/promo/validate')) {
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: 'Code required' });
+      }
+
+      const promoCode = await db.collection('promoCodes').findOne({ code: code.toUpperCase() });
+      if (!promoCode) {
+        return res.status(404).json({ message: 'Invalid code' });
+      }
+
+      if (!promoCode.active || new Date() > new Date(promoCode.expiryDate) || promoCode.currentUses >= promoCode.maxUses) {
+        return res.status(400).json({ message: 'Code expired or used up' });
+      }
+
+      return res.status(200).json({ valid: true, discount: promoCode.discount, code: promoCode.code });
+    }
+
+    // DELETE /api/products/promo/delete - Delete promo code (admin only)
+    if (req.method === 'DELETE' && req.url.includes('/promo/delete')) {
+      return requireAuth(req, res, async () => {
+        const { code } = req.body;
+        if (!code) {
+          return res.status(400).json({ message: 'Code required' });
+        }
+
+        const result = await db.collection('promoCodes').deleteOne({ code: code.toUpperCase() });
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: 'Code not found' });
+        }
+
+        return res.status(200).json({ message: 'Deleted' });
       });
     }
 

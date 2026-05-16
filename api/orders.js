@@ -334,8 +334,8 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ message: 'Customer, items, and total are required' });
       }
 
-      if (!customer.name || !customer.address || !customer.phone1) {
-        return res.status(400).json({ message: 'Customer name, address, and phone1 are required' });
+      if (!customer.name || !customer.email || !customer.address || !customer.phone1) {
+        return res.status(400).json({ message: 'Customer name, email, address, and phone1 are required' });
       }
 
       if (!Array.isArray(items) || items.length === 0) {
@@ -347,8 +347,8 @@ module.exports = async function handler(req, res) {
         items,
         total: parseFloat(total),
         shippingFee: parseFloat(shippingFee) || 0,
-        status: 'pending',
-        customerToken: customerToken || null, // Save customer FCM token
+        status: 'processing',
+        customerToken: customerToken || null,
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -381,10 +381,23 @@ module.exports = async function handler(req, res) {
       console.log('📦 Order created with ID:', result.insertedId);
       console.log('🔔 Attempting to send notifications...');
       
-      // Get the complete order with ID for Telegram
+      // Get the complete order with ID
       const completeOrder = { ...order, _id: result.insertedId };
       
-      // إرسال إشعار Telegram (أولوية أولى - الأضمن)
+      // إرسال إيميل تأكيد للعميل
+      if (customer.email) {
+        try {
+          const { sendOrderConfirmationEmail } = require('./utils/email');
+          const emailResult = await sendOrderConfirmationEmail(completeOrder);
+          if (emailResult.success) {
+            console.log('✅ Confirmation email sent to customer');
+          }
+        } catch (error) {
+          console.error('⚠️ Email notification failed:', error.message);
+        }
+      }
+      
+      // إرسال إشعار Telegram للأدمن
       try {
         const { sendNewOrderNotification } = require('./utils/telegram');
         const telegramResult = await sendNewOrderNotification(completeOrder);
@@ -392,10 +405,10 @@ module.exports = async function handler(req, res) {
           console.log('✅ Telegram notification sent successfully');
         }
       } catch (error) {
-        console.error('⚠️ Telegram notification failed (but order created):', error.message);
+        console.error('⚠️ Telegram notification failed:', error.message);
       }
       
-      // إرسال إشعار Firebase Admin (احتياطي)
+      // إرسال إشعار Firebase للأدمن
       sendNotificationToAdmins(
         '🛍️ طلب جديد!',
         `طلب من ${customer.name} - ${total} جنيه`,
@@ -432,9 +445,9 @@ module.exports = async function handler(req, res) {
           return res.status(400).json({ message: 'Status is required' });
         }
 
-        const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        const validStatuses = ['processing', 'shipped', 'delivered'];
         if (!validStatuses.includes(status)) {
-          return res.status(400).json({ message: 'Invalid status' });
+          return res.status(400).json({ message: 'Invalid status. Use: processing, shipped, or delivered' });
         }
 
         let result;
@@ -454,7 +467,7 @@ module.exports = async function handler(req, res) {
           return res.status(404).json({ message: 'Order not found' });
         }
 
-        // جلب الطلب عشان نشوف لو في customerToken
+        // جلب الطلب
         let order;
         try {
           order = await db.collection('orders').findOne({ _id: new ObjectId(targetOrderId) });
@@ -462,15 +475,25 @@ module.exports = async function handler(req, res) {
           order = await db.collection('orders').findOne({ _id: targetOrderId });
         }
 
-        // إرسال إشعار للعميل لو عنده token
+        // إرسال إيميل للعميل
+        if (order && order.customer && order.customer.email) {
+          try {
+            const { sendOrderStatusEmail } = require('./utils/email');
+            const emailResult = await sendOrderStatusEmail(order, status);
+            if (emailResult.success) {
+              console.log('✅ Status email sent to customer');
+            }
+          } catch (error) {
+            console.error('⚠️ Status email failed:', error.message);
+          }
+        }
+
+        // إرسال إشعار Firebase للعميل
         if (order && order.customerToken) {
           const statusMessages = {
-            pending: '⏳ طلبك قيد المراجعة',
-            confirmed: '✅ تم تأكيد طلبك',
             processing: '📦 جاري تجهيز طلبك',
             shipped: '🚚 طلبك في الطريق إليك',
-            delivered: '🎉 تم توصيل طلبك بنجاح',
-            cancelled: '❌ تم إلغاء طلبك'
+            delivered: '🎉 تم توصيل طلبك بنجاح'
           };
 
           sendNotificationToToken(
