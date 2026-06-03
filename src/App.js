@@ -9,6 +9,7 @@ import Products from './pages/Products';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
+import PaymentSuccess from './pages/PaymentSuccess';
 import Category from './pages/Category';
 import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
@@ -18,6 +19,12 @@ import MyOrders from './pages/MyOrders';
 import Settings from './pages/Settings';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AboutUs from './pages/AboutUs';
+import ContactUs from './pages/ContactUs';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import RefundPolicy from './pages/RefundPolicy';
+import ShippingPolicy from './pages/ShippingPolicy';
+import Address from './pages/Address';
 import { requestFCMToken } from './firebase-config';
 import Swal from 'sweetalert2';
 import axios from 'axios';
@@ -158,11 +165,18 @@ function App() {
                     <Route path="/category/:category" element={<Category />} />
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/checkout/success" element={<PaymentSuccess />} />
                     <Route path="/order-tracking" element={<OrderTracking />} />
                     <Route path="/wishlist" element={<Wishlist />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/my-orders" element={<MyOrders />} />
                     <Route path="/settings" element={<Settings />} />
+                    <Route path="/about" element={<AboutUs />} />
+                    <Route path="/contact" element={<ContactUs />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                    <Route path="/refund-policy" element={<RefundPolicy />} />
+                    <Route path="/shipping-policy" element={<ShippingPolicy />} />
+                    <Route path="/address" element={<Address />} />
                   </Routes>
                   <BottomNav />
                 </>
