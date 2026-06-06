@@ -23,6 +23,16 @@ const ProductDetail = () => {
   const [otherProducts, setOtherProducts] = useState([]);
   const [recentlyViewed, setRecentlyViewed] = useState([]);
   
+  // Product info tabs
+  const [activeTab, setActiveTab] = useState('notes'); // notes, season, info
+  const tabsContainerRef = React.useRef(null);
+  
+  // Live viewers & cart tracking
+  const [currentViewers, setCurrentViewers] = useState(0);
+  const [inCarts, setInCarts] = useState(0);
+  const [showViewers, setShowViewers] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
   // Bundle specific states
   const [selectedBundleSize1, setSelectedBundleSize1] = useState('');
   const [selectedBundleSize2, setSelectedBundleSize2] = useState('');
@@ -63,7 +73,39 @@ const ProductDetail = () => {
     fetchProduct();
     fetchOtherProducts();
     loadRecentlyViewed();
+    
+    // Initialize random numbers (avoiding 0)
+    setCurrentViewers(Math.floor(Math.random() * 30) + 2); // 2-31
+    setInCarts(Math.floor(Math.random() * 7) + 3); // 3-9
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Toggle between viewers and cart messages every 5 seconds
+  useEffect(() => {
+    const messageInterval = setInterval(() => {
+      setShowViewers(prev => !prev);
+    }, 5000);
+    
+    return () => clearInterval(messageInterval);
+  }, []);
+  
+  // Update numbers randomly every 5 seconds (simulating real-time changes)
+  useEffect(() => {
+    const numberInterval = setInterval(() => {
+      setCurrentViewers(prev => {
+        const change = Math.random() > 0.5 ? 1 : -1;
+        const newValue = prev + change;
+        return Math.max(2, Math.min(50, newValue)); // Keep between 2-50
+      });
+      
+      setInCarts(prev => {
+        const change = Math.random() > 0.5 ? 1 : -1;
+        const newValue = prev + change;
+        return Math.max(3, Math.min(20, newValue)); // Keep between 3-20
+      });
+    }, 5000);
+    
+    return () => clearInterval(numberInterval);
+  }, []);
 
   // Save to recently viewed after product is loaded
   useEffect(() => {
@@ -416,32 +458,78 @@ const ProductDetail = () => {
     </div>
   );
 
+  const nextImage = () => {
+    if (product?.images?.length > 1) {
+      setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+    }
+  };
+
+  const prevImage = () => {
+    if (product?.images?.length > 1) {
+      setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-beige-50 py-24">
+    <div className="min-h-screen bg-beige-50 py-20">
       <div className="max-w-6xl mx-auto px-6">
-        {/* Image Carousel */}
-        <div className="mb-8">
-          <div className="relative overflow-x-auto scrollbar-hide" style={{ height: '60vh' }}>
-            <div className="flex space-x-4 h-full">
-              {product.images && product.images.length > 0 ? (
-                product.images.map((image, index) => (
-                  <div key={index} className="flex-shrink-0 h-full" style={{ width: '80vw', maxWidth: '600px' }}>
-                    <img
-                      src={`/api/images/${image}`}
-                      alt={`${product.name} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
-                      }}
-                    />
-                  </div>
-                ))
-              ) : (
-                <div className="flex-shrink-0 h-full bg-gray-200" style={{ width: '80vw', maxWidth: '600px' }}>
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">No Image</div>
-                </div>
-              )}
-            </div>
+        {/* Image Carousel with Navigation Arrows */}
+        <div className="mb-6">
+          <div className="relative" style={{ height: '60vh' }}>
+            {product.images && product.images.length > 0 ? (
+              <>
+                <img
+                  src={`/api/images/${product.images[currentImageIndex]}`}
+                  alt={`${product.name} ${currentImageIndex + 1}`}
+                  className="w-full h-full object-cover rounded-lg"
+                  onError={(e) => {
+                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg==';
+                  }}
+                />
+                
+                {/* Navigation Arrows (show only if multiple images) */}
+                {product.images.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg transition-all z-10"
+                      aria-label="Previous image"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg transition-all z-10"
+                      aria-label="Next image"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                    
+                    {/* Image indicators */}
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+                      {product.images.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setCurrentImageIndex(idx)}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            idx === currentImageIndex ? 'bg-white w-6' : 'bg-white/60'
+                          }`}
+                          aria-label={`Go to image ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="w-full h-full bg-gray-200 rounded-lg flex items-center justify-center text-gray-400">
+                No Image
+              </div>
+            )}
           </div>
         </div>
 
@@ -449,6 +537,20 @@ const ProductDetail = () => {
         <div className="space-y-6">
           <h1 className="text-3xl font-playfair text-black">{product.name}</h1>
           <p className="text-2xl font-montserrat font-semibold text-black">{currentPrice} EGP</p>
+          
+          {/* Live Activity Messages */}
+          <div className="relative h-6 overflow-hidden">
+            <div className={`absolute w-full transition-all duration-500 ${showViewers ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'}`}>
+              <p className="text-sm font-montserrat text-gray-700">
+                <span className="font-bold text-black">{currentViewers}</span> people are viewing this right now
+              </p>
+            </div>
+            <div className={`absolute w-full transition-all duration-500 ${!showViewers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'}`}>
+              <p className="text-sm font-montserrat text-gray-700">
+                Hurry! over <span className="font-bold text-black">{inCarts}</span> people have this in their carts
+              </p>
+            </div>
+          </div>
 
           <hr className="border-beige-300" />
 
@@ -664,7 +766,7 @@ const ProductDetail = () => {
                           : selectedSize === sizeData.size
                             ? 'bg-black text-white'
                             : 'bg-white text-black hover:bg-beige-100'
-                      }`}
+                      } rounded-lg`}
                     >
                       <div className={sizeData.soldOut ? 'line-through' : ''}>{sizeData.size}</div>
                       <div className={`text-sm ${sizeData.soldOut ? 'line-through' : ''}`}>{sizeData.price} EGP</div>
@@ -677,7 +779,7 @@ const ProductDetail = () => {
               ) : (
                 // Fallback for old products
                 product.sizes.length === 1 ? (
-                  <div className="w-full bg-black text-white px-6 py-4 text-center font-montserrat">
+                  <div className="w-full bg-black text-white px-6 py-4 text-center font-montserrat rounded-lg">
                     {product.sizes[0]}
                   </div>
                 ) : (
@@ -686,7 +788,7 @@ const ProductDetail = () => {
                       <button
                         key={size}
                         onClick={() => handleSizeChange(size)}
-                        className={`px-6 py-4 font-montserrat transition-all ${
+                        className={`px-6 py-4 font-montserrat transition-all rounded-lg ${
                           selectedSize === size
                             ? 'bg-black text-white'
                             : 'bg-white text-black hover:bg-beige-100'
@@ -728,7 +830,7 @@ const ProductDetail = () => {
           {product.soldOut ? (
             <button
               disabled
-              className="w-full bg-gray-400 text-white px-6 py-4 font-montserrat cursor-not-allowed text-lg font-semibold"
+              className="w-full bg-gray-400 text-white px-6 py-4 font-montserrat cursor-not-allowed text-lg font-semibold rounded-lg"
             >
               SOLD OUT
             </button>
@@ -738,15 +840,15 @@ const ProductDetail = () => {
                 <button
                   onClick={handleAddToCart}
                   style={{ width: '70%' }}
-                  className="bg-black text-white px-4 sm:px-6 py-4 font-montserrat hover:bg-gray-800 transition-all text-sm sm:text-base"
+                  className="bg-black text-white px-4 sm:px-6 py-4 font-montserrat hover:bg-gray-800 transition-all text-sm sm:text-base rounded-lg"
                 >
                   Add to Cart
                 </button>
-                <div className="flex items-center bg-white border border-gray-300" style={{ width: '30%' }}>
+                <div className="flex items-center bg-white border border-gray-300 rounded-lg" style={{ width: '30%' }}>
                   <button
                     onClick={() => updateQuantity(-1)}
                     disabled={quantity <= 1}
-                    className="flex-1 py-4 hover:bg-beige-100 disabled:opacity-50 font-montserrat text-lg"
+                    className="flex-1 py-4 hover:bg-beige-100 disabled:opacity-50 font-montserrat text-lg rounded-l-lg"
                   >
                     -
                   </button>
@@ -754,7 +856,7 @@ const ProductDetail = () => {
                   <button
                     onClick={() => updateQuantity(1)}
                     disabled={quantity >= 10}
-                    className="flex-1 py-4 hover:bg-beige-100 disabled:opacity-50 font-montserrat text-lg"
+                    className="flex-1 py-4 hover:bg-beige-100 disabled:opacity-50 font-montserrat text-lg rounded-r-lg"
                   >
                     +
                   </button>
@@ -764,7 +866,7 @@ const ProductDetail = () => {
               {/* Buy Now Button */}
               <button
                 onClick={handleBuyNow}
-                className="w-full bg-black text-white px-6 py-4 font-montserrat hover:bg-gray-800 transition-all"
+                className="w-full bg-black text-white px-6 py-4 font-montserrat hover:bg-gray-800 transition-all rounded-lg"
               >
                 Buy it now
               </button>
@@ -772,7 +874,7 @@ const ProductDetail = () => {
               {/* Wishlist Button */}
               <button
                 onClick={handleToggleWishlist}
-                className={`w-full flex items-center justify-center gap-2 px-6 py-4 font-montserrat transition-all border-2 ${
+                className={`w-full flex items-center justify-center gap-2 px-6 py-4 font-montserrat transition-all border-2 rounded-lg ${
                   isInWishlist(product._id)
                     ? 'bg-red-50 border-red-500 text-red-500'
                     : 'bg-white border-gray-300 text-black hover:border-black'
@@ -809,6 +911,113 @@ const ProductDetail = () => {
                 {product.description || 'No description available.'}
               </div>
             )}
+          </div>
+          
+          <hr className="border-beige-300" />
+          
+          {/* Product Info Tabs */}
+          <div className="mt-6">
+            {/* Tab Headers with Navigation Arrows */}
+            <div className="relative flex items-center mb-4">
+              {/* Left Arrow - Scrolls tabs left */}
+              <button
+                onClick={() => {
+                  if (tabsContainerRef.current) {
+                    tabsContainerRef.current.scrollBy({ left: -100, behavior: 'smooth' });
+                  }
+                }}
+                className="p-1 rounded-lg transition-all flex-shrink-0 hover:bg-gray-100"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              
+              {/* Tabs - Scrollable */}
+              <div 
+                ref={tabsContainerRef}
+                className="flex-1 flex justify-start gap-0.5 overflow-x-auto scrollbar-hide px-1 scroll-smooth"
+              >
+                <button
+                  onClick={() => setActiveTab('notes')}
+                  className={`px-2 py-1.5 font-montserrat text-xs whitespace-nowrap transition-all relative ${
+                    activeTab === 'notes' ? 'text-black font-semibold' : 'text-gray-500'
+                  }`}
+                >
+                  Fragrance Notes
+                  {activeTab === 'notes' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('season')}
+                  className={`px-2 py-1.5 font-montserrat text-xs whitespace-nowrap transition-all relative ${
+                    activeTab === 'season' ? 'text-black font-semibold' : 'text-gray-500'
+                  }`}
+                >
+                  Fragrance Season
+                  {activeTab === 'season' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('info')}
+                  className={`px-2 py-1.5 font-montserrat text-xs whitespace-nowrap transition-all relative ${
+                    activeTab === 'info' ? 'text-black font-semibold' : 'text-gray-500'
+                  }`}
+                >
+                  Additional Info
+                  {activeTab === 'info' && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black"></div>
+                  )}
+                </button>
+              </div>
+              
+              {/* Right Arrow - Scrolls tabs right */}
+              <button
+                onClick={() => {
+                  if (tabsContainerRef.current) {
+                    tabsContainerRef.current.scrollBy({ left: 100, behavior: 'smooth' });
+                  }
+                }}
+                className="p-1 rounded-lg transition-all flex-shrink-0 hover:bg-gray-100"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Tab Content - Smaller text */}
+            <div className="bg-gray-50 rounded-lg p-4 min-h-[120px]">
+              {activeTab === 'notes' && (
+                <div className="font-montserrat text-sm text-gray-700 leading-relaxed">
+                  {product.fragranceNotes || 'No fragrance notes available.'}
+                </div>
+              )}
+              
+              {activeTab === 'season' && (
+                <div className="font-montserrat text-sm text-gray-700 leading-relaxed">
+                  {product.fragranceSeason || 'No season information available.'}
+                </div>
+              )}
+              
+              {activeTab === 'info' && (
+                <div className="flex justify-center">
+                  <img 
+                    src="/additional-info.jpg" 
+                    alt="Additional Information" 
+                    className="max-w-full h-auto rounded-lg"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = '<p class="text-gray-500 font-montserrat text-sm">No additional information image available.</p>';
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -11,6 +11,8 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import PaymentSuccess from './pages/PaymentSuccess';
 import Category from './pages/Category';
+import BundleCategory from './pages/BundleCategory';
+import BundleSubcategory from './pages/BundleSubcategory';
 import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
 import Notifications from './pages/Notifications';
@@ -162,6 +164,8 @@ function App() {
                     {/* PerfumeQuiz route removed */}
                     <Route path="/products" element={<Products />} />
                     <Route path="/products/:id" element={<ProductDetail />} />
+                    <Route path="/category/bundles" element={<BundleCategory />} />
+                    <Route path="/category/bundles/:subcategory" element={<BundleSubcategory />} />
                     <Route path="/category/:category" element={<Category />} />
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/checkout" element={<Checkout />} />

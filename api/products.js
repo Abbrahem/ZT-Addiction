@@ -144,8 +144,16 @@ module.exports = async function handler(req, res) {
       const limit = req.query?.limit ? parseInt(req.query.limit) : undefined;
       const random = req.query?.random === 'true';
       const excludeId = req.query?.exclude;
+      const bundleSubcategory = req.query?.bundleSubcategory;
 
-      let products = await db.collection('products').find({}).toArray();
+      let query = {};
+      
+      // Filter by bundleSubcategory if provided
+      if (bundleSubcategory) {
+        query.bundleSubcategory = bundleSubcategory;
+      }
+
+      let products = await db.collection('products').find(query).toArray();
 
       // Exclude specific product if requested
       if (excludeId) {
@@ -184,9 +192,26 @@ module.exports = async function handler(req, res) {
     // POST /api/products - Create new product
     if (req.method === 'POST' && !productId) {
       return requireAuth(req, res, async () => {
-        const { name, description, collection, images, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2, bundlePerfume3, bundlePerfume4 } = req.body;
+        const { 
+          name, 
+          description, 
+          fragranceNotes, 
+          fragranceSeason, 
+          collection, 
+          subcategory, 
+          bundleSubcategory,
+          gender,
+          images, 
+          sizesWithPrices, 
+          priceEGP, 
+          size, 
+          bundlePerfume1, 
+          bundlePerfume2, 
+          bundlePerfume3, 
+          bundlePerfume4 
+        } = req.body;
         
-        console.log('📦 Creating product with data:', { name, collection, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2, bundlePerfume3, bundlePerfume4 });
+        console.log('📦 Creating product with data:', { name, collection, subcategory, bundleSubcategory, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2, bundlePerfume3, bundlePerfume4 });
 
         if (!name || !collection) {
           console.log('❌ Missing name or collection');
@@ -223,12 +248,29 @@ module.exports = async function handler(req, res) {
         const product = {
           name,
           description: description || '',
+          fragranceNotes: fragranceNotes || '',
+          fragranceSeason: fragranceSeason || '',
           collection,
           images: images || [],
           soldOut: false,
           createdAt: new Date(),
           updatedAt: new Date()
         };
+        
+        // Add subcategory for Bottles
+        if (collection === 'Bottles' && subcategory) {
+          product.subcategory = subcategory;
+        }
+        
+        // Add bundleSubcategory for Bundles
+        if (collection === 'Bundles' && bundleSubcategory) {
+          product.bundleSubcategory = bundleSubcategory;
+        }
+        
+        // Add gender if provided
+        if (gender) {
+          product.gender = gender;
+        }
 
         // Handle bundle products
         if (isBundle) {

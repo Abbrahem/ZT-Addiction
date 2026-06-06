@@ -19,6 +19,14 @@ const Products = () => {
   const [selectedBundleSize4, setSelectedBundleSize4] = useState('');
   const [activePerfume, setActivePerfume] = useState(1);
   const { addToCart } = useCart();
+  
+  // Sort and Filter states
+  const [sortBy, setSortBy] = useState('default');
+  const [showFilters, setShowFilters] = useState(false);
+  const [showInStock, setShowInStock] = useState(true);
+  const [showOutOfStock, setShowOutOfStock] = useState(true);
+  const [priceRange, setPriceRange] = useState([0, 25000]);
+  const [tempPriceRange, setTempPriceRange] = useState([0, 25000]);
 
   // Helper functions for sold out handling
   const hasAvailableSizes = (perfume) => {
@@ -42,7 +50,7 @@ const Products = () => {
 
   useEffect(() => {
     filterProducts();
-  }, [products, selectedCollection]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [products, selectedCollection, sortBy, showInStock, showOutOfStock, priceRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchProducts = async () => {
     try {
@@ -60,12 +68,62 @@ const Products = () => {
 
   const filterProducts = () => {
     let filtered = products;
+    
+    // Filter by collection
     if (selectedCollection !== 'all') {
       filtered = filtered.filter(product =>
         product.collection?.toLowerCase() === selectedCollection.toLowerCase()
       );
     }
+    
+    // Filter by availability
+    if (!showInStock || !showOutOfStock) {
+      filtered = filtered.filter(product => {
+        if (showInStock && !showOutOfStock) return !product.soldOut;
+        if (!showInStock && showOutOfStock) return product.soldOut;
+        return true;
+      });
+    }
+    
+    // Filter by price range
+    filtered = filtered.filter(product => {
+      const price = product.sizesWithPrices?.[0]?.price || product.priceEGP || 0;
+      return price >= priceRange[0] && price <= priceRange[1];
+    });
+    
+    // Apply sorting
+    filtered = [...filtered].sort((a, b) => {
+      const priceA = a.sizesWithPrices?.[0]?.price || a.priceEGP || 0;
+      const priceB = b.sizesWithPrices?.[0]?.price || b.priceEGP || 0;
+      
+      switch (sortBy) {
+        case 'popularity':
+          return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
+        case 'rating':
+          return (b.averageRating || 0) - (a.averageRating || 0);
+        case 'latest':
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        case 'price-asc':
+          return priceA - priceB;
+        case 'price-desc':
+          return priceB - priceA;
+        default:
+          return 0;
+      }
+    });
+    
     setFilteredProducts(filtered);
+  };
+  
+  const applyFilters = () => {
+    setPriceRange(tempPriceRange);
+    setShowFilters(false);
+  };
+  
+  const getStockCounts = () => {
+    const inStock = products.filter(p => !p.soldOut).length;
+    const outOfStock = products.filter(p => p.soldOut).length;
+    return { inStock, outOfStock };
   };
 
   const collections = ['all', ...new Set(products.map(p => p.collection).filter(Boolean))];
@@ -206,12 +264,12 @@ const Products = () => {
       <div className="max-w-7xl mx-auto px-6">
         <h1 className="text-4xl font-playfair text-center mb-12 text-black">All Products</h1>
 
-        <div className="mb-12 max-w-3xl mx-auto">
+        <div className="mb-8 max-w-3xl mx-auto">
           <label className="block text-sm font-medium mb-3 font-montserrat text-center">Filter by Collection</label>
           <select
             value={selectedCollection}
             onChange={(e) => setSelectedCollection(e.target.value)}
-            className="w-full px-6 py-4 bg-white text-black border border-gray-300 focus:ring-2 focus:ring-black focus:outline-none font-montserrat"
+            className="w-full px-6 py-4 bg-white text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:outline-none font-montserrat"
           >
             {collections.map((collection) => (
               <option key={collection} value={collection}>
@@ -219,6 +277,39 @@ const Products = () => {
               </option>
             ))}
           </select>
+        </div>
+        
+        {/* Sort and Filter Controls */}
+        <div className="flex items-center justify-between mb-6 gap-2">
+          {/* Filters Button - Left */}
+          <button
+            onClick={() => setShowFilters(true)}
+            className="px-3 py-1.5 bg-black text-white rounded-lg font-montserrat text-xs hover:bg-gray-800 transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            <span className="hidden sm:inline">Filters</span>
+          </button>
+          
+          {/* Sort By Dropdown - Right */}
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg font-montserrat text-xs focus:ring-2 focus:ring-black focus:outline-none appearance-none pr-8 cursor-pointer"
+            >
+              <option value="default">Sort By</option>
+              <option value="popularity">Popularity</option>
+              <option value="rating">Rating</option>
+              <option value="latest">Latest</option>
+              <option value="price-asc">Price: Low</option>
+              <option value="price-desc">Price: High</option>
+            </select>
+            <svg className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
         </div>
 
         {filteredProducts.length === 0 ? (
@@ -233,6 +324,111 @@ const Products = () => {
           </div>
         )}
       </div>
+
+      {/* Filter Sidebar */}
+      {showFilters && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setShowFilters(false)}
+          />
+          
+          {/* Sidebar - Half screen width */}
+          <div className="fixed top-0 right-0 h-full w-full md:w-1/2 lg:w-96 bg-white z-50 shadow-2xl transform transition-transform duration-300 overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-playfair text-black">Filters</h2>
+                <button 
+                  onClick={() => setShowFilters(false)}
+                  className="text-black hover:opacity-70"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Availability Filter */}
+              <div className="mb-8">
+                <h3 className="text-lg font-montserrat font-semibold mb-4 text-black">Availability</h3>
+                
+                <label className="flex items-center gap-3 mb-3 cursor-pointer">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showInStock}
+                      onChange={(e) => setShowInStock(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-black peer-checked:border-black transition-all flex items-center justify-center">
+                      {showInStock && (
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <span className="font-montserrat text-sm text-gray-700">
+                    In stock <span className="text-gray-500">({getStockCounts().inStock})</span>
+                  </span>
+                </label>
+                
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showOutOfStock}
+                      onChange={(e) => setShowOutOfStock(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-5 h-5 border-2 border-gray-300 rounded peer-checked:bg-black peer-checked:border-black transition-all flex items-center justify-center">
+                      {showOutOfStock && (
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  <span className="font-montserrat text-sm text-gray-700">
+                    Out of stock <span className="text-gray-500">({getStockCounts().outOfStock})</span>
+                  </span>
+                </label>
+              </div>
+              
+              {/* Price Range Filter */}
+              <div className="mb-8">
+                <h3 className="text-lg font-montserrat font-semibold mb-4 text-black">Price</h3>
+                
+                <div className="mb-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max="25000"
+                    step="100"
+                    value={tempPriceRange[1]}
+                    onChange={(e) => setTempPriceRange([tempPriceRange[0], parseInt(e.target.value)])}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+                  />
+                </div>
+                
+                <p className="font-montserrat text-sm text-gray-700">
+                  Price: <span className="font-semibold text-black">LE {tempPriceRange[0]}.00 - LE {tempPriceRange[1]}.00</span>
+                </p>
+              </div>
+              
+              {/* Apply Filter Button */}
+              <button
+                onClick={applyFilters}
+                className="w-full bg-black text-white px-6 py-3 rounded-lg font-montserrat hover:bg-gray-800 transition-colors"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Quick Add Modal */}
       {quickAddProduct && (

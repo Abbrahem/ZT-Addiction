@@ -27,8 +27,12 @@ const AdminDashboard = () => {
   const [productForm, setProductForm] = useState({
     name: '',
     description: '',
+    fragranceNotes: '',
+    fragranceSeason: '',
     collection: '',
     subcategory: '', // For Bottles: Niche, Designer, Arabic
+    bundleSubcategory: '', // For Bundles: bottles, samples
+    gender: '', // men, women, unisex
     images: [],
     sizesWithPrices: [], // Array of {size: '5ml', price: 450}
     // Bundle specific fields - up to 4 perfumes (3 & 4 are optional)
@@ -64,6 +68,7 @@ const AdminDashboard = () => {
 
   const collections = ['Summer Samples', 'Winter Samples', 'Bundles', 'Bottles', 'Quantities With Bottle'];
   const bottleSubcategories = ['Niche', 'Designer', 'Arabic'];
+  const bundleSubcategories = ['bottles', 'samples'];
   const availableSizes = ['3ml', '5ml', '10ml', '20ml', '25ml', '30ml', '35ml', '40ml', '45ml', '50ml', '60ml', '65ml', '70ml', '80ml', '100ml', '200ml'];
 
   useEffect(() => {
@@ -501,8 +506,12 @@ const AdminDashboard = () => {
     setProductForm({
       name: product.name,
       description: product.description || '',
+      fragranceNotes: product.fragranceNotes || '',
+      fragranceSeason: product.fragranceSeason || '',
       collection: product.collection,
       subcategory: product.subcategory || '',
+      bundleSubcategory: product.bundleSubcategory || '',
+      gender: product.gender || '',
       images: product.images || [],
       sizesWithPrices: product.sizesWithPrices || (product.size && product.priceEGP ? [{ size: product.size, price: product.priceEGP }] : []),
       bundlePerfume1: product.bundlePerfume1 || { name: '', sizesWithPrices: [] },
@@ -881,12 +890,36 @@ const AdminDashboard = () => {
                   />
                 </div>
 
+                {/* Fragrance Notes */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Fragrance Notes</label>
+                  <textarea
+                    value={productForm.fragranceNotes}
+                    onChange={(e) => setProductForm({ ...productForm, fragranceNotes: e.target.value })}
+                    className="input-field"
+                    rows="3"
+                    placeholder="e.g., Top: Bergamot, Lemon | Heart: Jasmine, Rose | Base: Vanilla, Musk"
+                  />
+                </div>
+
+                {/* Fragrance Season */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Fragrance Season</label>
+                  <textarea
+                    value={productForm.fragranceSeason}
+                    onChange={(e) => setProductForm({ ...productForm, fragranceSeason: e.target.value })}
+                    className="input-field"
+                    rows="3"
+                    placeholder="e.g., Perfect for summer evenings, ideal for winter..."
+                  />
+                </div>
+
                 {/* Collection */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Collection</label>
                   <select
                     value={productForm.collection}
-                    onChange={(e) => setProductForm({ ...productForm, collection: e.target.value, subcategory: '' })}
+                    onChange={(e) => setProductForm({ ...productForm, collection: e.target.value, subcategory: '', bundleSubcategory: '' })}
                     className="input-field"
                     required
                   >
@@ -911,6 +944,45 @@ const AdminDashboard = () => {
                       {bottleSubcategories.map(sub => (
                         <option key={sub} value={sub}>{sub}</option>
                       ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Bundle Subcategory - Only show when Bundles is selected */}
+                {productForm.collection === 'Bundles' && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Bundle Type</label>
+                    <select
+                      value={productForm.bundleSubcategory}
+                      onChange={(e) => setProductForm({ ...productForm, bundleSubcategory: e.target.value })}
+                      className="input-field"
+                      required
+                    >
+                      <option value="">Select Type</option>
+                      {bundleSubcategories.map(sub => (
+                        <option key={sub} value={sub}>{sub === 'bottles' ? 'Full Bottles' : 'Samples'}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Gender - Show for Winter/Summer Samples, Bundles, and Bottles */}
+                {(productForm.collection === 'Winter Samples' || 
+                  productForm.collection === 'Summer Samples' || 
+                  productForm.collection === 'Bundles' || 
+                  productForm.collection === 'Bottles') && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Gender</label>
+                    <select
+                      value={productForm.gender}
+                      onChange={(e) => setProductForm({ ...productForm, gender: e.target.value })}
+                      className="input-field"
+                      required
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="men">Men</option>
+                      <option value="women">Women</option>
+                      <option value="unisex">Unisex</option>
                     </select>
                   </div>
                 )}
@@ -1684,7 +1756,39 @@ const AdminDashboard = () => {
                       {/* Payment Info */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
                         <h4 className="font-semibold mb-3">Payment Information:</h4>
-                        {order.payment ? (
+                        {order.paymentMethod === 'instapay' && order.instapay ? (
+                          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold">InstaPay</span>
+                              {!order.instapay.verified && (
+                                <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-semibold animate-pulse">
+                                  Needs Review
+                                </span>
+                              )}
+                              {order.instapay.verified && (
+                                <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                  ✓ Verified
+                                </span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+                              <p><strong>Sender Phone:</strong> {order.instapay.senderPhone}</p>
+                              <p><strong>Amount:</strong> {order.instapay.amount} EGP</p>
+                              <p><strong>Submitted:</strong> {new Date(order.instapay.submittedAt).toLocaleString()}</p>
+                            </div>
+                            {order.instapay.screenshot && (
+                              <div>
+                                <p className="font-semibold mb-2">Payment Screenshot:</p>
+                                <img
+                                  src={order.instapay.screenshot}
+                                  alt="InstaPay Screenshot"
+                                  className="max-w-md h-64 object-contain rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => setImageModal(order.instapay.screenshot)}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : order.payment ? (
                           <div className="bg-green-50 p-4 rounded-lg">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
                               <p><strong>Method:</strong> <span className="text-green-700">{order.payment.methodName}</span></p>

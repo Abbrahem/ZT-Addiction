@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 
@@ -7,6 +7,11 @@ const Cart = () => {
   const shippingFee = 110;
   const subtotal = getCartTotal();
   const total = subtotal + (items.length > 0 ? shippingFee : 0);
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   if (items.length === 0) {
     return (
