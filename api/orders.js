@@ -89,6 +89,12 @@ async function sendNotificationToAdmins(title, body, data = {}) {
 }
 
 module.exports = async function handler(req, res) {
+  // Skip if this is a paymob request
+  if (req.url && (req.url.includes('/paymob') || req.url.includes('paymob'))) {
+    console.log('⏭️ Skipping orders.js - this is a paymob request');
+    return res.status(404).json({ error: 'Not found' });
+  }
+
   const client = await clientPromise;
   const db = client.db('danger-sneakers');
 
@@ -156,7 +162,7 @@ module.exports = async function handler(req, res) {
         
         const promoCode = {
           code,
-          discount: parseInt(discount),
+          discount: Math.min(parseInt(discount), 40), // ✅ Max 40%
           maxUses: parseInt(maxUses),
           currentUses: 0,
           expiryDate,
@@ -326,9 +332,10 @@ module.exports = async function handler(req, res) {
 
     // POST /api/orders - Create new order
     if (req.method === 'POST' && !isOrderIdEndpoint) {
-      const { customer, items, total, shippingFee, promoCode, discount, payment, customerToken } = req.body;
+      const { customer, items, total, shippingFee, promoCode, discount, payment, customerToken, paymentMethod, instapay, walletPayment } = req.body;
       
-      console.log('Creating order with payment:', payment);
+      console.log('Creating order with payment method:', paymentMethod);
+      console.log('InstaPay data:', instapay);
 
       if (!customer || !items || !total) {
         return res.status(400).json({ message: 'Customer, items, and total are required' });
@@ -347,8 +354,9 @@ module.exports = async function handler(req, res) {
         items,
         total: parseFloat(total),
         shippingFee: parseFloat(shippingFee) || 0,
-        status: 'processing',
+        status: paymentMethod === 'instapay' ? 'Pending Payment' : 'processing',
         customerToken: customerToken || null,
+        paymentMethod: paymentMethod || 'cod',
         createdAt: new Date(),
         updatedAt: new Date()
       };
@@ -365,7 +373,30 @@ module.exports = async function handler(req, res) {
         );
       }
 
-      // Add payment info if provided
+      // Add InstaPay info if provided
+      if (paymentMethod === 'instapay' && instapay) {
+        order.instapay = {
+          senderPhone: instapay.senderPhone,
+          amount: instapay.amount,
+          screenshot: instapay.screenshot,
+          verified: false,
+          submittedAt: new Date()
+        };
+      }
+
+      // Add Wallet Payment info if provided
+      if (walletPayment && ['vodafone', 'orange', 'telda'].includes(paymentMethod)) {
+        order.walletPayment = {
+          type: walletPayment.type,
+          senderPhone: walletPayment.senderPhone,
+          amount: walletPayment.amount,
+          screenshot: walletPayment.screenshot,
+          verified: false,
+          submittedAt: new Date()
+        };
+      }
+
+      // Add payment info if provided (old structure for compatibility)
       if (payment) {
         order.payment = {
           method: payment.method,
@@ -409,11 +440,16 @@ module.exports = async function handler(req, res) {
       }
       
       // إرسال إشعار Firebase للأدمن
+      const notificationTitle = paymentMethod === 'instapay' ? '💳 طلب InstaPay جديد!' : '🛍️ طلب جديد!';
+      const notificationBody = paymentMethod === 'instapay' 
+        ? `طلب InstaPay من ${customer.name} - ${total} جنيه (يحتاج مراجعة)`
+        : `طلب من ${customer.name} - ${total} جنيه`;
+      
       sendNotificationToAdmins(
-        '🛍️ طلب جديد!',
-        `طلب من ${customer.name} - ${total} جنيه`,
+        notificationTitle,
+        notificationBody,
         {
-          type: 'new_order',
+          type: paymentMethod === 'instapay' ? 'instapay_order' : 'new_order',
           orderId: result.insertedId.toString(),
           url: `/admin/dashboard`
         }
@@ -504,14 +540,16 @@ module.exports = async function handler(req, res) {
               type: 'order_update',
               orderId: targetOrderId.toString(),
               status: status,
-              url: `/order-tracking?orderId=${targetOrderId}`
+              url: `/order-tracking?orderId=${targetOrderId}`,
+              earnedPoints: status === 'shipped' ? 5 : 0
             }
           ).catch(err => console.error('Customer notification failed:', err));
         }
 
         return res.status(200).json({
           message: 'Order status updated successfully',
-          status
+          status,
+          pointsEarned: status === 'shipped' ? 5 : 0
         });
       });
     }
