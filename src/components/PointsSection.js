@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getPoints, calculateDiscount, deductPoints, generatePromoCode } from '../utils/points';
@@ -11,53 +11,12 @@ const PointsSection = () => {
   const [loading, setLoading] = useState(false);
   const [showInsufficientMessage, setShowInsufficientMessage] = useState(false);
 
-  useEffect(() => {
-    loadPoints();
-    
-    // Check for shipped orders and add points
-    checkForShippedOrders();
-    
-    // Listen for points updates
-    const handlePointsUpdate = () => {
-      loadPoints();
-    };
-    
-    // Listen for new orders to check status later
-    const handleNewOrder = () => {
-      // Check for shipped orders after a delay
-      setTimeout(checkForShippedOrders, 2000);
-    };
-    
-    // Listen for shipped orders from admin
-    const handleOrderShipped = (event) => {
-      const { orderId } = event.detail;
-      console.log(`🎯 Received orderShipped event for: ${orderId}`);
-      
-      // Check if this order belongs to the current user
-      const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
-      if (myOrders.includes(orderId)) {
-        setTimeout(() => {
-          checkSpecificOrder(orderId);
-        }, 1000);
-      }
-    };
-    
-    window.addEventListener('pointsUpdated', handlePointsUpdate);
-    window.addEventListener('newOrder', handleNewOrder);
-    window.addEventListener('orderShipped', handleOrderShipped);
-    
-    // Check for shipped orders every 30 seconds
-    const intervalId = setInterval(checkForShippedOrders, 30000);
-    
-    return () => {
-      window.removeEventListener('pointsUpdated', handlePointsUpdate);
-      window.removeEventListener('newOrder', handleNewOrder);
-      window.removeEventListener('orderShipped', handleOrderShipped);
-      clearInterval(intervalId);
-    };
-  }, []);
+  const loadPoints = () => {
+    const userPoints = getPoints();
+    setPoints(userPoints);
+  };
 
-  const checkSpecificOrder = async (orderId) => {
+  const checkSpecificOrder = useCallback(async (orderId) => {
     try {
       const processedOrders = JSON.parse(localStorage.getItem('pointsProcessedOrders') || '[]');
       
@@ -102,9 +61,9 @@ const PointsSection = () => {
     } catch (error) {
       console.error(`Error checking specific order ${orderId}:`, error);
     }
-  };
+  }, []);
 
-  const checkForShippedOrders = async () => {
+  const checkForShippedOrders = useCallback(async () => {
     try {
       // Get user's orders from localStorage
       const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
@@ -156,12 +115,53 @@ const PointsSection = () => {
     } catch (error) {
       console.error('Error checking for shipped orders:', error);
     }
-  };
+  }, []);
 
-  const loadPoints = () => {
-    const userPoints = getPoints();
-    setPoints(userPoints);
-  };
+  useEffect(() => {
+    loadPoints();
+    
+    // Check for shipped orders and add points
+    checkForShippedOrders();
+    
+    // Listen for points updates
+    const handlePointsUpdate = () => {
+      loadPoints();
+    };
+    
+    // Listen for new orders to check status later
+    const handleNewOrder = () => {
+      // Check for shipped orders after a delay
+      setTimeout(checkForShippedOrders, 2000);
+    };
+    
+    // Listen for shipped orders from admin
+    const handleOrderShipped = (event) => {
+      const { orderId } = event.detail;
+      console.log(`🎯 Received orderShipped event for: ${orderId}`);
+      
+      // Check if this order belongs to the current user
+      const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+      if (myOrders.includes(orderId)) {
+        setTimeout(() => {
+          checkSpecificOrder(orderId);
+        }, 1000);
+      }
+    };
+    
+    window.addEventListener('pointsUpdated', handlePointsUpdate);
+    window.addEventListener('newOrder', handleNewOrder);
+    window.addEventListener('orderShipped', handleOrderShipped);
+    
+    // Check for shipped orders every 30 seconds
+    const intervalId = setInterval(checkForShippedOrders, 30000);
+    
+    return () => {
+      window.removeEventListener('pointsUpdated', handlePointsUpdate);
+      window.removeEventListener('newOrder', handleNewOrder);
+      window.removeEventListener('orderShipped', handleOrderShipped);
+      clearInterval(intervalId);
+    };
+  }, [checkForShippedOrders, checkSpecificOrder]);
 
   const handlePointsChange = (e) => {
     const value = e.target.value;
