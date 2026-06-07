@@ -14,14 +14,149 @@ const PointsSection = () => {
   useEffect(() => {
     loadPoints();
     
+    // Check for shipped orders and add points
+    checkForShippedOrders();
+    
     // Listen for points updates
     const handlePointsUpdate = () => {
       loadPoints();
     };
     
+    // Listen for new orders to check status later
+    const handleNewOrder = () => {
+      // Check for shipped orders after a delay
+      setTimeout(checkForShippedOrders, 2000);
+    };
+    
+    // Listen for shipped orders from admin
+    const handleOrderShipped = (event) => {
+      const { orderId } = event.detail;
+      console.log(`🎯 Received orderShipped event for: ${orderId}`);
+      
+      // Check if this order belongs to the current user
+      const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+      if (myOrders.includes(orderId)) {
+        setTimeout(() => {
+          checkSpecificOrder(orderId);
+        }, 1000);
+      }
+    };
+    
     window.addEventListener('pointsUpdated', handlePointsUpdate);
-    return () => window.removeEventListener('pointsUpdated', handlePointsUpdate);
+    window.addEventListener('newOrder', handleNewOrder);
+    window.addEventListener('orderShipped', handleOrderShipped);
+    
+    // Check for shipped orders every 30 seconds
+    const intervalId = setInterval(checkForShippedOrders, 30000);
+    
+    return () => {
+      window.removeEventListener('pointsUpdated', handlePointsUpdate);
+      window.removeEventListener('newOrder', handleNewOrder);
+      window.removeEventListener('orderShipped', handleOrderShipped);
+      clearInterval(intervalId);
+    };
   }, []);
+
+  const checkSpecificOrder = async (orderId) => {
+    try {
+      const processedOrders = JSON.parse(localStorage.getItem('pointsProcessedOrders') || '[]');
+      
+      // If already processed, skip
+      if (processedOrders.includes(orderId)) {
+        console.log(`Order ${orderId} already processed for points`);
+        return;
+      }
+      
+      // Fetch order status from API
+      const response = await axios.get(`/api/orders?orderId=${orderId}`);
+      const orders = response.data;
+      
+      if (orders && orders.length > 0) {
+        const order = orders[0];
+        
+        // If order is shipped and not processed, add points
+        if (order.status === 'shipped') {
+          console.log(`✅ Order ${orderId} is shipped - adding points`);
+          
+          const { addPointsForOrder } = await import('../utils/points');
+          const pointsAdded = addPointsForOrder(orderId);
+          
+          if (pointsAdded) {
+            // Refresh points display
+            loadPoints();
+            
+            // Show success message
+            const pointsEarned = 5;
+            Swal.fire({
+              icon: 'success',
+              title: '🎉 Points Earned!',
+              text: `You earned ${pointsEarned} points from your shipped order!`,
+              timer: 4000,
+              showConfirmButton: false,
+              toast: true,
+              position: 'top-end'
+            });
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Error checking specific order ${orderId}:`, error);
+    }
+  };
+
+  const checkForShippedOrders = async () => {
+    try {
+      // Get user's orders from localStorage
+      const myOrders = JSON.parse(localStorage.getItem('myOrders') || '[]');
+      const processedOrders = JSON.parse(localStorage.getItem('pointsProcessedOrders') || '[]');
+      
+      if (myOrders.length === 0) return;
+      
+      // Check each order that hasn't been processed for points
+      for (const orderId of myOrders) {
+        if (processedOrders.includes(orderId)) continue;
+        
+        try {
+          // Fetch order status from API
+          const response = await axios.get(`/api/orders?orderId=${orderId}`);
+          const orders = response.data;
+          
+          if (orders && orders.length > 0) {
+            const order = orders[0];
+            
+            // If order is shipped and not processed, add points
+            if (order.status === 'shipped') {
+              console.log(`✅ Order ${orderId} is shipped - adding points`);
+              
+              const { addPointsForOrder } = await import('../utils/points');
+              const pointsAdded = addPointsForOrder(orderId);
+              
+              if (pointsAdded) {
+                // Refresh points display
+                loadPoints();
+                
+                // Show success message
+                const pointsEarned = 5;
+                Swal.fire({
+                  icon: 'success',
+                  title: '🎉 Points Earned!',
+                  text: `You earned ${pointsEarned} points from your shipped order!`,
+                  timer: 4000,
+                  showConfirmButton: false,
+                  toast: true,
+                  position: 'top-end'
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`Error checking order ${orderId}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for shipped orders:', error);
+    }
+  };
 
   const loadPoints = () => {
     const userPoints = getPoints();

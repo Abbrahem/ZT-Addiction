@@ -609,38 +609,38 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen py-24 bg-beige-50">
-      <div className="max-w-4xl mx-auto px-6">
-        <h1 className="text-4xl font-playfair mb-12 text-black text-center">Checkout</h1>
+    <div className="min-h-screen py-16 md:py-24 bg-beige-50">
+      <div className="max-w-4xl mx-auto px-4 md:px-6">
+        <h1 className="text-2xl md:text-4xl font-playfair mb-8 md:mb-12 text-black text-center">Checkout</h1>
 
         {/* Order Summary */}
-        <div className="bg-white p-6 mb-8 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-playfair mb-6 text-black">Order Details</h2>
+        <div className="bg-white p-4 md:p-6 mb-6 md:mb-8 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-lg md:text-xl font-playfair mb-4 md:mb-6 text-black">Order Details</h2>
           
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3 md:space-y-4 mb-4 md:mb-6">
             {items.map((item) => (
-              <div key={`${item.id}-${item.size}-${item.color}`} className="flex gap-4">
-                <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden">
+              <div key={`${item.id}-${item.size}-${item.color}`} className="flex gap-3 md:gap-4">
+                <div className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0 rounded-lg overflow-hidden">
                   <img
                     src={item.image ? `/api/images/${item.image}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
                     alt={item.name}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="flex-1">
-                  <p className="font-montserrat font-medium text-black">{item.name}</p>
-                  <p className="text-sm font-montserrat text-gray-600">
+                <div className="flex-1 min-w-0">
+                  <p className="font-montserrat font-medium text-black text-sm md:text-base truncate">{item.name}</p>
+                  <p className="text-xs md:text-sm font-montserrat text-gray-600">
                     Size: {item.size} | Qty: {item.quantity}
                   </p>
-                  <p className="font-montserrat font-semibold text-black">{(item.price * item.quantity).toLocaleString()} EGP</p>
+                  <p className="font-montserrat font-semibold text-black text-sm md:text-base">{(item.price * item.quantity).toLocaleString()} EGP</p>
                 </div>
               </div>
             ))}
           </div>
 
-          <hr className="border-gray-200 mb-4" />
+          <hr className="border-gray-200 mb-3 md:mb-4" />
 
-          <div className="space-y-2 font-montserrat text-sm">
+          <div className="space-y-2 font-montserrat text-xs md:text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Subtotal:</span>
               <span className="text-black font-medium">{subtotal.toLocaleString()} EGP</span>
@@ -655,30 +655,30 @@ const Checkout = () => {
                 <span>-{discount.toLocaleString()} EGP ({appliedPromo.discount}%)</span>
               </div>
             )}
-            <div className="flex justify-between text-lg font-bold border-t pt-3 mt-2">
+            <div className="flex justify-between text-base md:text-lg font-bold border-t pt-2 md:pt-3 mt-2">
               <span>Total:</span>
               <span>{total.toLocaleString()} EGP</span>
             </div>
           </div>
 
           {/* Promo Code Section */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <h3 className="font-montserrat font-semibold mb-3 text-sm">Have a Promo Code?</h3>
+          <div className="mt-4 md:mt-6 pt-4 md:pt-6 border-t border-gray-200">
+            <h3 className="font-montserrat font-semibold mb-3 text-xs md:text-sm">Have a Promo Code?</h3>
             {!appliedPromo ? (
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={promoCode}
                   onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
                   placeholder="Enter promo code"
-                  className="input-field flex-1 font-montserrat text-sm"
+                  className="input-field flex-1 font-montserrat text-xs md:text-sm"
                   maxLength="10"
                 />
                 <button
                   type="button"
                   onClick={handleApplyPromo}
                   disabled={promoLoading}
-                  className={`bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 font-montserrat text-sm ${promoLoading ? 'opacity-50' : ''}`}
+                  className={`bg-green-600 text-white px-4 md:px-6 py-2 rounded-lg hover:bg-green-700 font-montserrat text-xs md:text-sm whitespace-nowrap ${promoLoading ? 'opacity-50' : ''}`}
                 >
                   {promoLoading ? 'Checking...' : 'Apply'}
                 </button>
@@ -686,7 +686,7 @@ const Checkout = () => {
             ) : (
               <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex justify-between items-center">
                 <div>
-                  <p className="font-montserrat font-semibold text-green-700 text-sm">
+                  <p className="font-montserrat font-semibold text-green-700 text-xs md:text-sm">
                     {appliedPromo.code} Applied!
                   </p>
                   <p className="text-xs text-green-600">
@@ -696,7 +696,7 @@ const Checkout = () => {
                 <button
                   type="button"
                   onClick={handleRemovePromo}
-                  className="text-red-500 hover:text-red-700 font-montserrat text-sm"
+                  className="text-red-500 hover:text-red-700 font-montserrat text-xs md:text-sm"
                 >
                   Remove
                 </button>
@@ -706,17 +706,17 @@ const Checkout = () => {
         </div>
 
         {/* Customer Information Form */}
-        <div className="bg-white p-6 mb-8 rounded-xl shadow-sm border border-gray-100">
-          <h2 className="text-xl font-playfair mb-6 text-black">Personal Information</h2>
+        <div className="bg-white p-4 md:p-6 mb-6 md:mb-8 rounded-xl shadow-sm border border-gray-100">
+          <h2 className="text-lg md:text-xl font-playfair mb-4 md:mb-6 text-black">Personal Information</h2>
           
-          <div className="space-y-4">
+          <div className="space-y-3 md:space-y-4">
             <div>
               <input
                 type="text"
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleInputChange}
-                className="input-field font-montserrat text-sm"
+                className="input-field font-montserrat text-sm md:text-base"
                 placeholder="Full Name"
                 required
               />
@@ -728,7 +728,7 @@ const Checkout = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                className="input-field font-montserrat text-sm"
+                className="input-field font-montserrat text-sm md:text-base"
                 placeholder="Email Address"
                 required
               />
@@ -742,7 +742,7 @@ const Checkout = () => {
                 name="government"
                 value={formData.government}
                 onChange={handleInputChange}
-                className="input-field font-montserrat text-sm bg-white text-black"
+                className="input-field font-montserrat text-sm md:text-base bg-white text-black"
                 required
               >
                 <option value="">Select Government</option>
@@ -781,37 +781,39 @@ const Checkout = () => {
                 name="address"
                 value={formData.address}
                 onChange={handleInputChange}
-                className="input-field font-montserrat text-sm"
+                className="input-field font-montserrat text-sm md:text-base"
                 rows="3"
                 placeholder="Complete Address"
                 required
               />
             </div>
 
-            <div>
-              <input
-                type="tel"
-                name="phone1"
-                value={formData.phone1}
-                onChange={handleInputChange}
-                className="input-field font-montserrat text-sm"
-                placeholder="Phone Number 1 (11 digits)"
-                maxLength="11"
-                required
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+              <div>
+                <input
+                  type="tel"
+                  name="phone1"
+                  value={formData.phone1}
+                  onChange={handleInputChange}
+                  className="input-field font-montserrat text-sm md:text-base"
+                  placeholder="Phone Number 1 (11 digits)"
+                  maxLength="11"
+                  required
+                />
+              </div>
 
-            <div>
-              <input
-                type="tel"
-                name="phone2"
-                value={formData.phone2}
-                onChange={handleInputChange}
-                className="input-field font-montserrat text-sm"
-                placeholder="Phone Number 2 (11 digits)"
-                maxLength="11"
-                required
-              />
+              <div>
+                <input
+                  type="tel"
+                  name="phone2"
+                  value={formData.phone2}
+                  onChange={handleInputChange}
+                  className="input-field font-montserrat text-sm md:text-base"
+                  placeholder="Phone Number 2 (11 digits)"
+                  maxLength="11"
+                  required
+                />
+              </div>
             </div>
 
             {/* Save Info Checkbox */}
@@ -823,15 +825,15 @@ const Checkout = () => {
                 onChange={(e) => setSaveInfo(e.target.checked)}
                 className="w-4 h-4 cursor-pointer"
               />
-              <label htmlFor="saveInfo" className="font-montserrat text-sm cursor-pointer text-gray-700">
+              <label htmlFor="saveInfo" className="font-montserrat text-xs md:text-sm cursor-pointer text-gray-700">
                 Save this information for next time
               </label>
             </div>
           </div>
 
           {/* Payment Method Section - Inside Personal Info Card */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-lg font-playfair mb-4 text-black">Payment Method</h3>
+          <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-gray-200">
+            <h3 className="text-base md:text-lg font-playfair mb-3 md:mb-4 text-black">Payment Method</h3>
             
             <PaymentSelection 
               onSubmit={handleSubmit}

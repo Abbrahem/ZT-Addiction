@@ -780,6 +780,13 @@ const AdminDashboard = () => {
       
       // Trigger event to update notification badge
       window.dispatchEvent(new Event('newNotification'));
+      
+      // ✅ إذا الستاتوس بقى shipped، trigger فحص النقاط
+      if (newStatus === 'shipped') {
+        // Trigger points check for all users
+        window.dispatchEvent(new CustomEvent('orderShipped', { detail: { orderId } }));
+        console.log(`🎯 Triggered points check for shipped order: ${orderId}`);
+      }
 
       Swal.fire({
         icon: 'success',
