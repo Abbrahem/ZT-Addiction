@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import ProductCard from '../components/ProductCard';
+import PointsSection from '../components/PointsSection';
 import Footer from '../components/Footer';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -303,109 +304,10 @@ const Home = () => {
         </Link>
       </section>
 
-      {/* Best Selling Horizontal Scroll Section */}
-      {bestSellerProducts.length > 0 && (
-        <section className="py-12 md:py-20 px-4 md:px-6">
-          <h2 className="text-3xl md:text-4xl font-playfair text-center mb-12 md:mb-16 text-black">BEST SELLING</h2>
-          
-          <div className="overflow-x-auto scrollbar-hide">
-            <div className="flex gap-6 pb-4" style={{ minWidth: 'max-content' }}>
-              {bestSellerProducts.map((product) => (
-                <div key={product._id} className="group relative flex-shrink-0" style={{ width: '280px' }}>
-                  <Link to={`/products/${product._id}`} className="block">
-                    <div className="relative overflow-hidden mb-4 bg-gray-50" style={{ paddingBottom: '133%' }}>
-                      <img
-                        src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
-                        alt={product.name}
-                        className="absolute inset-0 w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                      />
-                      {product.soldOut && (
-                        <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                          <span className="bg-red-600 text-white px-3 py-2 rounded text-sm font-medium">
-                            SOLD OUT
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="font-montserrat text-base md:text-lg mb-2 text-black leading-tight">{product.name}</h3>
-                    <p className="font-montserrat text-base md:text-lg font-semibold text-black">{product.priceEGP} EGP</p>
-                  </Link>
-                  
-                  {/* Action Buttons */}
-                  <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
-                    {!product.soldOut && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleQuickAdd(product);
-                        }}
-                        className="bg-white text-black p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                        </svg>
-                      </button>
-                    )}
-                    
-                    {/* Wishlist Heart Icon */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isInWishlist(product._id)) {
-                          Swal.fire({
-                            icon: 'info',
-                            title: 'Already in Wishlist',
-                            timer: 1000,
-                            showConfirmButton: false
-                          });
-                        } else {
-                          addToWishlist(product);
-                          Swal.fire({
-                            icon: 'success',
-                            title: 'Added to Wishlist',
-                            timer: 1000,
-                            showConfirmButton: false
-                          });
-                        }
-                      }}
-                      className="bg-white p-3 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110"
-                    >
-                      <svg 
-                        className="w-5 h-5" 
-                        fill={isInWishlist(product._id) ? '#ef4444' : 'none'} 
-                        stroke={isInWishlist(product._id) ? '#ef4444' : 'currentColor'} 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                    </button>
-                  </div>
-                  
-                  {/* BEST SELLING Badge - Top Left */}
-                  <div className="absolute top-3 left-3 z-10">
-                    <div className="bg-black text-white px-3 py-1.5 rounded-full shadow-lg text-xs font-montserrat font-semibold">
-                      BEST SELLING
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Best Reviews Section */}
-      {bestReviewProducts.length > 0 && (
-        <section className="py-12 md:py-20 px-4 md:px-6 max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-playfair text-center mb-12 md:mb-16 text-black">BEST REVIEWS</h2>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8 lg:gap-10">
-            {bestReviewProducts.map((product) => (
-              <ProductCard key={product._id} product={product} onQuickAdd={handleQuickAdd} />
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Points Section */}
+      <section className="py-12 md:py-20 px-4 md:px-6 max-w-2xl mx-auto">
+        <PointsSection />
+      </section>
 
       {/* Quick Add Modal */}
       {quickAddProduct && (

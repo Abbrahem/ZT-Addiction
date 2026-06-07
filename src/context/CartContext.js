@@ -95,7 +95,8 @@ export const CartProvider = ({ children }) => {
         color,
         quantity,
         isBundle: product.isBundle || false,
-        bundleDetails: bundleDetails
+        bundleDetails: bundleDetails,
+        collection: product.collection || null
       }
     });
   };

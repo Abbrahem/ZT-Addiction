@@ -17,6 +17,7 @@ import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
 import Notifications from './pages/Notifications';
 import MyOrders from './pages/MyOrders';
+import AIChat from './pages/AIChat';
 // PerfumeQuiz removed
 import Settings from './pages/Settings';
 import AdminLogin from './pages/admin/AdminLogin';
@@ -174,6 +175,7 @@ function App() {
                     <Route path="/wishlist" element={<Wishlist />} />
                     <Route path="/notifications" element={<Notifications />} />
                     <Route path="/my-orders" element={<MyOrders />} />
+                    <Route path="/ai-chat" element={<AIChat />} />
                     <Route path="/settings" element={<Settings />} />
                     <Route path="/about" element={<AboutUs />} />
                     <Route path="/contact" element={<ContactUs />} />

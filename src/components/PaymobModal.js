@@ -1,44 +1,52 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 
 const PaymobModal = ({ isOpen, onClose, paymentUrl }) => {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center p-2 sm:p-4">
-      {/* Close button */}
-      <button
-        onClick={onClose}
-        className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 p-2 bg-white hover:bg-gray-100 rounded-full shadow-lg"
-        aria-label="إغلاق"
-      >
-        <svg className="w-5 h-5 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+  const handleComingSoon = () => {
+    alert('ستتوفر قريباً! نعمل على تفعيل هذه الخدمة');
+    onClose();
+  };
 
-      {/* Modal - Smaller size */}
-      <div className="w-full max-w-md sm:max-w-lg md:max-w-2xl h-[85vh] sm:h-[80vh] bg-white rounded-lg shadow-2xl overflow-hidden">
-        <iframe
-          src={paymentUrl}
-          className="w-full h-full"
-          style={{ 
-            border: 'none',
-            display: 'block'
-          }}
-          title="Paymob Payment"
-          allow="payment"
-        />
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 m-4 max-w-md w-full">
+        <div className="text-center">
+          <h3 className="text-xl font-playfair mb-4 text-black">
+            دفع أونلاين - Paymob
+          </h3>
+          
+          <div className="mb-6">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <p className="text-yellow-800 font-montserrat text-sm">
+                ⚠️ هذه الخدمة ستتوفر قريباً
+              </p>
+            </div>
+            
+            <p className="text-gray-600 font-montserrat text-sm mb-4">
+              نعمل حالياً على تفعيل الدفع الإلكتروني عبر بطاقات الائتمان والمحافظ الإلكترونية.
+            </p>
+            
+            <p className="text-gray-800 font-montserrat text-sm">
+              يرجى استخدام طرق الدفع الأخرى المتاحة في الوقت الحالي.
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={handleComingSoon}
+              className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg font-montserrat hover:bg-gray-700"
+            >
+              حسناً
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 bg-black text-white py-2 px-4 rounded-lg font-montserrat hover:bg-gray-800"
+            >
+              إغلاق
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

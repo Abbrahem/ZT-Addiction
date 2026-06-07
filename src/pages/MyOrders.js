@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { addPointsForOrder } from '../utils/points';
 
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -8,6 +9,7 @@ const MyOrders = () => {
 
   useEffect(() => {
     loadOrders();
+    checkForShippedOrders();
   }, []);
 
   const loadOrders = () => {
@@ -20,6 +22,22 @@ const MyOrders = () => {
       console.error('Error loading orders:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkForShippedOrders = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('orders') || '[]');
+      stored.forEach(order => {
+        if (order.status && order.status.toLowerCase() === 'shipped') {
+          const added = addPointsForOrder(order.id);
+          if (added) {
+            console.log(`✅ Added 5 points for shipped order ${order.id}`);
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Error checking shipped orders:', error);
     }
   };
 

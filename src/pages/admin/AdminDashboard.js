@@ -383,13 +383,24 @@ const AdminDashboard = () => {
       }
 
       setProductForm({
-        name: '', description: '', collection: '', subcategory: '', images: [], sizesWithPrices: [],
+        name: '',
+        description: '',
+        fragranceNotes: '',
+        fragranceSeason: '',
+        collection: '',
+        subcategory: '',
+        bundleSubcategory: '',
+        gender: '',
+        images: [],
+        sizesWithPrices: [],
         bundlePerfume1: { name: '', sizesWithPrices: [] },
         bundlePerfume2: { name: '', sizesWithPrices: [] },
         bundlePerfume3: { name: '', sizesWithPrices: [] },
         bundlePerfume4: { name: '', sizesWithPrices: [] }
       });
+      setTempSize('');
       setTempPrice('');
+      setEditingProduct(null);
 
       if (activeTab === 'manage-products') {
         fetchProducts();
@@ -790,20 +801,20 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-            <div className="flex items-center gap-4">
+          <div className="flex justify-between items-center py-4 sm:py-6 gap-2">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <div className="flex items-center gap-2 sm:gap-4">
               {/* Notifications Button */}
               <button
                 onClick={() => setActiveView(activeView === 'notifications' ? 'dashboard' : 'notifications')}
-                className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
                 title="الإشعارات"
               >
-                <span className="text-2xl">🔔</span>
+                <span className="text-xl sm:text-2xl">🔔</span>
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -811,7 +822,10 @@ const AdminDashboard = () => {
                 )}
               </button>
               
-              <button onClick={handleLogout} className="btn-secondary">
+              <button 
+                onClick={handleLogout} 
+                className="bg-gray-800 text-white px-3 py-2 sm:px-4 sm:py-2 rounded-lg hover:bg-gray-900 transition-colors text-sm whitespace-nowrap flex-shrink-0"
+              >
                 Logout
               </button>
             </div>
@@ -972,18 +986,57 @@ const AdminDashboard = () => {
                   productForm.collection === 'Bundles' || 
                   productForm.collection === 'Bottles') && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">Gender</label>
-                    <select
-                      value={productForm.gender}
-                      onChange={(e) => setProductForm({ ...productForm, gender: e.target.value })}
-                      className="input-field"
-                      required
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="men">Men</option>
-                      <option value="women">Women</option>
-                      <option value="unisex">Unisex</option>
-                    </select>
+                    <label className="block text-sm font-medium mb-2">Gender (Select one or more)</label>
+                    <div className="flex flex-wrap gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={productForm.gender?.includes('men')}
+                          onChange={(e) => {
+                            const currentGenders = productForm.gender ? productForm.gender.split(',') : [];
+                            if (e.target.checked) {
+                              setProductForm({ ...productForm, gender: [...currentGenders, 'men'].join(',') });
+                            } else {
+                              setProductForm({ ...productForm, gender: currentGenders.filter(g => g !== 'men').join(',') });
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">Men</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={productForm.gender?.includes('women')}
+                          onChange={(e) => {
+                            const currentGenders = productForm.gender ? productForm.gender.split(',') : [];
+                            if (e.target.checked) {
+                              setProductForm({ ...productForm, gender: [...currentGenders, 'women'].join(',') });
+                            } else {
+                              setProductForm({ ...productForm, gender: currentGenders.filter(g => g !== 'women').join(',') });
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">Women</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={productForm.gender?.includes('unisex')}
+                          onChange={(e) => {
+                            const currentGenders = productForm.gender ? productForm.gender.split(',') : [];
+                            if (e.target.checked) {
+                              setProductForm({ ...productForm, gender: [...currentGenders, 'unisex'].join(',') });
+                            } else {
+                              setProductForm({ ...productForm, gender: currentGenders.filter(g => g !== 'unisex').join(',') });
+                            }
+                          }}
+                          className="w-4 h-4"
+                        />
+                        <span className="text-sm">Unisex</span>
+                      </label>
+                    </div>
                   </div>
                 )}
 
@@ -1468,7 +1521,7 @@ const AdminDashboard = () => {
                     return matchesSearch && matchesCollection;
                   })
                   .map((product) => (
-                  <div key={product._id} className="card p-4">
+                  <div key={product._id} className="card p-4 overflow-hidden">
                     <div className="relative h-48 mb-4">
                       <img
                         src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
@@ -1492,9 +1545,13 @@ const AdminDashboard = () => {
                       )}
                     </div>
 
-                    <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
-                    <p className="text-gray-600 mb-1">{product.collection}</p>
-                    <p className="font-bold mb-2">{product.priceEGP} EGP</p>
+                    <h3 className="font-semibold text-base sm:text-lg mb-2 break-words">{product.name}</h3>
+                    <p className="text-sm text-gray-600 mb-1 break-words">{product.collection}</p>
+                    <p className="font-bold mb-2 text-sm sm:text-base">
+                      {product.sizesWithPrices && product.sizesWithPrices.length > 0 
+                        ? `${product.sizesWithPrices[0].price} EGP` 
+                        : `${product.priceEGP || 0} EGP`}
+                    </p>
 
                     {/* Bundle Sizes with Sold Out Toggle */}
                     {product.isBundle && product.bundlePerfume1 && product.bundlePerfume2 && (
@@ -1660,7 +1717,7 @@ const AdminDashboard = () => {
 
           {/* Orders Tab */}
           {activeTab === 'orders' && (
-            <div>
+            <div className="overflow-x-hidden">
               <h2 className="text-xl font-semibold mb-6">Manage Orders ({orders.length})</h2>
 
               {orders.length === 0 ? (
@@ -1670,10 +1727,10 @@ const AdminDashboard = () => {
               ) : (
                 <div className="space-y-6">
                   {orders.map((order) => (
-                    <div key={order._id} className="card p-6">
+                    <div key={order._id} className="card p-4 sm:p-6 overflow-hidden">
                       {/* Order Date */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
-                        <p className="text-sm text-gray-500">Order Date: {new Date(order.createdAt).toLocaleString('en-US', {
+                        <p className="text-xs sm:text-sm text-gray-500 break-words">Order Date: {new Date(order.createdAt).toLocaleString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
@@ -1684,55 +1741,55 @@ const AdminDashboard = () => {
 
                       {/* Products */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
-                        <h4 className="font-semibold mb-3">Products:</h4>
+                        <h4 className="font-semibold mb-3 text-sm sm:text-base">Products:</h4>
                         <div className="space-y-4">
                           {order.items.map((item, index) => (
-                            <div key={index} className="bg-gray-50 rounded-lg p-4">
-                              <div className="flex items-start gap-4">
+                            <div key={index} className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                              <div className="flex items-start gap-3 sm:gap-4">
                                 <img
                                   src={item.image ? `/api/images/${item.image}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
                                   alt={item.name}
-                                  className="w-20 h-20 object-cover rounded-lg"
+                                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0"
                                 />
-                                <div className="flex-1">
-                                  <div className="flex justify-between items-start">
-                                    <p className="font-semibold text-lg">{item.name}</p>
-                                    <p className="font-bold text-lg">{item.price} EGP</p>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-2">
+                                    <p className="font-semibold text-sm sm:text-lg break-words">{item.name}</p>
+                                    <p className="font-bold text-sm sm:text-lg whitespace-nowrap">{item.price} EGP</p>
                                   </div>
-                                  <p className="text-sm text-gray-500 mt-1">Quantity: {item.quantity}</p>
+                                  <p className="text-xs sm:text-sm text-gray-500 mt-1">Quantity: {item.quantity}</p>
                                 </div>
                               </div>
                               
                               {item.isBundle && item.bundleDetails ? (
-                                <div className="mt-4 grid grid-cols-2 gap-3">
+                                <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   <div className="bg-purple-100 rounded-lg p-3">
                                     <p className="text-xs text-purple-600 font-medium mb-1">Perfume 1</p>
-                                    <p className="font-semibold text-purple-900">{item.bundleDetails.perfume1Name}</p>
-                                    <p className="text-sm text-purple-700 mt-1">Size: {item.bundleDetails.size1}</p>
+                                    <p className="font-semibold text-purple-900 text-sm break-words">{item.bundleDetails.perfume1Name}</p>
+                                    <p className="text-xs sm:text-sm text-purple-700 mt-1">Size: {item.bundleDetails.size1}</p>
                                   </div>
                                   <div className="bg-indigo-100 rounded-lg p-3">
                                     <p className="text-xs text-indigo-600 font-medium mb-1">Perfume 2</p>
-                                    <p className="font-semibold text-indigo-900">{item.bundleDetails.perfume2Name}</p>
-                                    <p className="text-sm text-indigo-700 mt-1">Size: {item.bundleDetails.size2}</p>
+                                    <p className="font-semibold text-indigo-900 text-sm break-words">{item.bundleDetails.perfume2Name}</p>
+                                    <p className="text-xs sm:text-sm text-indigo-700 mt-1">Size: {item.bundleDetails.size2}</p>
                                   </div>
                                   {item.bundleDetails.perfume3Name && (
                                     <div className="bg-green-100 rounded-lg p-3">
                                       <p className="text-xs text-green-600 font-medium mb-1">Perfume 3</p>
-                                      <p className="font-semibold text-green-900">{item.bundleDetails.perfume3Name}</p>
-                                      <p className="text-sm text-green-700 mt-1">Size: {item.bundleDetails.size3}</p>
+                                      <p className="font-semibold text-green-900 text-sm break-words">{item.bundleDetails.perfume3Name}</p>
+                                      <p className="text-xs sm:text-sm text-green-700 mt-1">Size: {item.bundleDetails.size3}</p>
                                     </div>
                                   )}
                                   {item.bundleDetails.perfume4Name && (
                                     <div className="bg-orange-100 rounded-lg p-3">
                                       <p className="text-xs text-orange-600 font-medium mb-1">Perfume 4</p>
-                                      <p className="font-semibold text-orange-900">{item.bundleDetails.perfume4Name}</p>
-                                      <p className="text-sm text-orange-700 mt-1">Size: {item.bundleDetails.size4}</p>
+                                      <p className="font-semibold text-orange-900 text-sm break-words">{item.bundleDetails.perfume4Name}</p>
+                                      <p className="text-xs sm:text-sm text-orange-700 mt-1">Size: {item.bundleDetails.size4}</p>
                                     </div>
                                   )}
                                 </div>
                               ) : (
                                 <div className="mt-2">
-                                  <span className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm">
+                                  <span className="inline-block bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-xs sm:text-sm">
                                     Size: {item.size}
                                   </span>
                                 </div>
@@ -1744,21 +1801,24 @@ const AdminDashboard = () => {
 
                       {/* Customer Info */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
-                        <h4 className="font-semibold mb-3">Customer Information:</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          <p><strong>Name:</strong> {order.customer.name}</p>
-                          <p><strong>Address:</strong> {order.customer.address}</p>
-                          <p><strong>Phone 1:</strong> {order.customer.phone1}</p>
-                          <p><strong>Phone 2:</strong> {order.customer.phone2}</p>
+                        <h4 className="font-semibold mb-3 text-sm sm:text-base">Customer Information:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                          <p className="break-words"><strong>Name:</strong> {order.customer.name}</p>
+                          <p className="break-words"><strong>Address:</strong> {order.customer.address}</p>
+                          {order.customer.government && (
+                            <p className="break-words"><strong>Government:</strong> {order.customer.government}</p>
+                          )}
+                          <p className="break-words"><strong>Phone 1:</strong> {order.customer.phone1}</p>
+                          <p className="break-words"><strong>Phone 2:</strong> {order.customer.phone2}</p>
                         </div>
                       </div>
 
                       {/* Payment Info */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
-                        <h4 className="font-semibold mb-3">Payment Information:</h4>
+                        <h4 className="font-semibold mb-3 text-sm sm:text-base">Payment Information:</h4>
                         {order.paymentMethod === 'instapay' && order.instapay ? (
-                          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                            <div className="flex items-center gap-2 mb-3">
+                          <div className="bg-purple-50 p-3 sm:p-4 rounded-lg border border-purple-200">
+                            <div className="flex flex-wrap items-center gap-2 mb-3">
                               <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold">InstaPay</span>
                               {!order.instapay.verified && (
                                 <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-semibold animate-pulse">
@@ -1771,56 +1831,95 @@ const AdminDashboard = () => {
                                 </span>
                               )}
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-                              <p><strong>Sender Phone:</strong> {order.instapay.senderPhone}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 text-sm">
+                              <p className="break-words"><strong>Sender Phone:</strong> {order.instapay.senderPhone}</p>
                               <p><strong>Amount:</strong> {order.instapay.amount} EGP</p>
-                              <p><strong>Submitted:</strong> {new Date(order.instapay.submittedAt).toLocaleString()}</p>
+                              <p className="col-span-1 sm:col-span-2 break-words"><strong>Submitted:</strong> {new Date(order.instapay.submittedAt).toLocaleString()}</p>
                             </div>
                             {order.instapay.screenshot && (
                               <div>
-                                <p className="font-semibold mb-2">Payment Screenshot:</p>
+                                <p className="font-semibold mb-2 text-sm">Payment Screenshot:</p>
                                 <img
                                   src={order.instapay.screenshot}
                                   alt="InstaPay Screenshot"
-                                  className="max-w-md h-64 object-contain rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                  className="max-w-full sm:max-w-md h-48 sm:h-64 object-contain rounded border cursor-pointer hover:opacity-80 transition-opacity"
                                   onClick={() => setImageModal(order.instapay.screenshot)}
                                 />
                               </div>
                             )}
                           </div>
+                        ) : order.walletPayment && ['vodafone', 'orange', 'telda'].includes(order.paymentMethod) ? (
+                          <div className="bg-blue-50 p-3 sm:p-4 rounded-lg border border-blue-200">
+                            <div className="flex flex-wrap items-center gap-2 mb-3">
+                              <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                {order.walletPayment.type === 'vodafone' ? '📱 Vodafone Cash' :
+                                 order.walletPayment.type === 'orange' ? '🍊 Orange Cash' :
+                                 order.walletPayment.type === 'telda' ? '💳 Telda' : order.walletPayment.type}
+                              </span>
+                              {!order.walletPayment.verified && (
+                                <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">Pending Verification</span>
+                              )}
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 text-sm">
+                              <p className="break-words"><strong>Sender Phone:</strong> {order.walletPayment.senderPhone}</p>
+                              <p><strong>Amount:</strong> {order.walletPayment.amount} EGP</p>
+                              <p className="col-span-1 sm:col-span-2 break-words"><strong>Submitted:</strong> {new Date(order.walletPayment.submittedAt).toLocaleString()}</p>
+                            </div>
+                            {order.walletPayment.screenshot && (
+                              <div>
+                                <p className="font-semibold mb-2 text-sm">Payment Screenshot:</p>
+                                <img
+                                  src={order.walletPayment.screenshot}
+                                  alt="Wallet Payment Screenshot"
+                                  className="max-w-full sm:max-w-md h-48 sm:h-64 object-contain rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => setImageModal(order.walletPayment.screenshot)}
+                                />
+                              </div>
+                            )}
+                          </div>
                         ) : order.payment ? (
-                          <div className="bg-green-50 p-4 rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-                              <p><strong>Method:</strong> <span className="text-green-700">{order.payment.methodName}</span></p>
+                          <div className="bg-green-50 p-3 sm:p-4 rounded-lg">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3 text-sm">
+                              <p className="break-words"><strong>Method:</strong> <span className="text-green-700">{order.payment.methodName}</span></p>
                               <p><strong>Amount:</strong> {order.payment.amount} EGP</p>
-                              <p><strong>Sender Phone:</strong> {order.payment.senderPhone}</p>
+                              <p className="break-words"><strong>Sender Phone:</strong> {order.payment.senderPhone}</p>
                             </div>
                             {order.payment.screenshot && (
                               <div>
-                                <p className="font-semibold mb-2">Screenshot:</p>
+                                <p className="font-semibold mb-2 text-sm">Screenshot:</p>
                                 <img
                                   src={order.payment.screenshot}
                                   alt="Payment Screenshot"
-                                  className="max-w-xs h-48 object-contain rounded border cursor-pointer hover:opacity-80"
+                                  className="max-w-full sm:max-w-xs h-40 sm:h-48 object-contain rounded border cursor-pointer hover:opacity-80"
                                   onClick={() => setImageModal(order.payment.screenshot)}
                                 />
                               </div>
                             )}
                           </div>
                         ) : (
-                          <div className="bg-yellow-50 p-4 rounded-lg">
-                            <p><strong>Method:</strong> <span className="text-yellow-700">Cash on Delivery</span></p>
+                          <div className="bg-yellow-50 p-3 sm:p-4 rounded-lg">
+                            <p className="text-sm"><strong>Method:</strong> 
+                              <span className="text-yellow-700 ml-2">
+                                {order.paymentMethod === 'cod' ? 'Cash on Delivery' :
+                                 order.paymentMethod === 'vodafone' ? '📱 Vodafone Cash' :
+                                 order.paymentMethod === 'orange' ? '🍊 Orange Cash' :
+                                 order.paymentMethod === 'telda' ? '💳 Telda' :
+                                 order.paymentMethod === 'instapay' ? '💳 InstaPay' :
+                                 order.paymentMethod === 'paymob' ? '💳 Online Payment' :
+                                 order.paymentMethod || 'Cash on Delivery'}
+                              </span>
+                            </p>
                           </div>
                         )}
                       </div>
 
                       {/* Order Status */}
                       <div className="mb-4 pb-4 border-b border-gray-200">
-                        <label className="block text-sm font-medium mb-2">Order Status:</label>
+                        <label className="block text-xs sm:text-sm font-medium mb-2">Order Status:</label>
                         <select
                           value={order.status}
                           onChange={(e) => handleOrderStatusUpdate(order._id, e.target.value)}
-                          className="input-field max-w-xs"
+                          className="input-field w-full sm:max-w-xs text-sm"
                         >
                           <option value="processing">Processing</option>
                           <option value="shipped">Shipped</option>
@@ -1829,10 +1928,10 @@ const AdminDashboard = () => {
                       </div>
 
                       {/* Price Summary */}
-                      <div>
+                      <div className="text-sm">
                         <div className="flex justify-between mb-2">
                           <span className="font-semibold">Subtotal:</span>
-                          <span>{order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)} EGP</span>
+                          <span className="break-words">{order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0)} EGP</span>
                         </div>
                         <div className="flex justify-between mb-2">
                           <span className="font-semibold">Shipping:</span>
@@ -1840,11 +1939,11 @@ const AdminDashboard = () => {
                         </div>
                         {order.promoCode && (
                           <div className="flex justify-between mb-2 text-green-600">
-                            <span className="font-semibold">Promo ({order.promoCode}):</span>
+                            <span className="font-semibold break-words">Promo ({order.promoCode}):</span>
                             <span>-{order.discount || 0}%</span>
                           </div>
                         )}
-                        <div className="flex justify-between text-lg font-bold border-t pt-2">
+                        <div className="flex justify-between text-base sm:text-lg font-bold border-t pt-2">
                           <span>Total:</span>
                           <span>{order.total} EGP</span>
                         </div>
@@ -1854,7 +1953,7 @@ const AdminDashboard = () => {
                       <div className="mt-4">
                         <button
                           onClick={() => handleDeleteOrder(order._id)}
-                          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full"
+                          className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 w-full text-sm"
                         >
                           Delete Order
                         </button>
@@ -1900,12 +1999,16 @@ const AdminDashboard = () => {
                       <input
                         type="number"
                         value={promoForm.discount}
-                        onChange={(e) => setPromoForm({ ...promoForm, discount: e.target.value })}
+                        onChange={(e) => {
+                          const value = Math.min(parseInt(e.target.value || 0), 40);
+                          setPromoForm({ ...promoForm, discount: value.toString() });
+                        }}
                         className="input-field"
                         min="1"
-                        max="100"
+                        max="40"
                         required
                       />
+                      <p className="text-xs text-gray-500 mt-1">Maximum 40%</p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">Max Uses</label>
@@ -2050,17 +2153,17 @@ const AdminDashboard = () => {
 
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 shadow-lg z-40">
-        <div className="max-w-md mx-auto flex justify-around items-center py-3">
+        <div className="max-w-md mx-auto flex justify-around items-center py-2">
           <button
             onClick={() => setActiveView('dashboard')}
-            className={`flex flex-col items-center px-6 py-2 rounded-lg transition-colors ${
+            className={`flex flex-col items-center px-4 py-1 rounded-lg transition-colors ${
               activeView === 'dashboard'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-600 hover:text-blue-600'
             }`}
           >
-            <span className="text-2xl mb-1">📊</span>
-            <span className="text-xs font-semibold">Dashboard</span>
+            <span className="text-xl mb-0.5">📊</span>
+            <span className="text-[10px] font-semibold">Dashboard</span>
           </button>
 
           <button
@@ -2068,16 +2171,16 @@ const AdminDashboard = () => {
               setActiveView('notifications');
               loadNotificationCount();
             }}
-            className={`flex flex-col items-center px-6 py-2 rounded-lg transition-colors relative ${
+            className={`flex flex-col items-center px-4 py-1 rounded-lg transition-colors relative ${
               activeView === 'notifications'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-600 hover:text-blue-600'
             }`}
           >
-            <span className="text-2xl mb-1">🔔</span>
-            <span className="text-xs font-semibold">Notifications</span>
+            <span className="text-xl mb-0.5">🔔</span>
+            <span className="text-[10px] font-semibold">Notifications</span>
             {unreadCount > 0 && (
-              <span className="absolute top-0 right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+              <span className="absolute -top-1 right-1 bg-red-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -2085,20 +2188,20 @@ const AdminDashboard = () => {
 
           <button
             onClick={() => setActiveView('profile')}
-            className={`flex flex-col items-center px-6 py-2 rounded-lg transition-colors ${
+            className={`flex flex-col items-center px-4 py-1 rounded-lg transition-colors ${
               activeView === 'profile'
                 ? 'text-blue-600 bg-blue-50'
                 : 'text-gray-600 hover:text-blue-600'
             }`}
           >
-            <span className="text-2xl mb-1">👤</span>
-            <span className="text-xs font-semibold">Profile</span>
+            <span className="text-xl mb-0.5">👤</span>
+            <span className="text-[10px] font-semibold">Profile</span>
           </button>
         </div>
       </div>
 
       {/* Add padding at bottom to prevent content from being hidden by bottom nav */}
-      <div className="h-20"></div>
+      <div className="h-16"></div>
     </div>
   );
 };

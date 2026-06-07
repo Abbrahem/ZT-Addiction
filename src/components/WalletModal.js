@@ -1,22 +1,41 @@
 import React, { useState } from 'react';
 
-const InstaPayModal = ({ isOpen, onClose, onSubmit, total }) => {
+const WalletModal = ({ isOpen, onClose, onSubmit, total, walletType }) => {
   const [senderPhone, setSenderPhone] = useState('');
   const [amount, setAmount] = useState(total);
   const [screenshot, setScreenshot] = useState(null);
   const [screenshotPreview, setScreenshotPreview] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const walletConfig = {
+    vodafone: {
+      title: 'Vodafone Cash',
+      color: 'red',
+      emoji: '📱',
+      receiverNumber: '01003019300'
+    },
+    orange: {
+      title: 'Orange Cash',
+      color: 'orange',
+      emoji: '🍊',
+      receiverNumber: '01228982199'
+    },
+    telda: {
+      title: 'Telda',
+      color: 'purple',
+      emoji: '💳',
+      receiverNumber: '01272558833'
+    }
+  };
+
+  const config = walletConfig[walletType] || walletConfig.vodafone;
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setScreenshot(file);
-      
-      // Create preview
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setScreenshotPreview(reader.result);
-      };
+      reader.onloadend = () => setScreenshotPreview(reader.result);
       reader.readAsDataURL(file);
     }
   };
@@ -51,17 +70,17 @@ const InstaPayModal = ({ isOpen, onClose, onSubmit, total }) => {
       await onSubmit({
         senderPhone,
         amount,
-        screenshot: base64Screenshot
+        screenshot: base64Screenshot,
+        walletType
       });
       
-      // Reset form
       setSenderPhone('');
       setAmount(total);
       setScreenshot(null);
       setScreenshotPreview('');
       onClose();
     } catch (error) {
-      console.error('Error submitting InstaPay:', error);
+      console.error(`Error submitting ${config.title}:`, error);
       alert('Error submitting payment. Please try again.');
     } finally {
       setLoading(false);
@@ -75,7 +94,10 @@ const InstaPayModal = ({ isOpen, onClose, onSubmit, total }) => {
       <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-playfair text-black">InstaPay Payment</h2>
+            <h2 className="text-2xl font-playfair text-black flex items-center gap-2">
+              <span>{config.emoji}</span>
+              {config.title} Payment
+            </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-black transition-colors"
@@ -87,12 +109,12 @@ const InstaPayModal = ({ isOpen, onClose, onSubmit, total }) => {
             </button>
           </div>
 
-          {/* InstaPay Instructions */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          {/* Payment Instructions */}
+          <div className={`bg-${config.color}-50 border border-${config.color}-200 rounded-lg p-4 mb-6`}>
             <h3 className="font-montserrat font-semibold text-black mb-2">How to Pay:</h3>
             <ol className="text-sm font-montserrat text-gray-700 space-y-1 list-decimal list-inside">
-              <li>Open your InstaPay app</li>
-              <li>Send <strong>{total} EGP</strong> to: <strong className="text-black">01228982199</strong></li>
+              <li>Open your {config.title} app</li>
+              <li>Send <strong>{total} EGP</strong> to: <strong className="text-black">{config.receiverNumber}</strong></li>
               <li>Take a screenshot of the confirmation</li>
               <li>Upload it below and submit</li>
             </ol>
@@ -102,7 +124,7 @@ const InstaPayModal = ({ isOpen, onClose, onSubmit, total }) => {
             {/* Sender Phone */}
             <div>
               <label className="block text-sm font-montserrat font-medium text-black mb-2">
-                Your Phone Number <span className="text-red-500">*</span>
+                Your Phone Number / Account <span className="text-red-500">*</span>
               </label>
               <input
                 type="tel"
@@ -143,12 +165,12 @@ const InstaPayModal = ({ isOpen, onClose, onSubmit, total }) => {
                 accept="image/*"
                 onChange={handleFileChange}
                 className="hidden"
-                id="screenshot-upload"
+                id={`${walletType}-screenshot-upload`}
                 required
                 disabled={loading}
               />
               <label
-                htmlFor="screenshot-upload"
+                htmlFor={`${walletType}-screenshot-upload`}
                 className={`flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
                   loading ? 'opacity-50 cursor-not-allowed' : 'hover:border-black'
                 } ${screenshotPreview ? 'border-green-500' : 'border-gray-300'}`}
@@ -203,4 +225,4 @@ const InstaPayModal = ({ isOpen, onClose, onSubmit, total }) => {
   );
 };
 
-export default InstaPayModal;
+export default WalletModal;

@@ -50,9 +50,13 @@ const BundleSubcategory = () => {
   const filterProducts = () => {
     let filtered = products;
     
-    // Filter by gender
+    // Filter by gender (support multiple genders in product)
     if (selectedGender !== 'all') {
-      filtered = filtered.filter(product => product.gender === selectedGender);
+      filtered = filtered.filter(product => {
+        if (!product.gender) return false;
+        // Check if product gender contains the selected gender
+        return product.gender.includes(selectedGender);
+      });
     }
     
     // Filter by availability

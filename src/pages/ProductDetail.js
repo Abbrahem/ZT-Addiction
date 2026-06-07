@@ -73,11 +73,29 @@ const ProductDetail = () => {
     fetchProduct();
     fetchOtherProducts();
     loadRecentlyViewed();
-    
-    // Initialize random numbers (avoiding 0)
-    setCurrentViewers(Math.floor(Math.random() * 30) + 2); // 2-31
-    setInCarts(Math.floor(Math.random() * 7) + 3); // 3-9
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  
+  // Initialize real-time stats after product is loaded
+  useEffect(() => {
+    if (product) {
+      // If sold out, set cart count to 0, otherwise use realistic small numbers
+      if (product.soldOut) {
+        setCurrentViewers(Math.floor(Math.random() * 3) + 1); // 1-3 viewers for sold out
+        setInCarts(0); // 0 in carts when sold out
+      } else {
+        setCurrentViewers(Math.floor(Math.random() * 5) + 1); // 1-5 viewers
+        // Cart count: 0, 1, or 2 with weighted probability (60% chance of 1)
+        const rand = Math.random();
+        if (rand < 0.15) {
+          setInCarts(0); // 15% chance
+        } else if (rand < 0.75) {
+          setInCarts(1); // 60% chance (most common)
+        } else {
+          setInCarts(2); // 25% chance
+        }
+      }
+    }
+  }, [product]);
   
   // Toggle between viewers and cart messages every 5 seconds
   useEffect(() => {
@@ -88,24 +106,39 @@ const ProductDetail = () => {
     return () => clearInterval(messageInterval);
   }, []);
   
-  // Update numbers randomly every 5 seconds (simulating real-time changes)
+  // Update numbers slowly (viewers every 30 seconds, cart every 10 minutes)
   useEffect(() => {
-    const numberInterval = setInterval(() => {
-      setCurrentViewers(prev => {
-        const change = Math.random() > 0.5 ? 1 : -1;
-        const newValue = prev + change;
-        return Math.max(2, Math.min(50, newValue)); // Keep between 2-50
-      });
-      
-      setInCarts(prev => {
-        const change = Math.random() > 0.5 ? 1 : -1;
-        const newValue = prev + change;
-        return Math.max(3, Math.min(20, newValue)); // Keep between 3-20
-      });
-    }, 5000);
+    if (!product) return;
     
-    return () => clearInterval(numberInterval);
-  }, []);
+    // Update viewers every 30 seconds
+    const viewersInterval = setInterval(() => {
+      setCurrentViewers(prev => {
+        const change = Math.random() > 0.6 ? 1 : (Math.random() > 0.3 ? -1 : 0);
+        const newValue = prev + change;
+        return product.soldOut ? Math.max(1, Math.min(5, newValue)) : Math.max(1, Math.min(5, newValue));
+      });
+    }, 30000); // 30 seconds
+    
+    // Update cart count every 10 minutes (600000ms) if not sold out
+    let cartInterval;
+    if (!product.soldOut) {
+      cartInterval = setInterval(() => {
+        const rand = Math.random();
+        if (rand < 0.15) {
+          setInCarts(0); // 15% chance
+        } else if (rand < 0.75) {
+          setInCarts(1); // 60% chance (most common)
+        } else {
+          setInCarts(2); // 25% chance
+        }
+      }, 600000); // 10 minutes
+    }
+    
+    return () => {
+      clearInterval(viewersInterval);
+      if (cartInterval) clearInterval(cartInterval);
+    };
+  }, [product]);
 
   // Save to recently viewed after product is loaded
   useEffect(() => {
