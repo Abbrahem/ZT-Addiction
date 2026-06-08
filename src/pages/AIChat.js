@@ -84,7 +84,7 @@ const AIChat = () => {
   const responses = {
     en: {
       track: '📦 To track your order:\n\n1. Go to "Orders" tab below\n2. Find your order\n3. View real-time status\n\nNeed help? Contact us!',
-      shipping: '🚚 Shipping Info:\n\n• Delivery: 2-3 business days\n• Cairo: Next day\n• Free over 500 EGP\n• Track anytime',
+      shipping: '🚚 Shipping Info:\n\n• Delivery: 2-3 business days\n• Cairo: Next day\n• Track anytime',
       payment: '💳 Payment Methods:\n\n• Cash on Delivery ✅\n• Visa/Mastercard\n• InstaPay\n• Mobile Wallets\n\nAll secure!',
       return: '↩️ Return Policy:\n\n• 7 days to return\n• Product unused\n• Original packaging\n• Full refund guaranteed\n\nEasy process!',
       contact: '📞 Contact Us:\n\n📱 +20 127 255 8833\n📧 abrahemelgazaly2@gmail.com\n💬 WhatsApp available\n\nWe reply fast!',
@@ -95,7 +95,7 @@ const AIChat = () => {
     },
     ar: {
       track: '📦 لتتبع طلبك:\n\n1. اذهب لتبويب "طلباتي" بالأسفل\n2. ابحث عن طلبك\n3. شاهد الحالة\n\nتحتاج مساعدة؟ تواصل معنا!',
-      shipping: '🚚 معلومات الشحن:\n\n• التوصيل: 2-3 أيام\n• القاهرة: اليوم التالي\n• مجاني فوق 500 جنيه\n• تتبع في أي وقت',
+      shipping: '🚚 معلومات الشحن:\n\n• التوصيل: 2-3 أيام\n• القاهرة: اليوم التالي\n• تتبع في أي وقت',
       payment: '💳 طرق الدفع:\n\n• الدفع عند الاستلام ✅\n• فيزا/ماستركارد\n• إنستاباي\n• المحافظ الإلكترونية\n\nكلها آمنة!',
       return: '↩️ سياسة الإرجاع:\n\n• مدة: 7 أيام\n• منتج غير مستخدم\n• العبوة الأصلية\n• استرداد كامل مضمون\n\nعملية سهلة!',
       contact: '📞 تواصل معنا:\n\n📱 +20 127 255 8833\n📧 abrahemelgazaly2@gmail.com\n💬 واتساب متاح\n\nنرد بسرعة!',
