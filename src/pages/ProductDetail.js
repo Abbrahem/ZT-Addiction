@@ -38,6 +38,7 @@ const ProductDetail = () => {
   const [selectedBundleSize2, setSelectedBundleSize2] = useState('');
   const [selectedBundleSize3, setSelectedBundleSize3] = useState('');
   const [selectedBundleSize4, setSelectedBundleSize4] = useState('');
+  const [selectedBundleSize5, setSelectedBundleSize5] = useState('');
   const [activePerfume, setActivePerfume] = useState(1);
 
   // Scroll to reviews if URL has scrollToReviews parameter
@@ -173,6 +174,10 @@ const ProductDetail = () => {
         if (availableSize4) { setSelectedBundleSize4(availableSize4.size); totalPrice += availableSize4.price; }
         else { setSelectedBundleSize4(''); }
         
+        const availableSize5 = getFirstAvailableSize(productData.bundlePerfume5);
+        if (availableSize5) { setSelectedBundleSize5(availableSize5.size); totalPrice += availableSize5.price; }
+        else { setSelectedBundleSize5(''); }
+        
         setCurrentPrice(totalPrice);
       } else {
         // Set initial size and price (skip sold out sizes)
@@ -285,8 +290,10 @@ const ProductDetail = () => {
       const perfume2Available = hasAvailableSizes(product.bundlePerfume2);
       const perfume3Exists = product.bundlePerfume3?.name;
       const perfume4Exists = product.bundlePerfume4?.name;
+      const perfume5Exists = product.bundlePerfume5?.name;
       const perfume3Available = perfume3Exists && hasAvailableSizes(product.bundlePerfume3);
       const perfume4Available = perfume4Exists && hasAvailableSizes(product.bundlePerfume4);
+      const perfume5Available = perfume5Exists && hasAvailableSizes(product.bundlePerfume5);
       
       if (perfume1Available && !selectedBundleSize1) {
         Swal.fire({ icon: 'warning', title: 'Missing Selection', text: 'Please select size for Perfume 1.' });
@@ -304,12 +311,17 @@ const ProductDetail = () => {
         Swal.fire({ icon: 'warning', title: 'Missing Selection', text: 'Please select size for Perfume 4.' });
         return;
       }
+      if (perfume5Available && !selectedBundleSize5) {
+        Swal.fire({ icon: 'warning', title: 'Missing Selection', text: 'Please select size for Perfume 5.' });
+        return;
+      }
       
       let bundleSizeParts = [];
       if (selectedBundleSize1) bundleSizeParts.push(selectedBundleSize1);
       if (selectedBundleSize2) bundleSizeParts.push(selectedBundleSize2);
       if (selectedBundleSize3) bundleSizeParts.push(selectedBundleSize3);
       if (selectedBundleSize4) bundleSizeParts.push(selectedBundleSize4);
+      if (selectedBundleSize5) bundleSizeParts.push(selectedBundleSize5);
       const bundleSize = bundleSizeParts.join(' + ');
       
       const bundleDetails = {
@@ -320,7 +332,9 @@ const ProductDetail = () => {
         perfume3Name: selectedBundleSize3 ? product.bundlePerfume3?.name : null,
         size3: selectedBundleSize3 || null,
         perfume4Name: selectedBundleSize4 ? product.bundlePerfume4?.name : null,
-        size4: selectedBundleSize4 || null
+        size4: selectedBundleSize4 || null,
+        perfume5Name: selectedBundleSize5 ? product.bundlePerfume5?.name : null,
+        size5: selectedBundleSize5 || null
       };
       
       addToCart(product, bundleSize, 'Default', quantity, currentPrice, bundleDetails);
@@ -346,8 +360,10 @@ const ProductDetail = () => {
       const perfume2Available = hasAvailableSizes(product.bundlePerfume2);
       const perfume3Exists = product.bundlePerfume3?.name;
       const perfume4Exists = product.bundlePerfume4?.name;
+      const perfume5Exists = product.bundlePerfume5?.name;
       const perfume3Available = perfume3Exists && hasAvailableSizes(product.bundlePerfume3);
       const perfume4Available = perfume4Exists && hasAvailableSizes(product.bundlePerfume4);
+      const perfume5Available = perfume5Exists && hasAvailableSizes(product.bundlePerfume5);
       
       if (perfume1Available && !selectedBundleSize1) {
         Swal.fire({ icon: 'warning', title: 'Missing Selection', text: 'Please select size for Perfume 1.' });
@@ -365,12 +381,17 @@ const ProductDetail = () => {
         Swal.fire({ icon: 'warning', title: 'Missing Selection', text: 'Please select size for Perfume 4.' });
         return;
       }
+      if (perfume5Available && !selectedBundleSize5) {
+        Swal.fire({ icon: 'warning', title: 'Missing Selection', text: 'Please select size for Perfume 5.' });
+        return;
+      }
       
       let bundleSizeParts = [];
       if (selectedBundleSize1) bundleSizeParts.push(selectedBundleSize1);
       if (selectedBundleSize2) bundleSizeParts.push(selectedBundleSize2);
       if (selectedBundleSize3) bundleSizeParts.push(selectedBundleSize3);
       if (selectedBundleSize4) bundleSizeParts.push(selectedBundleSize4);
+      if (selectedBundleSize5) bundleSizeParts.push(selectedBundleSize5);
       const bundleSize = bundleSizeParts.join(' + ');
       
       const bundleDetails = {
@@ -381,7 +402,9 @@ const ProductDetail = () => {
         perfume3Name: selectedBundleSize3 ? product.bundlePerfume3?.name : null,
         size3: selectedBundleSize3 || null,
         perfume4Name: selectedBundleSize4 ? product.bundlePerfume4?.name : null,
-        size4: selectedBundleSize4 || null
+        size4: selectedBundleSize4 || null,
+        perfume5Name: selectedBundleSize5 ? product.bundlePerfume5?.name : null,
+        size5: selectedBundleSize5 || null
       };
       
       addToCart(product, bundleSize, 'Default', quantity, currentPrice, bundleDetails);
@@ -696,6 +719,32 @@ const ProductDetail = () => {
                     </div>
                   );
                 })()}
+
+                {/* Perfume 5 Circle (Optional) */}
+                {product.bundlePerfume5?.name && (() => {
+                  const isFullySoldOut = isPerfumeFullySoldOut(product.bundlePerfume5);
+                  return (
+                    <div 
+                      onClick={() => !isFullySoldOut && setActivePerfume(5)}
+                      className={`transition-all duration-300 ${isFullySoldOut ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'} ${activePerfume === 5 && !isFullySoldOut ? 'scale-110' : 'opacity-70 hover:opacity-100'}`}
+                    >
+                      <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center border-4 transition-all ${
+                        isFullySoldOut ? 'border-red-300 bg-red-100 text-red-400' :
+                        activePerfume === 5 ? 'border-black bg-black text-white shadow-lg' : 'border-gray-300 bg-white text-black hover:border-gray-400'
+                      }`}>
+                        <span className={`text-xl sm:text-2xl font-bold ${isFullySoldOut ? 'line-through' : ''}`}>5</span>
+                      </div>
+                      <p className={`text-center mt-2 font-montserrat text-xs sm:text-sm max-w-20 sm:max-w-24 leading-tight ${isFullySoldOut ? 'line-through text-red-400' : activePerfume === 5 ? 'font-semibold text-black' : 'text-gray-600'}`}>
+                        {product.bundlePerfume5?.name}
+                      </p>
+                      {isFullySoldOut ? (
+                        <p className="text-center text-xs text-red-500 mt-1">Sold Out</p>
+                      ) : selectedBundleSize5 && (
+                        <p className="text-center text-xs text-green-600 mt-1 font-medium">{selectedBundleSize5}</p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Size Selection for Active Perfume */}
@@ -705,6 +754,7 @@ const ProductDetail = () => {
                   {activePerfume === 2 && product.bundlePerfume2?.name}
                   {activePerfume === 3 && product.bundlePerfume3?.name}
                   {activePerfume === 4 && product.bundlePerfume4?.name}
+                  {activePerfume === 5 && product.bundlePerfume5?.name}
                 </h4>
                 <p className="text-center text-gray-500 text-sm mb-4">Select Size</p>
                 
@@ -713,14 +763,15 @@ const ProductDetail = () => {
                     const perfumeData = activePerfume === 1 ? product.bundlePerfume1 
                       : activePerfume === 2 ? product.bundlePerfume2 
                       : activePerfume === 3 ? product.bundlePerfume3 
-                      : product.bundlePerfume4;
+                      : activePerfume === 4 ? product.bundlePerfume4
+                      : product.bundlePerfume5;
                     
                     const selectedSize = activePerfume === 1 ? selectedBundleSize1 
                       : activePerfume === 2 ? selectedBundleSize2 
                       : activePerfume === 3 ? selectedBundleSize3 
-                      : selectedBundleSize4;
+                      : activePerfume === 4 ? selectedBundleSize4
+                      : selectedBundleSize5;
                     
-                    // Check if all sizes are sold out
                     const allSoldOut = perfumeData?.sizesWithPrices?.every(s => s.soldOut);
                     if (allSoldOut) {
                       return (
@@ -738,13 +789,15 @@ const ProductDetail = () => {
                             if (activePerfume === 1) setSelectedBundleSize1(item.size);
                             else if (activePerfume === 2) setSelectedBundleSize2(item.size);
                             else if (activePerfume === 3) setSelectedBundleSize3(item.size);
-                            else setSelectedBundleSize4(item.size);
+                            else if (activePerfume === 4) setSelectedBundleSize4(item.size);
+                            else setSelectedBundleSize5(item.size);
                             
                             const p1 = activePerfume === 1 ? item.price : (product.bundlePerfume1?.sizesWithPrices?.find(s => s.size === selectedBundleSize1)?.price || 0);
                             const p2 = activePerfume === 2 ? item.price : (product.bundlePerfume2?.sizesWithPrices?.find(s => s.size === selectedBundleSize2)?.price || 0);
                             const p3 = activePerfume === 3 ? item.price : (product.bundlePerfume3?.sizesWithPrices?.find(s => s.size === selectedBundleSize3)?.price || 0);
                             const p4 = activePerfume === 4 ? item.price : (product.bundlePerfume4?.sizesWithPrices?.find(s => s.size === selectedBundleSize4)?.price || 0);
-                            setCurrentPrice(p1 + p2 + p3 + p4);
+                            const p5 = activePerfume === 5 ? item.price : (product.bundlePerfume5?.sizesWithPrices?.find(s => s.size === selectedBundleSize5)?.price || 0);
+                            setCurrentPrice(p1 + p2 + p3 + p4 + p5);
                           }
                         }}
                         disabled={item.soldOut}
@@ -777,6 +830,9 @@ const ProductDetail = () => {
                   )}
                   {product.bundlePerfume4?.name && (
                     <p><span className="font-medium">{product.bundlePerfume4?.name}:</span> {isPerfumeFullySoldOut(product.bundlePerfume4) ? <span className="text-red-500">Sold Out</span> : (selectedBundleSize4 || 'Not selected')}</p>
+                  )}
+                  {product.bundlePerfume5?.name && (
+                    <p><span className="font-medium">{product.bundlePerfume5?.name}:</span> {isPerfumeFullySoldOut(product.bundlePerfume5) ? <span className="text-red-500">Sold Out</span> : (selectedBundleSize5 || 'Not selected')}</p>
                   )}
                 </div>
               </div>

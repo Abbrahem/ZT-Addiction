@@ -17,12 +17,12 @@ const PaymentSelection = ({ onSubmit, loading }) => {
     <div>
       {/* Payment Options */}
       <div className="space-y-3 mb-6">
-        {/* Paymob Payment Option - Coming Soon */}
+        {/* Paymob Payment Option - Now Active */}
         <div className="w-full">
           <label
             className={`flex items-start gap-3 p-3 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
               selectedMethod === 'paymob'
-                ? 'border-black bg-gray-50'
+                ? 'border-green-500 bg-green-50'
                 : 'border-gray-200 bg-white hover:border-gray-300'
             } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
@@ -40,7 +40,7 @@ const PaymentSelection = ({ onSubmit, loading }) => {
             {/* Custom Radio Button */}
             <div className={`mt-0.5 w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
               selectedMethod === 'paymob' 
-                ? 'border-black bg-black' 
+                ? 'border-green-500 bg-green-500' 
                 : 'border-gray-400 bg-white'
             }`}>
               {selectedMethod === 'paymob' && (
@@ -49,18 +49,34 @@ const PaymentSelection = ({ onSubmit, loading }) => {
             </div>
 
             <div className="flex-1 flex items-center justify-between gap-2">
-              <span className="font-montserrat text-sm font-medium text-black">
-                Pay via Credit Cards / Wallets
-              </span>
+              <div>
+                <span className="font-montserrat text-sm font-medium text-black flex items-center gap-2">
+                  💳 Credit/Debit Cards 
+                  <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full font-bold">NEW</span>
+                </span>
+                <p className="text-xs text-gray-600 mt-1">Visa, MasterCard, Meeza</p>
+              </div>
             </div>
           </label>
 
           {/* Dropdown info for paymob payment */}
           {selectedMethod === 'paymob' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2 animate-fadeIn">
-              <p className="text-xs font-montserrat text-gray-700 leading-relaxed">
-                انتظر قريباً سوف تتوفر وسيلة الدفع هذه
-              </p>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-2 animate-fadeIn">
+              <div className="flex items-start gap-2">
+                <svg className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                </svg>
+                <div>
+                  <p className="text-xs font-montserrat text-green-800 font-medium">
+                    🔒 دفع آمن ومشفر عبر Paymob
+                  </p>
+                  <ul className="text-xs text-green-700 mt-1 space-y-0.5">
+                    <li>• جميع البطاقات مدعومة (Visa, MasterCard, Meeza)</li>
+                    <li>• اتصال مشفر SSL</li>
+                    <li>• معتمد من البنك المركزي المصري</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           )}
         </div>

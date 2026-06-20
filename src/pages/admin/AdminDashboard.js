@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { showLocalNotification } from '../../utils/notifications';
 import AdminNotifications from './AdminNotifications';
 import AdminProfile from './AdminProfile';
+import AdminRequestsRecommended from './AdminRequestsRecommended';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -39,7 +40,8 @@ const AdminDashboard = () => {
     bundlePerfume1: { name: '', sizesWithPrices: [] },
     bundlePerfume2: { name: '', sizesWithPrices: [] },
     bundlePerfume3: { name: '', sizesWithPrices: [] }, // Optional
-    bundlePerfume4: { name: '', sizesWithPrices: [] }  // Optional
+    bundlePerfume4: { name: '', sizesWithPrices: [] },  // Optional
+    bundlePerfume5: { name: '', sizesWithPrices: [] }   // Optional
   });
 
   // Edit product state
@@ -58,6 +60,8 @@ const AdminDashboard = () => {
   const [tempBundlePrice3, setTempBundlePrice3] = useState('');
   const [tempBundleSize4, setTempBundleSize4] = useState('');
   const [tempBundlePrice4, setTempBundlePrice4] = useState('');
+  const [tempBundleSize5, setTempBundleSize5] = useState('');
+  const [tempBundlePrice5, setTempBundlePrice5] = useState('');
 
   // Search and filter state for manage products
   const [searchTerm, setSearchTerm] = useState('');
@@ -275,6 +279,11 @@ const AdminDashboard = () => {
         Swal.fire({ icon: 'error', title: 'Missing Sizes', text: 'Please add sizes with prices for Perfume 4' });
         return;
       }
+      // Validate perfume 5 if name is provided
+      if (productForm.bundlePerfume5?.name && !productForm.bundlePerfume5?.sizesWithPrices?.length) {
+        Swal.fire({ icon: 'error', title: 'Missing Sizes', text: 'Please add sizes with prices for Perfume 5' });
+        return;
+      }
     } else {
       // For non-bundles, validate sizes
       if (!productForm.sizesWithPrices || productForm.sizesWithPrices.length === 0) {
@@ -293,6 +302,16 @@ const AdminDashboard = () => {
       submitData.priceEGP = 0; // Will be calculated based on selected sizes
       submitData.bundlePerfume1 = productForm.bundlePerfume1;
       submitData.bundlePerfume2 = productForm.bundlePerfume2;
+      // Include optional perfumes if they have data
+      if (productForm.bundlePerfume3?.name && productForm.bundlePerfume3?.sizesWithPrices?.length) {
+        submitData.bundlePerfume3 = productForm.bundlePerfume3;
+      }
+      if (productForm.bundlePerfume4?.name && productForm.bundlePerfume4?.sizesWithPrices?.length) {
+        submitData.bundlePerfume4 = productForm.bundlePerfume4;
+      }
+      if (productForm.bundlePerfume5?.name && productForm.bundlePerfume5?.sizesWithPrices?.length) {
+        submitData.bundlePerfume5 = productForm.bundlePerfume5;
+      }
     }
     
     console.log('Submitting product:', submitData);
@@ -528,7 +547,8 @@ const AdminDashboard = () => {
       bundlePerfume1: product.bundlePerfume1 || { name: '', sizesWithPrices: [] },
       bundlePerfume2: product.bundlePerfume2 || { name: '', sizesWithPrices: [] },
       bundlePerfume3: product.bundlePerfume3 || { name: '', sizesWithPrices: [] },
-      bundlePerfume4: product.bundlePerfume4 || { name: '', sizesWithPrices: [] }
+      bundlePerfume4: product.bundlePerfume4 || { name: '', sizesWithPrices: [] },
+      bundlePerfume5: product.bundlePerfume5 || { name: '', sizesWithPrices: [] }
     });
     setEditingProduct(product);
     setActiveTab('add-product');
@@ -849,7 +869,8 @@ const AdminDashboard = () => {
                 { id: 'add-product', label: 'Add New Product' },
                 { id: 'manage-products', label: 'Manage Products' },
                 { id: 'orders', label: 'Orders' },
-                { id: 'promo-codes', label: 'Promo Codes' }
+                { id: 'promo-codes', label: 'Promo Codes' },
+                { id: 'requests-recommended', label: 'Requests & Recommended' }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1299,63 +1320,58 @@ const AdminDashboard = () => {
                         className="input-field mb-3"
                         placeholder="Leave empty if not needed"
                       />
-                      
                       <label className="block text-sm font-medium mb-2">Perfume 4 Sizes & Prices</label>
                       <div className="flex gap-2 mb-3">
-                        <select
-                          value={tempBundleSize4}
-                          onChange={(e) => setTempBundleSize4(e.target.value)}
-                          className="input-field flex-1"
-                        >
+                        <select value={tempBundleSize4} onChange={(e) => setTempBundleSize4(e.target.value)} className="input-field flex-1">
                           <option value="">Select Size</option>
-                          {availableSizes.map(size => (
-                            <option key={size} value={size}>{size}</option>
-                          ))}
+                          {availableSizes.map(size => (<option key={size} value={size}>{size}</option>))}
                         </select>
-                        <input
-                          type="number"
-                          value={tempBundlePrice4}
-                          onChange={(e) => setTempBundlePrice4(e.target.value)}
-                          placeholder="Price (EGP)"
-                          className="input-field flex-1"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (tempBundleSize4 && tempBundlePrice4) {
-                              setProductForm({
-                                ...productForm,
-                                bundlePerfume4: {
-                                  ...productForm.bundlePerfume4,
-                                  sizesWithPrices: [...(productForm.bundlePerfume4?.sizesWithPrices || []), { size: tempBundleSize4, price: parseFloat(tempBundlePrice4) }]
-                                }
-                              });
-                              setTempBundleSize4('');
-                              setTempBundlePrice4('');
-                            }
-                          }}
-                          className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600"
-                        >
-                          Add
-                        </button>
+                        <input type="number" value={tempBundlePrice4} onChange={(e) => setTempBundlePrice4(e.target.value)} placeholder="Price (EGP)" className="input-field flex-1" />
+                        <button type="button" onClick={() => { if (tempBundleSize4 && tempBundlePrice4) { setProductForm({ ...productForm, bundlePerfume4: { ...productForm.bundlePerfume4, sizesWithPrices: [...(productForm.bundlePerfume4?.sizesWithPrices || []), { size: tempBundleSize4, price: parseFloat(tempBundlePrice4) }] } }); setTempBundleSize4(''); setTempBundlePrice4(''); } }} className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600">Add</button>
                       </div>
-                      
                       {productForm.bundlePerfume4?.sizesWithPrices?.length > 0 && (
                         <div className="space-y-2">
                           {productForm.bundlePerfume4.sizesWithPrices.map((item, idx) => (
                             <div key={idx} className="flex items-center justify-between bg-orange-100 p-3 rounded">
                               <span className="font-medium text-orange-900">{item.size} - {item.price} EGP</span>
-                              <button
-                                type="button"
-                                onClick={() => setProductForm({
-                                  ...productForm,
-                                  bundlePerfume4: {
-                                    ...productForm.bundlePerfume4,
-                                    sizesWithPrices: productForm.bundlePerfume4.sizesWithPrices.filter((_, i) => i !== idx)
-                                  }
-                                })}
-                                className="text-orange-600 hover:text-orange-800"
-                              >Remove</button>
+                              <button type="button" onClick={() => setProductForm({ ...productForm, bundlePerfume4: { ...productForm.bundlePerfume4, sizesWithPrices: productForm.bundlePerfume4.sizesWithPrices.filter((_, i) => i !== idx) } })} className="text-orange-600 hover:text-orange-800">Remove</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Perfume 5 - Optional */}
+                    <div className="p-4 bg-white rounded-lg border-2 border-dashed border-pink-300">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="bg-pink-500 text-white text-xs px-2 py-1 rounded">Optional</span>
+                        <label className="block text-sm font-medium">Perfume 5 Name</label>
+                      </div>
+                      <input
+                        type="text"
+                        value={productForm.bundlePerfume5?.name || ''}
+                        onChange={(e) => setProductForm({
+                          ...productForm,
+                          bundlePerfume5: { ...productForm.bundlePerfume5, name: e.target.value, sizesWithPrices: productForm.bundlePerfume5?.sizesWithPrices || [] }
+                        })}
+                        className="input-field mb-3"
+                        placeholder="Leave empty if not needed"
+                      />
+                      <label className="block text-sm font-medium mb-2">Perfume 5 Sizes & Prices</label>
+                      <div className="flex gap-2 mb-3">
+                        <select value={tempBundleSize5} onChange={(e) => setTempBundleSize5(e.target.value)} className="input-field flex-1">
+                          <option value="">Select Size</option>
+                          {availableSizes.map(size => (<option key={size} value={size}>{size}</option>))}
+                        </select>
+                        <input type="number" value={tempBundlePrice5} onChange={(e) => setTempBundlePrice5(e.target.value)} placeholder="Price (EGP)" className="input-field flex-1" />
+                        <button type="button" onClick={() => { if (tempBundleSize5 && tempBundlePrice5) { setProductForm({ ...productForm, bundlePerfume5: { ...productForm.bundlePerfume5, sizesWithPrices: [...(productForm.bundlePerfume5?.sizesWithPrices || []), { size: tempBundleSize5, price: parseFloat(tempBundlePrice5) }] } }); setTempBundleSize5(''); setTempBundlePrice5(''); } }} className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600">Add</button>
+                      </div>
+                      {productForm.bundlePerfume5?.sizesWithPrices?.length > 0 && (
+                        <div className="space-y-2">
+                          {productForm.bundlePerfume5.sizesWithPrices.map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-pink-100 p-3 rounded">
+                              <span className="font-medium text-pink-900">{item.size} - {item.price} EGP</span>
+                              <button type="button" onClick={() => setProductForm({ ...productForm, bundlePerfume5: { ...productForm.bundlePerfume5, sizesWithPrices: productForm.bundlePerfume5.sizesWithPrices.filter((_, i) => i !== idx) } })} className="text-pink-600 hover:text-pink-800">Remove</button>
                             </div>
                           ))}
                         </div>
@@ -1476,7 +1492,12 @@ const AdminDashboard = () => {
                       onClick={() => {
                         setEditingProduct(null);
                         setProductForm({
-                          name: '', priceEGP: '', description: '', collection: '', size: '', images: []
+                          name: '', description: '', fragranceNotes: '', fragranceSeason: '', collection: '', subcategory: '', bundleSubcategory: '', gender: '', images: [], sizesWithPrices: [],
+                          bundlePerfume1: { name: '', sizesWithPrices: [] },
+                          bundlePerfume2: { name: '', sizesWithPrices: [] },
+                          bundlePerfume3: { name: '', sizesWithPrices: [] },
+                          bundlePerfume4: { name: '', sizesWithPrices: [] },
+                          bundlePerfume5: { name: '', sizesWithPrices: [] }
                         });
                       }}
                       className="btn-secondary"
@@ -1641,6 +1662,29 @@ const AdminDashboard = () => {
                                     sizeItem.soldOut
                                       ? 'bg-red-100 text-red-700 line-through hover:bg-red-200'
                                       : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                                  }`}
+                                  title={sizeItem.soldOut ? 'Click to mark as available' : 'Click to mark as sold out'}
+                                >
+                                  {sizeItem.size} - {sizeItem.price} EGP
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Perfume 5 Sizes - Optional */}
+                        {product.bundlePerfume5?.name && product.bundlePerfume5?.sizesWithPrices?.length > 0 && (
+                          <div className="bg-white p-3 rounded-lg border-2 border-pink-200">
+                            <p className="text-sm font-bold mb-2 text-pink-900">5️⃣ {product.bundlePerfume5.name}</p>
+                            <div className="flex flex-wrap gap-2">
+                              {product.bundlePerfume5.sizesWithPrices?.map((sizeItem, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => handleBundleSizeSoldOutToggle(product._id, 5, sizeItem.size, sizeItem.soldOut)}
+                                  className={`px-3 py-2 rounded text-sm font-medium transition-all ${
+                                    sizeItem.soldOut
+                                      ? 'bg-red-100 text-red-700 line-through hover:bg-red-200'
+                                      : 'bg-pink-100 text-pink-700 hover:bg-pink-200'
                                   }`}
                                   title={sizeItem.soldOut ? 'Click to mark as available' : 'Click to mark as sold out'}
                                 >
@@ -2127,6 +2171,11 @@ const AdminDashboard = () => {
                 )}
               </div>
             </div>
+          )}
+
+          {/* Requests & Recommended Tab */}
+          {activeTab === 'requests-recommended' && (
+            <AdminRequestsRecommended />
           )}
             </>
           )}

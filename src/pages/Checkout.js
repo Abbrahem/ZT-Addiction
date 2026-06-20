@@ -95,16 +95,49 @@ const Checkout = () => {
       const firstName = nameParts[0] || 'Customer';
       const lastName = nameParts.slice(1).join(' ') || 'User';
 
+      // أولاً: احفظ الأوردر في DB بحالة pending
+      const orderData = {
+        items: items.map(item => ({
+          productId: item.id,
+          name: item.name,
+          size: item.size,
+          quantity: item.quantity,
+          price: item.price,
+          image: item.image,
+          isBundle: item.isBundle || false,
+          bundleDetails: item.bundleDetails || null
+        })),
+        customer: {
+          name: formData.fullName,
+          email: formData.email,
+          address: formData.address,
+          government: formData.government,
+          phone1: formData.phone1,
+          phone2: formData.phone2
+        },
+        shippingFee,
+        total,
+        promoCode: appliedPromo?.code,
+        discount: appliedPromo?.discount,
+        customerToken: localStorage.getItem('fcmToken') || null,
+        paymentMethod: 'paymob',
+        status: 'Pending Payment'
+      };
+
+      const orderResponse = await axios.post('/api/orders', orderData);
+      const savedOrderId = orderResponse.data.orderId;
+
+      // ثانياً: ابدأ عملية الدفع مع Paymob
       const paymentResponse = await axios.post('/api/paymob', {
         amount: total,
-        orderId: 'ORDER_' + Date.now(),
+        orderId: savedOrderId,
         customerInfo: {
           firstName,
           lastName,
           email: formData.email,
           phone: formData.phone1,
-          city: 'Cairo',
-          governorate: 'Cairo',
+          city: formData.government || 'Cairo',
+          governorate: formData.government || 'Cairo',
           street: formData.address,
           building: 'N/A',
           floor: 'N/A',
@@ -113,6 +146,8 @@ const Checkout = () => {
       });
 
       if (paymentResponse.data.success) {
+        // حفظ orderId محلياً للرجوع إليه
+        localStorage.setItem('pendingPaymobOrderId', savedOrderId);
         setPaymobUrl(paymentResponse.data.paymentUrl);
         setShowPaymobModal(true);
       } else {
@@ -131,14 +166,14 @@ const Checkout = () => {
   };
 
   const validateForm = () => {
-    const { fullName, email, address, phone1, phone2 } = formData;
+    const { fullName, email, address, government, phone1, phone2 } = formData;
     
-    if (!fullName.trim()) {
+    if (!fullName?.trim()) {
       Swal.fire({ icon: 'error', title: 'Missing Information', text: 'Please enter your full name' });
       return false;
     }
     
-    if (!email.trim()) {
+    if (!email?.trim()) {
       Swal.fire({ icon: 'error', title: 'Missing Information', text: 'Please enter your email' });
       return false;
     }
@@ -149,22 +184,22 @@ const Checkout = () => {
       return false;
     }
     
-    if (!address.trim()) {
+    if (!address?.trim()) {
       Swal.fire({ icon: 'error', title: 'Missing Information', text: 'Please enter your address' });
       return false;
     }
     
-    if (!formData.government.trim()) {
+    if (!government?.trim()) {
       Swal.fire({ icon: 'error', title: 'Missing Information', text: 'Please select your government' });
       return false;
     }
     
-    if (!phone1.trim()) {
+    if (!phone1?.trim()) {
       Swal.fire({ icon: 'error', title: 'Missing Information', text: 'Please enter your first phone number' });
       return false;
     }
     
-    if (!phone2.trim()) {
+    if (!phone2?.trim()) {
       Swal.fire({ icon: 'error', title: 'Missing Information', text: 'Please enter your second phone number' });
       return false;
     }
@@ -251,15 +286,9 @@ const Checkout = () => {
     
     if (!validateForm()) return;
     
-    // لو اختار Paymob Payment - عرض رسالة قريباً
+    // لو اختار Paymob Payment - تفعيل الدفع الفعلي
     if (selectedPaymentMethod === 'paymob') {
-      Swal.fire({
-        icon: 'info',
-        title: 'قريباً جداً!',
-        text: 'انتظر قريباً سوف تتوفر وسيلة الدفع هذه',
-        confirmButtonText: 'حسناً',
-        confirmButtonColor: '#000'
-      });
+      await handlePaymobPayment();
       return;
     }
     

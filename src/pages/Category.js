@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -7,6 +7,7 @@ import { mockProducts } from '../data/mockData';
 
 const Category = () => {
   const { category } = useParams();
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,6 +19,7 @@ const Category = () => {
   const [selectedBundleSize2, setSelectedBundleSize2] = useState('');
   const [selectedBundleSize3, setSelectedBundleSize3] = useState('');
   const [selectedBundleSize4, setSelectedBundleSize4] = useState('');
+  const [selectedBundleSize5, setSelectedBundleSize5] = useState('');
   const [activePerfume, setActivePerfume] = useState(1);
   const { addToCart } = useCart();
   
@@ -183,6 +185,10 @@ const Category = () => {
       if (availableSize4) { setSelectedBundleSize4(availableSize4.size); totalPrice += availableSize4.price; }
       else { setSelectedBundleSize4(''); }
       
+      const availableSize5 = getFirstAvailableSize(product.bundlePerfume5);
+      if (availableSize5) { setSelectedBundleSize5(availableSize5.size); totalPrice += availableSize5.price; }
+      else { setSelectedBundleSize5(''); }
+      
       setQuickAddPrice(totalPrice);
     } else {
       if (product.sizesWithPrices && product.sizesWithPrices.length > 0) {
@@ -212,8 +218,10 @@ const Category = () => {
       const perfume2Available = hasAvailableSizes(quickAddProduct.bundlePerfume2);
       const perfume3Exists = quickAddProduct.bundlePerfume3?.name;
       const perfume4Exists = quickAddProduct.bundlePerfume4?.name;
+      const perfume5Exists = quickAddProduct.bundlePerfume5?.name;
       const perfume3Available = perfume3Exists && hasAvailableSizes(quickAddProduct.bundlePerfume3);
       const perfume4Available = perfume4Exists && hasAvailableSizes(quickAddProduct.bundlePerfume4);
+      const perfume5Available = perfume5Exists && hasAvailableSizes(quickAddProduct.bundlePerfume5);
       
       if (perfume1Available && !selectedBundleSize1) {
         Swal.fire({ icon: 'warning', title: 'Select Size', text: 'Please select size for Perfume 1' });
@@ -231,12 +239,17 @@ const Category = () => {
         Swal.fire({ icon: 'warning', title: 'Select Size', text: 'Please select size for Perfume 4' });
         return;
       }
+      if (perfume5Available && !selectedBundleSize5) {
+        Swal.fire({ icon: 'warning', title: 'Select Size', text: 'Please select size for Perfume 5' });
+        return;
+      }
       
       let bundleSizeParts = [];
       if (selectedBundleSize1) bundleSizeParts.push(selectedBundleSize1);
       if (selectedBundleSize2) bundleSizeParts.push(selectedBundleSize2);
       if (selectedBundleSize3) bundleSizeParts.push(selectedBundleSize3);
       if (selectedBundleSize4) bundleSizeParts.push(selectedBundleSize4);
+      if (selectedBundleSize5) bundleSizeParts.push(selectedBundleSize5);
       const bundleSize = bundleSizeParts.join(' + ');
       
       const bundleDetails = {
@@ -247,7 +260,9 @@ const Category = () => {
         perfume3Name: selectedBundleSize3 ? quickAddProduct.bundlePerfume3?.name : null,
         size3: selectedBundleSize3 || null,
         perfume4Name: selectedBundleSize4 ? quickAddProduct.bundlePerfume4?.name : null,
-        size4: selectedBundleSize4 || null
+        size4: selectedBundleSize4 || null,
+        perfume5Name: selectedBundleSize5 ? quickAddProduct.bundlePerfume5?.name : null,
+        size5: selectedBundleSize5 || null
       };
       
       addToCart(quickAddProduct, bundleSize, 'Default', 1, quickAddPrice, bundleDetails);
@@ -266,6 +281,7 @@ const Category = () => {
     setSelectedBundleSize2('');
     setSelectedBundleSize3('');
     setSelectedBundleSize4('');
+    setSelectedBundleSize5('');
     setActivePerfume(1);
   };
 
@@ -465,6 +481,31 @@ const Category = () => {
         )}
       </div>
 
+      {/* Requests & Recommended Entry Card */}
+      {(category === 'summer-samples' || category === 'winter-samples' || category === 'bottles') && (
+        <div className="max-w-7xl mx-auto px-6 mt-12 mb-4">
+          <button
+            onClick={() => navigate(`/category/${category}/requests`)}
+            className="group w-full flex items-center justify-between bg-white border border-gray-200 rounded-2xl px-6 py-5 hover:border-black hover:shadow-md transition-all duration-300"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-3 3v-3z" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <h3 className="font-playfair text-base text-black">Requests & Recommended</h3>
+                <p className="font-montserrat text-xs text-gray-500 mt-0.5">Request a perfume or suggest one to our collection</p>
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-gray-400 group-hover:text-black group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {/* Filter Sidebar */}
       {showFilters && (
         <>
@@ -592,6 +633,7 @@ const Category = () => {
                 setSelectedBundleSize2('');
                 setSelectedBundleSize3('');
                 setSelectedBundleSize4('');
+                setSelectedBundleSize5('');
                 setActivePerfume(1);
               }}
               className="absolute top-4 right-4 text-black hover:opacity-70"
@@ -608,9 +650,17 @@ const Category = () => {
               // Bundle Size Selectors with Circles
               <div className="space-y-4 mb-4">
                 <div className="flex justify-center gap-3 flex-wrap mb-4">
-                  {[1, 2, 3, 4].map((num) => {
-                    const perfume = num === 1 ? quickAddProduct.bundlePerfume1 : num === 2 ? quickAddProduct.bundlePerfume2 : num === 3 ? quickAddProduct.bundlePerfume3 : quickAddProduct.bundlePerfume4;
-                    const selectedSize = num === 1 ? selectedBundleSize1 : num === 2 ? selectedBundleSize2 : num === 3 ? selectedBundleSize3 : selectedBundleSize4;
+                  {[1, 2, 3, 4, 5].map((num) => {
+                    const perfume = num === 1 ? quickAddProduct.bundlePerfume1
+                      : num === 2 ? quickAddProduct.bundlePerfume2
+                      : num === 3 ? quickAddProduct.bundlePerfume3
+                      : num === 4 ? quickAddProduct.bundlePerfume4
+                      : quickAddProduct.bundlePerfume5;
+                    const selectedSize = num === 1 ? selectedBundleSize1
+                      : num === 2 ? selectedBundleSize2
+                      : num === 3 ? selectedBundleSize3
+                      : num === 4 ? selectedBundleSize4
+                      : selectedBundleSize5;
                     if (!perfume?.name) return null;
                     
                     const isFullySoldOut = isPerfumeFullySoldOut(perfume);
@@ -639,11 +689,20 @@ const Category = () => {
                     {activePerfume === 2 && quickAddProduct.bundlePerfume2?.name}
                     {activePerfume === 3 && quickAddProduct.bundlePerfume3?.name}
                     {activePerfume === 4 && quickAddProduct.bundlePerfume4?.name}
+                    {activePerfume === 5 && quickAddProduct.bundlePerfume5?.name}
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {(() => {
-                      const perfume = activePerfume === 1 ? quickAddProduct.bundlePerfume1 : activePerfume === 2 ? quickAddProduct.bundlePerfume2 : activePerfume === 3 ? quickAddProduct.bundlePerfume3 : quickAddProduct.bundlePerfume4;
-                      const currentSelectedSize = activePerfume === 1 ? selectedBundleSize1 : activePerfume === 2 ? selectedBundleSize2 : activePerfume === 3 ? selectedBundleSize3 : selectedBundleSize4;
+                      const perfume = activePerfume === 1 ? quickAddProduct.bundlePerfume1
+                        : activePerfume === 2 ? quickAddProduct.bundlePerfume2
+                        : activePerfume === 3 ? quickAddProduct.bundlePerfume3
+                        : activePerfume === 4 ? quickAddProduct.bundlePerfume4
+                        : quickAddProduct.bundlePerfume5;
+                      const currentSelectedSize = activePerfume === 1 ? selectedBundleSize1
+                        : activePerfume === 2 ? selectedBundleSize2
+                        : activePerfume === 3 ? selectedBundleSize3
+                        : activePerfume === 4 ? selectedBundleSize4
+                        : selectedBundleSize5;
                       
                       const allSoldOut = perfume?.sizesWithPrices?.every(s => s.soldOut);
                       if (allSoldOut) {
@@ -662,12 +721,14 @@ const Category = () => {
                               if (activePerfume === 1) setSelectedBundleSize1(sizeData.size);
                               else if (activePerfume === 2) setSelectedBundleSize2(sizeData.size);
                               else if (activePerfume === 3) setSelectedBundleSize3(sizeData.size);
-                              else setSelectedBundleSize4(sizeData.size);
+                              else if (activePerfume === 4) setSelectedBundleSize4(sizeData.size);
+                              else setSelectedBundleSize5(sizeData.size);
                               const p1 = activePerfume === 1 ? sizeData.price : (quickAddProduct.bundlePerfume1?.sizesWithPrices?.find(s => s.size === selectedBundleSize1)?.price || 0);
                               const p2 = activePerfume === 2 ? sizeData.price : (quickAddProduct.bundlePerfume2?.sizesWithPrices?.find(s => s.size === selectedBundleSize2)?.price || 0);
                               const p3 = activePerfume === 3 ? sizeData.price : (quickAddProduct.bundlePerfume3?.sizesWithPrices?.find(s => s.size === selectedBundleSize3)?.price || 0);
                               const p4 = activePerfume === 4 ? sizeData.price : (quickAddProduct.bundlePerfume4?.sizesWithPrices?.find(s => s.size === selectedBundleSize4)?.price || 0);
-                              setQuickAddPrice(p1 + p2 + p3 + p4);
+                              const p5 = activePerfume === 5 ? sizeData.price : (quickAddProduct.bundlePerfume5?.sizesWithPrices?.find(s => s.size === selectedBundleSize5)?.price || 0);
+                              setQuickAddPrice(p1 + p2 + p3 + p4 + p5);
                             }
                           }}
                           disabled={sizeData.soldOut}
@@ -743,6 +804,10 @@ const Category = () => {
                   setQuickAddProduct(null);
                   setSelectedBundleSize1('');
                   setSelectedBundleSize2('');
+                  setSelectedBundleSize3('');
+                  setSelectedBundleSize4('');
+                  setSelectedBundleSize5('');
+                  setActivePerfume(1);
                 }}
                 style={{ width: '30%' }}
                 className="bg-white text-black border border-black px-4 sm:px-6 py-3 font-medium hover:bg-beige-100 transition-all font-montserrat text-sm sm:text-base"

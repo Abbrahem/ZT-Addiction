@@ -10,9 +10,11 @@ import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import PaymentSuccess from './pages/PaymentSuccess';
+import PaymentFailed from './pages/PaymentFailed';
 import Category from './pages/Category';
 import BundleCategory from './pages/BundleCategory';
 import BundleSubcategory from './pages/BundleSubcategory';
+import RequestsRecommendedPage from './pages/RequestsRecommendedPage';
 import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
 import Notifications from './pages/Notifications';
@@ -167,9 +169,12 @@ function App() {
                     <Route path="/products/:id" element={<ProductDetail />} />
                     <Route path="/category/bundles" element={<BundleCategory />} />
                     <Route path="/category/bundles/:subcategory" element={<BundleSubcategory />} />
+                    <Route path="/category/:category/requests" element={<RequestsRecommendedPage />} />
                     <Route path="/category/:category" element={<Category />} />
                     <Route path="/cart" element={<Cart />} />
                     <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/payment-success" element={<PaymentSuccess />} />
+                    <Route path="/payment-failed" element={<PaymentFailed />} />
                     <Route path="/checkout/success" element={<PaymentSuccess />} />
                     <Route path="/order-tracking" element={<OrderTracking />} />
                     <Route path="/wishlist" element={<Wishlist />} />

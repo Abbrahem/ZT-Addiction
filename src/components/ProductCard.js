@@ -47,9 +47,34 @@ const ProductCard = ({ product, onQuickAdd }) => {
         </div>
         <h3 className="font-montserrat text-sm md:text-base mb-1 text-black leading-tight">{product.name}</h3>
         <p className="font-montserrat text-sm md:text-base font-semibold text-black">
-          {product.sizesWithPrices && product.sizesWithPrices.length > 0 
-            ? `${product.sizesWithPrices[0].price} EGP` 
-            : `${product.priceEGP} EGP`}
+          {(() => {
+            // For bundle products, calculate price from perfumes
+            if (product.isBundle || product.collection === 'Bundles') {
+              const p1 = product.bundlePerfume1?.sizesWithPrices?.[0]?.price || 0;
+              const p2 = product.bundlePerfume2?.sizesWithPrices?.[0]?.price || 0;
+              const p3 = product.bundlePerfume3?.sizesWithPrices?.[0]?.price || 0;
+              const p4 = product.bundlePerfume4?.sizesWithPrices?.[0]?.price || 0;
+              const p5 = product.bundlePerfume5?.sizesWithPrices?.[0]?.price || 0;
+              const totalPrice = p1 + p2 + p3 + p4 + p5;
+              
+              // Debug log
+              if (totalPrice === 0) {
+                console.log('Bundle price is 0 for:', product.name, {
+                  collection: product.collection,
+                  isBundle: product.isBundle,
+                  p1, p2, p3, p4, p5,
+                  bundlePerfume1: product.bundlePerfume1,
+                  bundlePerfume2: product.bundlePerfume2
+                });
+              }
+              
+              return totalPrice > 0 ? `${totalPrice} EGP` : '0 EGP';
+            }
+            // For regular products
+            return product.sizesWithPrices && product.sizesWithPrices.length > 0 
+              ? `${product.sizesWithPrices[0].price} EGP` 
+              : `${product.priceEGP || 0} EGP`;
+          })()}
         </p>
       </Link>
       

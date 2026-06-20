@@ -15,7 +15,7 @@ app.use(cors({
     : ['http://localhost:3000'],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increased limit for image uploads
 app.use(cookieParser());
 
 // Serve static files
@@ -49,15 +49,23 @@ function loadApiRoutes(dir, basePath = '/api') {
   if (!fs.existsSync(dir)) return;
 
   const files = fs.readdirSync(dir);
+  const jsFiles = [];
+  const subdirs = [];
 
+  // Load .js route files before subdirectories so static paths (e.g. requests-recommended)
+  // are registered before dynamic ones (e.g. :id)
   files.forEach(file => {
     const filePath = path.join(dir, file);
     const stat = fs.statSync(filePath);
 
     if (stat.isDirectory()) {
-      // Recursively load subdirectories
-      loadApiRoutes(filePath, `${basePath}/${file}`);
+      subdirs.push({ file, filePath });
     } else if (file.endsWith('.js') && !file.includes('lib')) {
+      jsFiles.push({ file, filePath });
+    }
+  });
+
+  jsFiles.forEach(({ file, filePath }) => {
       try {
         const route = require(filePath);
         const routeName = file === 'index.js' ? '' : `/${file.replace('.js', '')}`;
@@ -68,44 +76,37 @@ function loadApiRoutes(dir, basePath = '/api') {
 
         // Check if route is a function (middleware) or has default export
         if (typeof route === 'function') {
-          app.all(dynamicPath, route);
-          console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
-          
-          // Special handling for orders - add dynamic ID route and promo routes
-          if (file === 'orders.js') {
-            app.all(`${basePath}/orders/:id`, route);
-            app.all(`${basePath}/orders/promo`, route);
-            console.log(`✅ Loaded API route: ${basePath}/orders/:id (ALL methods)`);
-            console.log(`✅ Loaded API route: ${basePath}/orders/promo (ALL methods)`);
-          }
-          
-          // Special handling for products - add dynamic ID routes
+          // Special handling for products - specific named routes MUST be registered BEFORE the main route
           if (file === 'products.js') {
-            app.all(`${basePath}/products/:id`, route);
+            app.all(`${basePath}/products/promo/list`, route);
+            app.all(`${basePath}/products/promo/create`, route);
+            app.all(`${basePath}/products/promo/validate`, route);
+            app.all(`${basePath}/products/promo/delete`, route);
+            app.all(`${basePath}/products/requests-recommended`, route);
             app.all(`${basePath}/products/:id/soldout`, route);
             app.all(`${basePath}/products/:id/bestseller`, route);
             app.all(`${basePath}/products/:id/review`, route);
             app.all(`${basePath}/products/:id/reviews`, route);
-            console.log(`✅ Loaded API route: ${basePath}/products/:id (ALL methods)`);
-            console.log(`✅ Loaded API route: ${basePath}/products/:id/soldout (ALL methods)`);
-            console.log(`✅ Loaded API route: ${basePath}/products/:id/bestseller (ALL methods)`);
-            console.log(`✅ Loaded API route: ${basePath}/products/:id/review (ALL methods)`);
-            console.log(`✅ Loaded API route: ${basePath}/products/:id/reviews (ALL methods)`);
+            app.all(`${basePath}/products/:id`, route);
           }
-          
-          // Special handling for auth - add auth sub-routes
+
+          // Special handling for auth
           if (file === 'auth.js') {
-            // Main auth route
-            app.all(`${basePath}/auth`, route);
-            // Sub-routes
             app.all(`${basePath}/auth/login`, route);
             app.all(`${basePath}/auth/logout`, route);
             app.all(`${basePath}/auth/check`, route);
-            console.log(`✅ Loaded API route: ${basePath}/auth (ALL methods)`);
-            console.log(`✅ Loaded API route: ${basePath}/auth/login (ALL methods)`);
-            console.log(`✅ Loaded API route: ${basePath}/auth/logout (ALL methods)`);
-            console.log(`✅ Loaded API route: ${basePath}/auth/check (ALL methods)`);
           }
+
+          // Special handling for orders
+          if (file === 'orders.js') {
+            app.all(`${basePath}/orders/promo`, route);
+            app.all(`${basePath}/orders/save-fcm-token`, route);
+            app.all(`${basePath}/orders/:id`, route);
+          }
+
+          // Register the main route
+          app.all(dynamicPath, route);
+          console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
         } else if (route.default && typeof route.default === 'function') {
           app.all(dynamicPath, route.default);
           console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
@@ -118,7 +119,10 @@ function loadApiRoutes(dir, basePath = '/api') {
       } catch (error) {
         console.error(`❌ Error loading ${filePath}:`, error.message);
       }
-    }
+  });
+
+  subdirs.forEach(({ file, filePath }) => {
+    loadApiRoutes(filePath, `${basePath}/${file}`);
   });
 }
 
