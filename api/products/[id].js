@@ -16,6 +16,11 @@ module.exports = async function handler(req, res) {
     productId = urlParts[urlParts.length - 2];
   }
 
+  const reservedSlugs = ['requests-recommended', 'promo'];
+  if (reservedSlugs.includes(productId)) {
+    return require('../products')(req, res);
+  }
+
   console.log('🔍 Product ID endpoint called:', req.method, productId);
 
   try {

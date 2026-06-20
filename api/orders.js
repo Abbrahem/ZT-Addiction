@@ -438,6 +438,17 @@ module.exports = async function handler(req, res) {
       } catch (error) {
         console.error('⚠️ Telegram notification failed:', error.message);
       }
+
+      // إرسال رسائل WhatsApp (للأدمن والعميل)
+      try {
+        const { notifyAdminNewOrder, notifyCustomerOrderReceived } = require('./utils/whatsapp');
+        // إشعار الأدمن بالطلب الجديد مع أزرار القبول/الرفض
+        notifyAdminNewOrder(completeOrder).catch(e => console.error('⚠️ WhatsApp admin notify failed:', e.message));
+        // إشعار العميل بتأكيد استلام الطلب
+        notifyCustomerOrderReceived(completeOrder).catch(e => console.error('⚠️ WhatsApp customer notify failed:', e.message));
+      } catch (error) {
+        console.error('⚠️ WhatsApp notification failed:', error.message);
+      }
       
       // إرسال إشعار Firebase للأدمن
       const notificationTitle = paymentMethod === 'instapay' ? '💳 طلب InstaPay جديد!' : '🛍️ طلب جديد!';

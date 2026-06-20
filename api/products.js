@@ -54,15 +54,20 @@ module.exports = async function handler(req, res) {
   const client = await clientPromise;
   const db = client.db('danger-sneakers');
 
+  // Use originalUrl (full path) when available to detect subpaths reliably
+  const fullUrl = req.originalUrl || req.url || '';
   // Extract product ID from URL if present
-  const urlParts = req.url.split('/');
+  const urlParts = fullUrl.split('/');
   const productId = req.params?.id || (urlParts.length > 3 ? urlParts[3].split('?')[0] : null);
-  const isSoldOutEndpoint = req.url.includes('/soldout');
-  
-  // Check if this is a promo endpoint
-  const isPromoEndpoint = req.url.includes('/promo/');
+  const isSoldOutEndpoint = fullUrl.includes('/soldout');
 
-  console.log('🔍 Products API called:', req.method, req.url, 'ProductID:', productId, 'IsPromo:', isPromoEndpoint);
+  // Check if this is a promo endpoint
+  const isPromoEndpoint = fullUrl.includes('/promo/');
+
+  // Check if this is a requests-recommended endpoint
+  const isRequestsRecommended = fullUrl.includes('/requests-recommended');
+
+  console.log('🔍 Products API called:', req.method, 'fullUrl:', fullUrl, 'req.url:', req.url, 'ProductID:', productId, 'IsPromo:', isPromoEndpoint, 'IsRequestsRecommended:', isRequestsRecommended);
 
   try {
     // ==================== PROMO CODES ENDPOINTS ====================
@@ -138,9 +143,49 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ message: 'Deleted' });
       });
     }
+
+    // ==================== REQUESTS & RECOMMENDED ENDPOINTS ====================
+
+    // POST /api/products/requests-recommended - Submit a request or recommendation
+    if (req.method === 'POST' && isRequestsRecommended) {
+      const { type, name, phone, perfumeName, imageBase64, category } = req.body;
+      if (!type || !perfumeName) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      const entry = {
+        type,
+        perfumeName,
+        imageBase64: imageBase64 || null,
+        category: category || null,
+        createdAt: new Date(),
+        ...(type === 'request' ? { name, phone } : {})
+      };
+      await db.collection('requestsRecommended').insertOne(entry);
+      return res.status(201).json({ message: 'Success' });
+    }
+
+    // GET /api/products/requests-recommended - Get all (admin only)
+    if (req.method === 'GET' && isRequestsRecommended) {
+      return requireAuth(req, res, async () => {
+        const items = await db.collection('requestsRecommended').find({}).sort({ createdAt: -1 }).toArray();
+        return res.status(200).json(items);
+      });
+    }
+
+    // DELETE /api/products/requests-recommended - Delete one by id (admin only)
+    if (req.method === 'DELETE' && isRequestsRecommended) {
+      return requireAuth(req, res, async () => {
+        const { id } = req.body;
+        if (!id) return res.status(400).json({ message: 'ID required' });
+        await db.collection('requestsRecommended').deleteOne({ _id: new ObjectId(id) });
+        return res.status(200).json({ message: 'Deleted' });
+      });
+    }
+    
+    // ==================== PRODUCTS ENDPOINTS ====================
     
     // GET /api/products - Get all products
-    if (req.method === 'GET' && !productId && !isPromoEndpoint) {
+    if (req.method === 'GET' && !productId && !isPromoEndpoint && !isRequestsRecommended) {
       const limit = req.query?.limit ? parseInt(req.query.limit) : undefined;
       const random = req.query?.random === 'true';
       const excludeId = req.query?.exclude;
@@ -208,10 +253,11 @@ module.exports = async function handler(req, res) {
           bundlePerfume1, 
           bundlePerfume2, 
           bundlePerfume3, 
-          bundlePerfume4 
+          bundlePerfume4,
+          bundlePerfume5
         } = req.body;
         
-        console.log('📦 Creating product with data:', { name, collection, subcategory, bundleSubcategory, sizesWithPrices, priceEGP, size, bundlePerfume1, bundlePerfume2, bundlePerfume3, bundlePerfume4 });
+        console.log('📦 Creating product with data:', { name, collection, subcategory, bundleSubcategory, bundlePerfume1, bundlePerfume2, bundlePerfume3, bundlePerfume4, bundlePerfume5 });
 
         if (!name || !collection) {
           console.log('❌ Missing name or collection');
@@ -317,12 +363,24 @@ module.exports = async function handler(req, res) {
             };
           }
           
+          // Perfume 5 (Optional)
+          if (bundlePerfume5?.name && bundlePerfume5?.sizesWithPrices?.length > 0) {
+            product.bundlePerfume5 = {
+              ...bundlePerfume5,
+              sizesWithPrices: bundlePerfume5.sizesWithPrices.map(item => ({
+                ...item,
+                soldOut: item.soldOut || false
+              }))
+            };
+          }
+          
           // Calculate default price from first size of each perfume
           const price1 = bundlePerfume1.sizesWithPrices[0]?.price || 0;
           const price2 = bundlePerfume2.sizesWithPrices[0]?.price || 0;
           const price3 = bundlePerfume3?.sizesWithPrices?.[0]?.price || 0;
           const price4 = bundlePerfume4?.sizesWithPrices?.[0]?.price || 0;
-          product.priceEGP = price1 + price2 + price3 + price4;
+          const price5 = bundlePerfume5?.sizesWithPrices?.[0]?.price || 0;
+          product.priceEGP = price1 + price2 + price3 + price4 + price5;
           
           product.isBundle = true;
         } else {

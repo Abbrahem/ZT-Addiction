@@ -146,17 +146,18 @@ module.exports = async function handler(req, res) {
           return res.status(404).json({ message: 'Product not found' });
         }
 
-        // Update the correct perfume's sizes (supports 1, 2, 3, 4)
+        // Update the correct perfume's sizes (supports 1, 2, 3, 4, 5)
         const perfumeKeyMap = {
           1: 'bundlePerfume1',
           2: 'bundlePerfume2',
           3: 'bundlePerfume3',
-          4: 'bundlePerfume4'
+          4: 'bundlePerfume4',
+          5: 'bundlePerfume5'
         };
         const perfumeKey = perfumeKeyMap[perfumeNumber];
         
         if (!perfumeKey) {
-          return res.status(400).json({ message: 'Invalid perfume number. Must be 1, 2, 3, or 4' });
+          return res.status(400).json({ message: 'Invalid perfume number. Must be 1-5' });
         }
         
         const perfume = product[perfumeKey];
