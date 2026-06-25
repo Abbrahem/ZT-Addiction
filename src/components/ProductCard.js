@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useWishlist } from '../context/WishlistContext';
 import Swal from 'sweetalert2';
+import { getProductPath } from '../utils/productUtils';
 
 const ProductCard = ({ product, onQuickAdd }) => {
   const { addToWishlist, isInWishlist } = useWishlist();
@@ -30,7 +31,7 @@ const ProductCard = ({ product, onQuickAdd }) => {
 
   return (
     <div className="group relative">
-      <Link to={`/products/${product._id}`} className="block">
+      <Link to={getProductPath(product)} className="block">
         <div className="relative overflow-hidden mb-3 bg-gray-50" style={{ paddingBottom: '133%' }}>
           <img
             src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
@@ -124,7 +125,7 @@ const ProductCard = ({ product, onQuickAdd }) => {
           </div>
         ) : (
           <Link
-            to={`/products/${product._id}?scrollToReviews=true`}
+            to={`${getProductPath(product)}?scrollToReviews=true`}
             onClick={(e) => e.stopPropagation()}
             className="bg-amber-500 text-white p-2 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 hover:scale-110 hover:bg-amber-600 flex items-center justify-center"
             title="Rate this product"
