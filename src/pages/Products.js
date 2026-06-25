@@ -44,6 +44,13 @@ const Products = () => {
     return perfume.sizesWithPrices.every(s => s.soldOut);
   };
 
+  const isFullBottleProduct = (product) => {
+    if (!product) return false;
+    const collection = product.collection?.toString().toLowerCase();
+    const bundleSubcategory = product.bundleSubcategory?.toString().toLowerCase();
+    return collection === 'bottles' || bundleSubcategory === 'bottles';
+  };
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -92,25 +99,33 @@ const Products = () => {
     });
     
     // Apply sorting
-    filtered = [...filtered].sort((a, b) => {
-      const priceA = a.sizesWithPrices?.[0]?.price || a.priceEGP || 0;
-      const priceB = b.sizesWithPrices?.[0]?.price || b.priceEGP || 0;
-      
-      switch (sortBy) {
-        case 'popularity':
-          return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
-        case 'rating':
-          return (b.averageRating || 0) - (a.averageRating || 0);
-        case 'latest':
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        case 'price-asc':
-          return priceA - priceB;
-        case 'price-desc':
-          return priceB - priceA;
-        default:
-          return 0;
-      }
-    });
+    if (sortBy === 'default') {
+      filtered = [...filtered].sort((a, b) => {
+        const aFullBottle = isFullBottleProduct(a) ? 0 : 1;
+        const bFullBottle = isFullBottleProduct(b) ? 0 : 1;
+        return aFullBottle - bFullBottle;
+      });
+    } else {
+      filtered = [...filtered].sort((a, b) => {
+        const priceA = a.sizesWithPrices?.[0]?.price || a.priceEGP || 0;
+        const priceB = b.sizesWithPrices?.[0]?.price || b.priceEGP || 0;
+        
+        switch (sortBy) {
+          case 'popularity':
+            return (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0);
+          case 'rating':
+            return (b.averageRating || 0) - (a.averageRating || 0);
+          case 'latest':
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          case 'price-asc':
+            return priceA - priceB;
+          case 'price-desc':
+            return priceB - priceA;
+          default:
+            return 0;
+        }
+      });
+    }
     
     setFilteredProducts(filtered);
   };

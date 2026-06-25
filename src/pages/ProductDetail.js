@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { getProductPath } from '../utils/productUtils';
 import { useWishlist } from '../context/WishlistContext';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -8,7 +9,7 @@ import { mockProducts } from '../data/mockData';
 import ProductReviews from '../components/ProductReviews';
 
 const ProductDetail = () => {
-  const { id } = useParams();
+  const { id: productId } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { addToWishlist, isInWishlist } = useWishlist();
@@ -74,7 +75,7 @@ const ProductDetail = () => {
     fetchProduct();
     fetchOtherProducts();
     loadRecentlyViewed();
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [productId]); // eslint-disable-line react-hooks/exhaustive-deps
   
   // Initialize real-time stats after product is loaded
   useEffect(() => {
@@ -150,7 +151,7 @@ const ProductDetail = () => {
 
   const fetchProduct = async () => {
     try {
-      const response = await axios.get(`/api/products/${id}`);
+      const response = await axios.get(`/api/products/${productId}`);
       const productData = Array.isArray(response.data) ? response.data[0] : response.data;
       setProduct(productData);
       
@@ -192,7 +193,7 @@ const ProductDetail = () => {
       }
     } catch (error) {
       console.error('Error fetching product:', error);
-      const mockProduct = mockProducts.find(p => p._id === id);
+      const mockProduct = mockProducts.find(p => p._id === productId);
       if (mockProduct) {
         setProduct(mockProduct);
         if (mockProduct.sizesWithPrices?.length > 0) {
@@ -221,15 +222,15 @@ const ProductDetail = () => {
     try {
       // Fetch related products from same category
       if (product?.collection) {
-        const response = await axios.get(`/api/products?collection=${product.collection}&limit=4&exclude=${id}`);
+        const response = await axios.get(`/api/products?collection=${product.collection}&limit=4&exclude=${productId}`);
         setOtherProducts(response.data);
       } else {
-        const response = await axios.get(`/api/products?limit=4&random=true&exclude=${id}`);
+        const response = await axios.get(`/api/products?limit=4&random=true&exclude=${productId}`);
         setOtherProducts(response.data);
       }
     } catch (error) {
       // Fallback to mock data with same category
-      let filtered = [...mockProducts].filter(p => p._id !== id);
+      let filtered = [...mockProducts].filter(p => p._id !== productId);
       if (product?.collection) {
         filtered = filtered.filter(p => p.collection === product.collection);
       }
@@ -242,7 +243,7 @@ const ProductDetail = () => {
     if (!product) return;
     
     const viewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
-    const filtered = viewed.filter(item => item.id !== id);
+    const filtered = viewed.filter(item => item.id !== productId);
     const updated = [
       { id: product._id, name: product.name, image: product.images?.[0], price: product.sizesWithPrices?.[0]?.price || product.priceEGP, timestamp: Date.now() },
       ...filtered
@@ -254,7 +255,7 @@ const ProductDetail = () => {
   const loadRecentlyViewed = () => {
     const viewed = JSON.parse(localStorage.getItem('recentlyViewed') || '[]');
     // Show last viewed products excluding current one
-    const filtered = viewed.filter(item => item.id !== id);
+    const filtered = viewed.filter(item => item.id !== productId);
     setRecentlyViewed(filtered.slice(0, 4));
   };
 
@@ -456,7 +457,7 @@ const ProductDetail = () => {
 
   const ProductCard = ({ product }) => (
     <div className="group relative">
-      <Link to={`/products/${product._id}`} className="block">
+      <Link to={getProductPath(product)} className="block">
         <div className="relative overflow-hidden mb-3" style={{ paddingBottom: '75%' }}>
           <img
             src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
@@ -1112,7 +1113,7 @@ const ProductDetail = () => {
 
         {/* Reviews Section */}
         <div id="reviews-section">
-          <ProductReviews productId={id} />
+          <ProductReviews productId={productId} />
         </div>
 
         {/* Related Products */}
@@ -1132,7 +1133,7 @@ const ProductDetail = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
               {recentlyViewed.map((item) => (
                 <div key={item.id} className="group relative">
-                  <Link to={`/products/${item.id}`} className="block">
+                  <Link to={getProductPath(item)} className="block">
                     <div className="relative overflow-hidden mb-3" style={{ paddingBottom: '75%' }}>
                       <img
                         src={item.image ? `/api/images/${item.image}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
