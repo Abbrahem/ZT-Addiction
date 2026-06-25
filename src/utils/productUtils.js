@@ -5,7 +5,7 @@ export const slugifyProductName = (name) => {
     .trim()
     .toLowerCase()
     .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9\u0600-\u06FF\-]+/g, '')
+    .replace(/[^a-z0-9\u0600-\u06FF-]+/g, '')
     .replace(/-{2,}/g, '-')
     .replace(/^-+|-+$/g, '');
 };
