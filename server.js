@@ -83,11 +83,10 @@ function loadApiRoutes(dir, basePath = '/api') {
             app.all(`${basePath}/products/promo/validate`, route);
             app.all(`${basePath}/products/promo/delete`, route);
             app.all(`${basePath}/products/requests-recommended`, route);
-            app.all(`${basePath}/products/:id/soldout`, route);
-            app.all(`${basePath}/products/:id/bestseller`, route);
-            app.all(`${basePath}/products/:id/review`, route);
-            app.all(`${basePath}/products/:id/reviews`, route);
-            app.all(`${basePath}/products/:id`, route);
+            
+            // Always register the main products route - dynamic subroutes will be registered later
+            app.all(dynamicPath, route);
+            console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
           }
 
           // Special handling for auth
@@ -95,6 +94,8 @@ function loadApiRoutes(dir, basePath = '/api') {
             app.all(`${basePath}/auth/login`, route);
             app.all(`${basePath}/auth/logout`, route);
             app.all(`${basePath}/auth/check`, route);
+            app.all(dynamicPath, route);
+            console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
           }
 
           // Special handling for orders
@@ -102,11 +103,15 @@ function loadApiRoutes(dir, basePath = '/api') {
             app.all(`${basePath}/orders/promo`, route);
             app.all(`${basePath}/orders/save-fcm-token`, route);
             app.all(`${basePath}/orders/:id`, route);
+            app.all(dynamicPath, route);
+            console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
           }
 
-          // Register the main route
-          app.all(dynamicPath, route);
-          console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
+          // Register the main route for other files
+          if (file !== 'products.js' && file !== 'auth.js' && file !== 'orders.js') {
+            app.all(dynamicPath, route);
+            console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
+          }
         } else if (route.default && typeof route.default === 'function') {
           app.all(dynamicPath, route.default);
           console.log(`✅ Loaded API route: ${dynamicPath} (ALL methods)`);
