@@ -1,0 +1,839 @@
+const { ObjectId } = require('mongodb');
+const clientPromise = require('./lib/mongodb');
+const { requireAuth } = require('./lib/auth');
+
+// Firebase Admin SDK for sending notifications
+let admin;
+try {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    admin = require('firebase-admin');
+    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount)
+      });
+    }
+  }
+} catch (error) {
+  console.log('⚠️ Firebase Admin not initialized in products.js');
+}
+
+// Helper function to send notification to all users
+async function sendNotificationToAll(title, body, data = {}) {
+  if (!admin) return;
+  
+  try {
+    const client = await clientPromise;
+    const db = client.db('danger-sneakers');
+    
+    // Get all user tokens
+    const tokens = await db.collection('fcmTokens').find({ userType: 'user' }).toArray();
+    
+    if (tokens.length === 0) {
+      console.log('⚠️ No user tokens found');
+      return;
+    }
+    
+    const tokenList = tokens.map(t => t.token);
+    
+    const message = {
+      notification: { title, body },
+      data,
+      tokens: tokenList
+    };
+    
+    const response = await admin.messaging().sendMulticast(message);
+    console.log(`✅ Sent to ${response.successCount} users`);
+  } catch (error) {
+    console.error('❌ Error sending notification:', error.message);
+  }
+}
+
+module.exports = async function handler(req, res) {
+  const client = await clientPromise;
+  const db = client.db('danger-sneakers');
+
+  // Use originalUrl (full path) when available to detect subpaths reliably
+  const fullUrl = req.originalUrl || req.url || '';
+  // Extract product ID from URL if present
+  const urlParts = fullUrl.split('/');
+  const productId = req.params?.id || (urlParts.length > 3 ? urlParts[3].split('?')[0] : null);
+  const isSoldOutEndpoint = fullUrl.includes('/soldout');
+
+  // Check if this is a promo endpoint
+  const isPromoEndpoint = fullUrl.includes('/promo/');
+
+  // Check if this is a requests-recommended endpoint
+  const isRequestsRecommended = fullUrl.includes('/requests-recommended');
+
+  console.log('🔍 Products API called:', req.method, 'fullUrl:', fullUrl, 'req.url:', req.url, 'ProductID:', productId, 'IsPromo:', isPromoEndpoint, 'IsRequestsRecommended:', isRequestsRecommended);
+
+  try {
+    // ==================== PROMO CODES ENDPOINTS ====================
+    
+    // GET /api/products/promo/list - Get all promo codes (admin only)
+    if (req.method === 'GET' && isPromoEndpoint && req.url.includes('/list')) {
+      return requireAuth(req, res, async () => {
+        const promoCodes = await db.collection('promoCodes').find({}).sort({ createdAt: -1 }).toArray();
+        return res.status(200).json(promoCodes);
+      });
+    }
+
+    // POST /api/products/promo/create - Create promo code (admin only)
+    if (req.method === 'POST' && isPromoEndpoint && req.url.includes('/create')) {
+      return requireAuth(req, res, async () => {
+        const { discount, maxUses, expiryDays } = req.body;
+
+        if (!discount || !maxUses || !expiryDays) {
+          return res.status(400).json({ message: 'All fields required' });
+        }
+
+        const code = 'ZT' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + parseInt(expiryDays));
+
+        const promoCode = {
+          code,
+          discount: parseInt(discount),
+          maxUses: parseInt(maxUses),
+          currentUses: 0,
+          expiryDate,
+          active: true,
+          createdAt: new Date()
+        };
+
+        await db.collection('promoCodes').insertOne(promoCode);
+        return res.status(201).json({ message: 'Success', promoCode });
+      });
+    }
+
+    // POST /api/products/promo/validate - Validate promo code (public)
+    if (req.method === 'POST' && isPromoEndpoint && req.url.includes('/validate')) {
+      const { code } = req.body;
+      if (!code) {
+        return res.status(400).json({ message: 'Code required' });
+      }
+
+      const promoCode = await db.collection('promoCodes').findOne({ code: code.toUpperCase() });
+      if (!promoCode) {
+        return res.status(404).json({ message: 'Invalid code' });
+      }
+
+      if (!promoCode.active || new Date() > new Date(promoCode.expiryDate) || promoCode.currentUses >= promoCode.maxUses) {
+        return res.status(400).json({ message: 'Code expired or used up' });
+      }
+
+      return res.status(200).json({ valid: true, discount: promoCode.discount, code: promoCode.code });
+    }
+
+    // DELETE /api/products/promo/delete - Delete promo code (admin only)
+    if (req.method === 'DELETE' && isPromoEndpoint && req.url.includes('/delete')) {
+      return requireAuth(req, res, async () => {
+        const { code } = req.body;
+        if (!code) {
+          return res.status(400).json({ message: 'Code required' });
+        }
+
+        const result = await db.collection('promoCodes').deleteOne({ code: code.toUpperCase() });
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: 'Code not found' });
+        }
+
+        return res.status(200).json({ message: 'Deleted' });
+      });
+    }
+
+    // ==================== REQUESTS & RECOMMENDED ENDPOINTS ====================
+
+    // POST /api/products/requests-recommended - Submit a request or recommendation
+    if (req.method === 'POST' && isRequestsRecommended) {
+      const { type, name, phone, perfumeName, imageBase64, category } = req.body;
+      if (!type || !perfumeName) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      const entry = {
+        type,
+        perfumeName,
+        imageBase64: imageBase64 || null,
+        category: category || null,
+        createdAt: new Date(),
+        ...(type === 'request' ? { name, phone } : {})
+      };
+      await db.collection('requestsRecommended').insertOne(entry);
+      return res.status(201).json({ message: 'Success' });
+    }
+
+    // GET /api/products/requests-recommended - Get all (admin only)
+    if (req.method === 'GET' && isRequestsRecommended) {
+      return requireAuth(req, res, async () => {
+        const items = await db.collection('requestsRecommended').find({}).sort({ createdAt: -1 }).toArray();
+        return res.status(200).json(items);
+      });
+    }
+
+    // DELETE /api/products/requests-recommended - Delete one by id (admin only)
+    if (req.method === 'DELETE' && isRequestsRecommended) {
+      return requireAuth(req, res, async () => {
+        const { id } = req.body;
+        if (!id) return res.status(400).json({ message: 'ID required' });
+        await db.collection('requestsRecommended').deleteOne({ _id: new ObjectId(id) });
+        return res.status(200).json({ message: 'Deleted' });
+      });
+    }
+    
+    // ==================== PRODUCTS ENDPOINTS ====================
+    
+    // GET /api/products - Get all products
+    if (req.method === 'GET' && !productId && !isPromoEndpoint && !isRequestsRecommended) {
+      const limit = req.query?.limit ? parseInt(req.query.limit) : undefined;
+      const random = req.query?.random === 'true';
+      const excludeId = req.query?.exclude;
+      const bundleSubcategory = req.query?.bundleSubcategory;
+
+      let query = {};
+      
+      // Filter by bundleSubcategory if provided
+      if (bundleSubcategory) {
+        query.bundleSubcategory = bundleSubcategory;
+      }
+
+      let products = await db.collection('products').find(query).toArray();
+
+      // Exclude specific product if requested
+      if (excludeId) {
+        products = products.filter(p => p._id.toString() !== excludeId && p._id !== excludeId);
+      }
+
+      // Shuffle products if random is requested
+      if (random) {
+        products = products.sort(() => Math.random() - 0.5);
+      }
+
+      if (limit) {
+        products = products.slice(0, limit);
+      }
+
+      return res.status(200).json(products);
+    }
+
+    // GET /api/products/[id] - Get single product
+    if (req.method === 'GET' && productId && !isSoldOutEndpoint) {
+      let product;
+
+      try {
+        product = await db.collection('products').findOne({ _id: new ObjectId(productId) });
+      } catch (error) {
+        product = await db.collection('products').findOne({ _id: productId });
+      }
+
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      return res.status(200).json(product);
+    }
+
+    // POST /api/products - Create new product
+    if (req.method === 'POST' && !productId) {
+      return requireAuth(req, res, async () => {
+        const { 
+          name, 
+          description, 
+          fragranceNotes, 
+          fragranceSeason, 
+          collection, 
+          subcategory, 
+          bundleSubcategory,
+          gender,
+          images, 
+          sizesWithPrices, 
+          priceEGP, 
+          size, 
+          bundlePerfume1, 
+          bundlePerfume2, 
+          bundlePerfume3, 
+          bundlePerfume4,
+          bundlePerfume5
+        } = req.body;
+        
+        console.log('📦 Creating product with data:', { name, collection, subcategory, bundleSubcategory, bundlePerfume1, bundlePerfume2, bundlePerfume3, bundlePerfume4, bundlePerfume5 });
+
+        if (!name || !collection) {
+          console.log('❌ Missing name or collection');
+          return res.status(400).json({ message: 'Name and collection are required' });
+        }
+
+        // Check if it's a bundle
+        const isBundle = collection === 'Bundles';
+        
+        // For bundles, validate bundle data
+        if (isBundle) {
+          if (!bundlePerfume1 || !bundlePerfume2) {
+            return res.status(400).json({ message: 'Bundle products require at least 2 perfumes' });
+          }
+          if (!bundlePerfume1.sizesWithPrices || bundlePerfume1.sizesWithPrices.length === 0) {
+            return res.status(400).json({ message: 'Perfume 1 requires sizes with prices' });
+          }
+          if (!bundlePerfume2.sizesWithPrices || bundlePerfume2.sizesWithPrices.length === 0) {
+            return res.status(400).json({ message: 'Perfume 2 requires sizes with prices' });
+          }
+        } else {
+          // Check if we have either sizesWithPrices or legacy format
+          const hasSizesWithPrices = sizesWithPrices && Array.isArray(sizesWithPrices) && sizesWithPrices.length > 0;
+          const hasLegacyFormat = priceEGP && size;
+          
+          console.log('📦 Validation check:', { hasSizesWithPrices, hasLegacyFormat, sizesWithPricesLength: sizesWithPrices?.length });
+          
+          if (!hasSizesWithPrices && !hasLegacyFormat) {
+            console.log('❌ Missing sizes/prices data');
+            return res.status(400).json({ message: 'Either sizesWithPrices array or price/size are required' });
+          }
+        }
+
+        const product = {
+          name,
+          description: description || '',
+          fragranceNotes: fragranceNotes || '',
+          fragranceSeason: fragranceSeason || '',
+          collection,
+          images: images || [],
+          soldOut: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        
+        // Add subcategory for Bottles
+        if (collection === 'Bottles' && subcategory) {
+          product.subcategory = subcategory;
+        }
+        
+        // Add bundleSubcategory for Bundles
+        if (collection === 'Bundles' && bundleSubcategory) {
+          product.bundleSubcategory = bundleSubcategory;
+        }
+        
+        // Add gender if provided
+        if (gender) {
+          product.gender = gender;
+        }
+
+        // Handle bundle products
+        if (isBundle) {
+          // Initialize soldOut property for all sizes - Perfume 1
+          const perfume1WithSoldOut = {
+            ...bundlePerfume1,
+            sizesWithPrices: bundlePerfume1.sizesWithPrices.map(item => ({
+              ...item,
+              soldOut: item.soldOut || false
+            }))
+          };
+          
+          // Perfume 2
+          const perfume2WithSoldOut = {
+            ...bundlePerfume2,
+            sizesWithPrices: bundlePerfume2.sizesWithPrices.map(item => ({
+              ...item,
+              soldOut: item.soldOut || false
+            }))
+          };
+          
+          product.bundlePerfume1 = perfume1WithSoldOut;
+          product.bundlePerfume2 = perfume2WithSoldOut;
+          
+          // Perfume 3 (Optional)
+          if (bundlePerfume3?.name && bundlePerfume3?.sizesWithPrices?.length > 0) {
+            product.bundlePerfume3 = {
+              ...bundlePerfume3,
+              sizesWithPrices: bundlePerfume3.sizesWithPrices.map(item => ({
+                ...item,
+                soldOut: item.soldOut || false
+              }))
+            };
+          }
+          
+          // Perfume 4 (Optional)
+          if (bundlePerfume4?.name && bundlePerfume4?.sizesWithPrices?.length > 0) {
+            product.bundlePerfume4 = {
+              ...bundlePerfume4,
+              sizesWithPrices: bundlePerfume4.sizesWithPrices.map(item => ({
+                ...item,
+                soldOut: item.soldOut || false
+              }))
+            };
+          }
+          
+          // Perfume 5 (Optional)
+          if (bundlePerfume5?.name && bundlePerfume5?.sizesWithPrices?.length > 0) {
+            product.bundlePerfume5 = {
+              ...bundlePerfume5,
+              sizesWithPrices: bundlePerfume5.sizesWithPrices.map(item => ({
+                ...item,
+                soldOut: item.soldOut || false
+              }))
+            };
+          }
+          
+          // Calculate default price from first size of each perfume
+          const price1 = bundlePerfume1.sizesWithPrices[0]?.price || 0;
+          const price2 = bundlePerfume2.sizesWithPrices[0]?.price || 0;
+          const price3 = bundlePerfume3?.sizesWithPrices?.[0]?.price || 0;
+          const price4 = bundlePerfume4?.sizesWithPrices?.[0]?.price || 0;
+          const price5 = bundlePerfume5?.sizesWithPrices?.[0]?.price || 0;
+          product.priceEGP = price1 + price2 + price3 + price4 + price5;
+          
+          product.isBundle = true;
+        } else {
+          // Add sizesWithPrices if provided, otherwise use legacy format
+          const hasSizesWithPrices = sizesWithPrices && Array.isArray(sizesWithPrices) && sizesWithPrices.length > 0;
+          if (hasSizesWithPrices) {
+            product.sizesWithPrices = sizesWithPrices;
+            // Set legacy fields for compatibility
+            product.priceEGP = sizesWithPrices[0].price;
+            product.size = sizesWithPrices[0].size;
+            product.sizes = sizesWithPrices.map(item => item.size);
+          } else {
+            // Legacy format
+            product.priceEGP = parseFloat(priceEGP);
+            product.size = size;
+            product.sizes = [size];
+          }
+        }
+
+        const result = await db.collection('products').insertOne(product);
+        
+        // إرسال إيميل للعملاء السابقين عن المنتج الجديد
+        try {
+          const { sendNewProductEmail } = require('./utils/email');
+          
+          // جلب كل الإيميلات من الأوردرات السابقة
+          const orders = await db.collection('orders').find({
+            'customer.email': { $exists: true, $ne: null, $ne: '' }
+          }).toArray();
+          
+          // استخراج الإيميلات الفريدة
+          const uniqueEmails = [...new Set(orders.map(o => o.customer.email.toLowerCase()))];
+          
+          console.log(`📧 Sending new product emails to ${uniqueEmails.length} customers from orders`);
+          
+          // إرسال الإيميلات (بدون انتظار عشان ما نأخر الـ response)
+          const productWithId = { ...product, _id: result.insertedId };
+          uniqueEmails.forEach(email => {
+            sendNewProductEmail(email, productWithId)
+              .catch(err => console.error(`Failed to send to ${email}:`, err.message));
+          });
+        } catch (error) {
+          console.error('⚠️ Error sending new product emails:', error.message);
+        }
+        
+        // Send notification to all users about new product via notification service
+        const NOTIFICATION_SERVICE_URL = process.env.NOTIFICATION_SERVICE_URL;
+        const NOTIFICATION_API_KEY = process.env.NOTIFICATION_API_KEY;
+        
+        if (NOTIFICATION_SERVICE_URL) {
+          fetch(`${NOTIFICATION_SERVICE_URL}/api/notifications/new-product`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': NOTIFICATION_API_KEY
+            },
+            body: JSON.stringify({
+              productName: name,
+              price: product.sizesWithPrices?.[0]?.price || product.priceEGP || 0,
+              category: collection,
+              productId: result.insertedId.toString()
+            })
+          }).catch(err => console.error('Notification failed:', err));
+        }
+        
+        return res.status(201).json({
+          message: 'Product created successfully',
+          productId: result.insertedId
+        });
+      });
+    }
+
+    // PUT /api/products/[id] - Update product
+    if (req.method === 'PUT' && productId && !isSoldOutEndpoint) {
+      return requireAuth(req, res, async () => {
+        console.log('📝 Updating product:', productId);
+        console.log('📦 Update data:', req.body);
+        console.log('🏷️ Subcategory:', req.body.subcategory);
+        
+        const updateData = {
+          ...req.body, // Take all fields from request body
+          updatedAt: new Date()
+        };
+        
+        // Remove _id if it exists in the body
+        delete updateData._id;
+
+        let result;
+        try {
+          result = await db.collection('products').updateOne(
+            { _id: new ObjectId(productId) },
+            { $set: updateData }
+          );
+        } catch (error) {
+          result = await db.collection('products').updateOne(
+            { _id: productId },
+            { $set: updateData }
+          );
+        }
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: 'Product not found' });
+        }
+
+        console.log('✅ Product updated successfully');
+        return res.status(200).json({ message: 'Product updated successfully' });
+      });
+    }
+
+    // PATCH /api/products/[id]/soldout - Toggle sold out status and other actions
+    if (req.method === 'PATCH' && productId && isSoldOutEndpoint) {
+      return requireAuth(req, res, async () => {
+        // Check action type from query or body
+        const action = req.query?.action || req.body?.action || 'soldout';
+        
+        console.log('📝 Soldout endpoint - Action:', action, 'Query:', req.query, 'Body:', req.body);
+        
+        // Helper function to convert ID
+        const getObjectId = (id) => {
+          try {
+            return new ObjectId(id);
+          } catch {
+            return id;
+          }
+        };
+        
+        // Handle bestseller action
+        if (action === 'bestseller') {
+          const isBestSeller = req.query.isBestSeller === 'true' || req.body.isBestSeller === true;
+
+          // If setting as best seller, check if we already have 6
+          if (isBestSeller) {
+            const bestSellerCount = await db.collection('products').countDocuments({ isBestSeller: true });
+            if (bestSellerCount >= 6) {
+              return res.status(400).json({ message: 'Maximum 6 best sellers allowed. Remove one first.' });
+            }
+          }
+
+          const result = await db.collection('products').updateOne(
+            { _id: getObjectId(productId) },
+            { $set: { isBestSeller, updatedAt: new Date() } }
+          );
+
+          if (result.matchedCount === 0) {
+            return res.status(404).json({ message: 'Product not found' });
+          }
+
+          return res.status(200).json({ 
+            success: true,
+            message: 'Best seller status updated',
+            isBestSeller 
+          });
+        }
+
+        // Handle bestreview action
+        if (action === 'bestreview') {
+          const isBestReview = req.query.isBestReview === 'true' || req.body.isBestReview === true;
+
+          // If setting as best review, check if we already have 4
+          if (isBestReview) {
+            const bestReviewCount = await db.collection('products').countDocuments({ isBestReview: true });
+            if (bestReviewCount >= 4) {
+              return res.status(400).json({ message: 'Maximum 4 best reviews allowed. Remove one first.' });
+            }
+          }
+
+          const result = await db.collection('products').updateOne(
+            { _id: getObjectId(productId) },
+            { $set: { isBestReview, updatedAt: new Date() } }
+          );
+
+          if (result.matchedCount === 0) {
+            return res.status(404).json({ message: 'Product not found' });
+          }
+
+          return res.status(200).json({ 
+            success: true,
+            message: 'Best review status updated',
+            isBestReview 
+          });
+        }
+
+        // Handle size soldout action
+        if (action === 'sizeSoldout') {
+          const size = req.query.size || req.body.size;
+          const isSoldOut = req.query.isSoldOut === 'true' || req.body.isSoldOut === true;
+
+          if (!size) {
+            return res.status(400).json({ message: 'Size is required' });
+          }
+
+          // Get the product first
+          const product = await db.collection('products').findOne({ _id: getObjectId(productId) });
+
+          if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+          }
+
+          // Update sizesWithPrices array
+          const sizesWithPrices = product.sizesWithPrices || [];
+          const updatedSizes = sizesWithPrices.map(item => {
+            if (item.size === size) {
+              return { ...item, soldOut: isSoldOut };
+            }
+            return item;
+          });
+
+          const result = await db.collection('products').updateOne(
+            { _id: getObjectId(productId) },
+            { $set: { sizesWithPrices: updatedSizes, updatedAt: new Date() } }
+          );
+
+          return res.status(200).json({ 
+            success: true,
+            message: 'Size status updated',
+            size,
+            isSoldOut 
+          });
+        }
+
+        // Handle bundle size soldout action
+        if (action === 'bundleSizeSoldout') {
+          const perfumeNumber = parseInt(req.query.perfumeNumber || req.body.perfumeNumber);
+          const size = req.query.size || req.body.size;
+          const isSoldOut = req.query.isSoldOut === 'true' || req.body.isSoldOut === true;
+
+          if (!perfumeNumber || !size) {
+            return res.status(400).json({ message: 'Perfume number and size are required' });
+          }
+
+          // Get the product first
+          const product = await db.collection('products').findOne({ _id: getObjectId(productId) });
+
+          if (!product) {
+            return res.status(404).json({ message: 'Product not found' });
+          }
+
+          // Update the correct perfume's sizes (supports 1, 2, 3, 4)
+          const perfumeKeyMap = {
+            1: 'bundlePerfume1',
+            2: 'bundlePerfume2',
+            3: 'bundlePerfume3',
+            4: 'bundlePerfume4'
+          };
+          const perfumeKey = perfumeKeyMap[perfumeNumber];
+          
+          if (!perfumeKey) {
+            return res.status(400).json({ message: 'Invalid perfume number. Must be 1, 2, 3, or 4' });
+          }
+          
+          const perfume = product[perfumeKey];
+          
+          if (!perfume || !perfume.sizesWithPrices) {
+            return res.status(404).json({ message: 'Perfume or sizes not found' });
+          }
+
+          const updatedSizes = perfume.sizesWithPrices.map(item => {
+            if (item.size === size) {
+              return { ...item, soldOut: isSoldOut };
+            }
+            return item;
+          });
+
+          const result = await db.collection('products').updateOne(
+            { _id: getObjectId(productId) },
+            { $set: { [`${perfumeKey}.sizesWithPrices`]: updatedSizes, updatedAt: new Date() } }
+          );
+
+          return res.status(200).json({ 
+            success: true,
+            message: 'Bundle size status updated',
+            perfumeNumber,
+            size,
+            isSoldOut 
+          });
+        }
+        
+        // Handle soldout action (default) - for whole product
+        const soldOut = req.query.soldOut === 'true' || req.body.soldOut === true;
+
+        let result;
+        try {
+          result = await db.collection('products').updateOne(
+            { _id: new ObjectId(productId) },
+            { $set: { soldOut, updatedAt: new Date() } }
+          );
+        } catch (error) {
+          result = await db.collection('products').updateOne(
+            { _id: productId },
+            { $set: { soldOut, updatedAt: new Date() } }
+          );
+        }
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: 'Product not found' });
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: 'Product status updated successfully',
+          soldOut
+        });
+      });
+    }
+
+    // PATCH /api/products/[id]/bestseller - Toggle best seller status
+    const isBestSellerEndpoint = req.url.includes('/bestseller');
+    if (req.method === 'PATCH' && productId && isBestSellerEndpoint) {
+      return requireAuth(req, res, async () => {
+        const { isBestSeller } = req.body;
+
+        if (typeof isBestSeller !== 'boolean') {
+          return res.status(400).json({ message: 'isBestSeller must be a boolean value' });
+        }
+
+        // If setting as best seller, check if we already have 6
+        if (isBestSeller) {
+          const bestSellerCount = await db.collection('products').countDocuments({ isBestSeller: true });
+          if (bestSellerCount >= 6) {
+            return res.status(400).json({ message: 'Maximum 6 best sellers allowed. Remove one first.' });
+          }
+        }
+
+        let result;
+        try {
+          result = await db.collection('products').updateOne(
+            { _id: new ObjectId(productId) },
+            { $set: { isBestSeller, updatedAt: new Date() } }
+          );
+        } catch (error) {
+          result = await db.collection('products').updateOne(
+            { _id: productId },
+            { $set: { isBestSeller, updatedAt: new Date() } }
+          );
+        }
+
+        if (result.matchedCount === 0) {
+          return res.status(404).json({ message: 'Product not found' });
+        }
+
+        return res.status(200).json({
+          message: 'Best seller status updated successfully',
+          isBestSeller
+        });
+      });
+    }
+
+    // DELETE /api/products/[id] - Delete product
+    if (req.method === 'DELETE' && productId) {
+      return requireAuth(req, res, async () => {
+        let result;
+        try {
+          result = await db.collection('products').deleteOne({ _id: new ObjectId(productId) });
+        } catch (error) {
+          result = await db.collection('products').deleteOne({ _id: productId });
+        }
+
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: 'Product not found' });
+        }
+
+        return res.status(200).json({ message: 'Product deleted successfully' });
+      });
+    }
+
+    // POST /api/products/[id]/review - Add review
+    if (req.method === 'POST' && productId && req.url.includes('/review')) {
+      const { rating, comment, userName, userEmail } = req.body;
+
+      if (!rating || rating < 1 || rating > 5) {
+        return res.status(400).json({ message: 'Rating must be between 1 and 5' });
+      }
+
+      if (!comment || comment.trim().length === 0) {
+        return res.status(400).json({ message: 'Comment is required' });
+      }
+
+      const review = {
+        _id: new ObjectId(),
+        rating: parseInt(rating),
+        comment: comment.trim(),
+        userName: userName || userEmail?.split('@')[0] || 'Anonymous',
+        userEmail: userEmail || 'anonymous@example.com',
+        createdAt: new Date()
+      };
+
+      let result;
+      try {
+        result = await db.collection('products').updateOne(
+          { _id: new ObjectId(productId) },
+          { 
+            $push: { reviews: review },
+            $inc: { reviewCount: 1 }
+          }
+        );
+      } catch (error) {
+        result = await db.collection('products').updateOne(
+          { _id: productId },
+          { 
+            $push: { reviews: review },
+            $inc: { reviewCount: 1 }
+          }
+        );
+      }
+
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      // Calculate new average rating
+      let product;
+      try {
+        product = await db.collection('products').findOne({ _id: new ObjectId(productId) });
+      } catch (error) {
+        product = await db.collection('products').findOne({ _id: productId });
+      }
+
+      if (product && product.reviews) {
+        const avgRating = product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length;
+        await db.collection('products').updateOne(
+          { _id: product._id },
+          { $set: { averageRating: Math.round(avgRating * 10) / 10 } }
+        );
+      }
+
+      return res.status(201).json({ message: 'Review added successfully', review });
+    }
+
+    // GET /api/products/[id]/reviews - Get all reviews for a product
+    if (req.method === 'GET' && productId && req.url.includes('/reviews')) {
+      let product;
+      try {
+        product = await db.collection('products').findOne({ _id: new ObjectId(productId) });
+      } catch (error) {
+        product = await db.collection('products').findOne({ _id: productId });
+      }
+
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      const reviews = product.reviews || [];
+      return res.status(200).json({ 
+        reviews: reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
+        averageRating: product.averageRating || 0,
+        reviewCount: reviews.length
+      });
+    }
+
+    return res.status(405).json({ message: 'Method not allowed' });
+
+  } catch (error) {
+    console.error('Products API error:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
