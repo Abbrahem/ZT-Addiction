@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useWishlist } from '../context/WishlistContext';
+import { getProductPath } from '../utils/productUtils';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
