@@ -2,19 +2,33 @@ const { ObjectId } = require('mongodb');
 const clientPromise = require('../lib/mongodb');
 const { requireAuth } = require('../lib/auth');
 
+// Helper function to slugify product name (matches frontend)
+const slugifyProductName = (name) => {
+  if (!name) return '';
+  return name
+    .toString()
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9\u0600-\u06FF\-]+/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
 module.exports = async function handler(req, res) {
   const client = await clientPromise;
   const db = client.db('danger-sneakers');
   
-  // Extract product ID from URL
-  const urlParts = req.url.split('/');
-  let productId = urlParts[urlParts.length - 1].split('?')[0];
+  // Extract product ID/slug from URL params
+  let productId = req.params.id || '';
+  
+  // Debug logging
+  console.log('🔍 Request URL:', req.url);
+  console.log('🔍 Request params:', req.params);
+  console.log('🔍 Product ID extracted:', productId);
   
   // Remove /soldout if present
   const isSoldOutEndpoint = req.url.includes('/soldout');
-  if (isSoldOutEndpoint) {
-    productId = urlParts[urlParts.length - 2];
-  }
 
   const reservedSlugs = ['requests-recommended', 'promo'];
   if (reservedSlugs.includes(productId)) {
@@ -28,10 +42,30 @@ module.exports = async function handler(req, res) {
     if (req.method === 'GET' && !isSoldOutEndpoint) {
       let product;
       
+      // First try ObjectId (for backward compatibility with admin dashboard)
       try {
         product = await db.collection('products').findOne({ _id: new ObjectId(productId) });
       } catch (error) {
-        product = await db.collection('products').findOne({ _id: productId });
+        // Not a valid ObjectId, continue to slug lookup
+      }
+      
+      // If not found by ObjectId, try slug lookup
+      if (!product) {
+        product = await db.collection('products').findOne({ slug: productId });
+      }
+      
+      // If still not found, try matching by slugified name (for products without slug field)
+      if (!product) {
+        const allProducts = await db.collection('products').find({}).toArray();
+        product = allProducts.find(p => slugifyProductName(p.name) === productId);
+      }
+      
+      // If still not found, try case-insensitive name match
+      if (!product) {
+        const allProducts = await db.collection('products').find({}).toArray();
+        product = allProducts.find(p => 
+          p.name && p.name.toLowerCase().replace(/\s+/g, '-') === productId.toLowerCase()
+        );
       }
       
       if (!product) {
