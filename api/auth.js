@@ -1,7 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const clientPromise = require('./lib/mongodb');
-const { handleCors } = require('./lib/cors');
 
 // Authentication middleware
 const requireAuth = async (req, res, next) => {
@@ -20,8 +19,6 @@ const requireAuth = async (req, res, next) => {
 };
 
 module.exports = async function handler(req, res) {
-  if (handleCors(req, res)) return;
-
   try {
     const client = await clientPromise;
     const db = client.db('danger-sneakers');

@@ -13,6 +13,26 @@
       "destination": "/api/auth"
     },
     {
+      "source": "/api/products/promo/list",
+      "destination": "/api/products"
+    },
+    {
+      "source": "/api/products/promo/create",
+      "destination": "/api/products"
+    },
+    {
+      "source": "/api/products/promo/validate",
+      "destination": "/api/products"
+    },
+    {
+      "source": "/api/products/promo/delete",
+      "destination": "/api/products"
+    },
+    {
+      "source": "/api/products/requests-recommended",
+      "destination": "/api/products"
+    },
+    {
       "source": "/api/products/(.*)/soldout",
       "destination": "/api/products"
     },
@@ -51,54 +71,59 @@
     {
       "source": "/api/seed",
       "destination": "/api/seed"
+    },
+    {
+      "source": "/api/paymob",
+      "destination": "/api/paymob"
+    },
+    {
+      "source": "/api/paymob/verify",
+      "destination": "/api/paymob/verify"
+    },
+    {
+      "source": "/api/paymob/callback",
+      "destination": "/api/paymob/callback"
+    },
+    {
+      "source": "/api/whatsapp-webhook",
+      "destination": "/api/whatsapp-webhook"
+    },
+    {
+      "source": "/api/requests-recommended",
+      "destination": "/api/requests-recommended"
     }
   ],
   "headers": [
     {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,DELETE,OPTIONS,PATCH" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type,Authorization,Cookie,X-Requested-With" },
+        { "key": "Access-Control-Allow-Credentials", "value": "true" }
+      ]
+    },
+    {
       "source": "/manifest.json",
       "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/json"
-        },
-        {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        }
+        { "key": "Content-Type", "value": "application/json" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" }
       ]
     },
     {
       "source": "/service-worker.js",
       "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
-        },
-        {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
+        { "key": "Content-Type", "value": "application/javascript" },
+        { "key": "Service-Worker-Allowed", "value": "/" },
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]
     },
     {
       "source": "/firebase-messaging-sw.js",
       "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
-        },
-        {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "no-cache, no-store, must-revalidate"
-        }
+        { "key": "Content-Type", "value": "application/javascript" },
+        { "key": "Service-Worker-Allowed", "value": "/" },
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
       ]
     }
   ]
