@@ -2,6 +2,7 @@
 export const mockProducts = [
   {
     _id: '1',
+    slug: 'dior-sauvage',
     name: 'Dior Sauvage',
     priceEGP: 350,
     description: 'A powerful and noble fragrance with fresh and woody notes',
@@ -13,6 +14,7 @@ export const mockProducts = [
   },
   {
     _id: '2',
+    slug: 'chanel-bleu-de-chanel',
     name: 'Chanel Bleu de Chanel',
     priceEGP: 400,
     description: 'An aromatic woody fragrance that embodies freedom',
@@ -24,6 +26,7 @@ export const mockProducts = [
   },
   {
     _id: '3',
+    slug: 'tom-ford-oud-wood',
     name: 'Tom Ford Oud Wood',
     priceEGP: 500,
     description: 'A composition of exotic, smoky woods including rare oud',
@@ -35,6 +38,7 @@ export const mockProducts = [
   },
   {
     _id: '4',
+    slug: 'versace-eros',
     name: 'Versace Eros',
     priceEGP: 300,
     description: 'A fresh oriental woody fragrance with mint and vanilla',
@@ -46,6 +50,7 @@ export const mockProducts = [
   },
   {
     _id: '5',
+    slug: 'acqua-di-gio',
     name: 'Acqua di Gio',
     priceEGP: 350,
     description: 'A fresh aquatic fragrance inspired by the sea',
@@ -57,6 +62,7 @@ export const mockProducts = [
   },
   {
     _id: '6',
+    slug: 'luxury-perfume-bundle',
     name: 'Luxury Perfume Bundle',
     priceEGP: 1200,
     description: 'A collection of 5 premium perfume samples',

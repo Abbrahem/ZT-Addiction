@@ -12,12 +12,10 @@ export const slugifyProductName = (name) => {
 
 export const getProductPath = (product) => {
   if (!product) return '/products';
-  const slug = slugifyProductName(product.name || 'product');
-  return `/products/${encodeURIComponent(slug)}`;
+  const id = product._id || product.id;
+  return `/products/${id}`;
 };
 
 export const parseProductIdFromParam = (param) => {
-  // This function is no longer needed for slug-based routing
-  // Kept for backward compatibility
   return param;
 };

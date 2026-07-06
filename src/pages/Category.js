@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { getProductPath } from '../utils/productUtils';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { mockProducts } from '../data/mockData';
@@ -287,7 +288,7 @@ const Category = () => {
 
   const ProductCard = ({ product }) => (
     <div className="group relative">
-      <Link to={`/products/${product._id}`} className="block">
+      <Link to={getProductPath(product)} className="block">
         <div className="relative overflow-hidden mb-4 bg-gray-50" style={{ paddingBottom: '133%' }}>
           <img
             src={product.images?.[0] ? `/api/images/${product.images[0]}` : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}

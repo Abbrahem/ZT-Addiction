@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { getProductPath } from '../utils/productUtils';
 import { useWishlist } from '../context/WishlistContext';
 import Swal from 'sweetalert2';
 
@@ -99,7 +100,7 @@ const Wishlist = () => {
               </Link>
               
               <div className="p-4">
-                <Link to={`/products/${item.id}`}>
+                <Link to={getProductPath(item)}>
                   <h3 className="font-montserrat text-sm mb-2 text-black hover:opacity-70 transition-opacity line-clamp-2">
                     {item.name}
                   </h3>
@@ -110,7 +111,7 @@ const Wishlist = () => {
                 
                 <div className="flex flex-col gap-2">
                   <Link
-                    to={`/products/${item.id}`}
+                    to={getProductPath(item)}
                     className="w-full px-3 py-2.5 bg-black text-white text-xs font-montserrat hover:bg-gray-800 transition-colors text-center"
                   >
                     View Product

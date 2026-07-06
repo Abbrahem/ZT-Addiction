@@ -1,8 +1,7 @@
 const { ObjectId } = require('mongodb');
 const clientPromise = require('./lib/mongodb');
 const { requireAuth } = require('./lib/auth');
-
-// Firebase Admin SDK للإشعارات (مدمج هنا عشان نوفر ملف)
+const { handleCors } = require('./lib/cors');
 const admin = require('firebase-admin');
 let firebaseAdmin = null;
 
@@ -89,6 +88,8 @@ async function sendNotificationToAdmins(title, body, data = {}) {
 }
 
 module.exports = async function handler(req, res) {
+  if (handleCors(req, res)) return;
+
   // Skip if this is a paymob request
   if (req.url && (req.url.includes('/paymob') || req.url.includes('paymob'))) {
     console.log('⏭️ Skipping orders.js - this is a paymob request');

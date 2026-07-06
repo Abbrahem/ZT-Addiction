@@ -1,7 +1,10 @@
 const { GridFSBucket, ObjectId } = require('mongodb');
 const clientPromise = require('./lib/mongodb');
+const { handleCors } = require('./lib/cors');
 
 module.exports = async function handler(req, res) {
+  if (handleCors(req, res)) return;
+
   if (req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
