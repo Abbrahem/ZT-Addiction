@@ -28,10 +28,6 @@ const ProductDetail = () => {
   const [activeTab, setActiveTab] = useState('notes'); // notes, season, info
   const tabsContainerRef = React.useRef(null);
   
-  // Live viewers & cart tracking
-  const [currentViewers, setCurrentViewers] = useState(0);
-  const [inCarts, setInCarts] = useState(0);
-  const [showViewers, setShowViewers] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
   // Bundle specific states
@@ -77,71 +73,6 @@ const ProductDetail = () => {
     loadRecentlyViewed();
   }, [productId]); // eslint-disable-line react-hooks/exhaustive-deps
   
-  // Initialize real-time stats after product is loaded
-  useEffect(() => {
-    if (product) {
-      // If sold out, set cart count to 0, otherwise use realistic small numbers
-      if (product.soldOut) {
-        setCurrentViewers(Math.floor(Math.random() * 3) + 1); // 1-3 viewers for sold out
-        setInCarts(0); // 0 in carts when sold out
-      } else {
-        setCurrentViewers(Math.floor(Math.random() * 5) + 1); // 1-5 viewers
-        // Cart count: 0, 1, or 2 with weighted probability (60% chance of 1)
-        const rand = Math.random();
-        if (rand < 0.15) {
-          setInCarts(0); // 15% chance
-        } else if (rand < 0.75) {
-          setInCarts(1); // 60% chance (most common)
-        } else {
-          setInCarts(2); // 25% chance
-        }
-      }
-    }
-  }, [product]);
-  
-  // Toggle between viewers and cart messages every 5 seconds
-  useEffect(() => {
-    const messageInterval = setInterval(() => {
-      setShowViewers(prev => !prev);
-    }, 5000);
-    
-    return () => clearInterval(messageInterval);
-  }, []);
-  
-  // Update numbers slowly (viewers every 30 seconds, cart every 10 minutes)
-  useEffect(() => {
-    if (!product) return;
-    
-    // Update viewers every 30 seconds
-    const viewersInterval = setInterval(() => {
-      setCurrentViewers(prev => {
-        const change = Math.random() > 0.6 ? 1 : (Math.random() > 0.3 ? -1 : 0);
-        const newValue = prev + change;
-        return product.soldOut ? Math.max(1, Math.min(5, newValue)) : Math.max(1, Math.min(5, newValue));
-      });
-    }, 30000); // 30 seconds
-    
-    // Update cart count every 10 minutes (600000ms) if not sold out
-    let cartInterval;
-    if (!product.soldOut) {
-      cartInterval = setInterval(() => {
-        const rand = Math.random();
-        if (rand < 0.15) {
-          setInCarts(0); // 15% chance
-        } else if (rand < 0.75) {
-          setInCarts(1); // 60% chance (most common)
-        } else {
-          setInCarts(2); // 25% chance
-        }
-      }, 600000); // 10 minutes
-    }
-    
-    return () => {
-      clearInterval(viewersInterval);
-      if (cartInterval) clearInterval(cartInterval);
-    };
-  }, [product]);
-
   // Save to recently viewed after product is loaded
   useEffect(() => {
     if (product) {
@@ -594,20 +525,6 @@ const ProductDetail = () => {
         <div className="space-y-6">
           <h1 className="text-3xl font-playfair text-black">{product.name}</h1>
           <p className="text-2xl font-montserrat font-semibold text-black">{currentPrice} EGP</p>
-          
-          {/* Live Activity Messages */}
-          <div className="relative h-6 overflow-hidden">
-            <div className={`absolute w-full transition-all duration-500 ${showViewers ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full'}`}>
-              <p className="text-sm font-montserrat text-gray-700">
-                <span className="font-bold text-black">{currentViewers}</span> people are viewing this right now
-              </p>
-            </div>
-            <div className={`absolute w-full transition-all duration-500 ${!showViewers ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'}`}>
-              <p className="text-sm font-montserrat text-gray-700">
-                Hurry! over <span className="font-bold text-black">{inCarts}</span> people have this in their carts
-              </p>
-            </div>
-          </div>
 
           <hr className="border-beige-300" />
 
