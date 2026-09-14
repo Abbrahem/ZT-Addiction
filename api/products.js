@@ -54,25 +54,26 @@ async function sendNotificationToAll(title, body, data = {}) {
 module.exports = async function handler(req, res) {
   if (handleCors(req, res)) return;
 
-  const client = await clientPromise;
-  const db = client.db('danger-sneakers');
-
-  // Use originalUrl (full path) when available to detect subpaths reliably
-  const fullUrl = req.originalUrl || req.url || '';
-  // Extract product ID from URL if present
-  const urlParts = fullUrl.split('/');
-  const productId = req.params?.id || (urlParts.length > 3 ? urlParts[3].split('?')[0] : null);
-  const isSoldOutEndpoint = fullUrl.includes('/soldout');
-
-  // Check if this is a promo endpoint
-  const isPromoEndpoint = fullUrl.includes('/promo/');
-
-  // Check if this is a requests-recommended endpoint
-  const isRequestsRecommended = fullUrl.includes('/requests-recommended');
-
-  console.log('🔍 Products API called:', req.method, 'fullUrl:', fullUrl, 'req.url:', req.url, 'ProductID:', productId, 'IsPromo:', isPromoEndpoint, 'IsRequestsRecommended:', isRequestsRecommended);
-
   try {
+    const client = await clientPromise;
+    const db = client.db('danger-sneakers');
+
+    // Use originalUrl (full path) when available to detect subpaths reliably
+    const fullUrl = req.originalUrl || req.url || '';
+    // Extract product ID from URL if present
+    const urlParts = fullUrl.split('/');
+    const productId = req.params?.id || (urlParts.length > 3 ? urlParts[3].split('?')[0] : null);
+    const isSoldOutEndpoint = fullUrl.includes('/soldout');
+
+    // Check if this is a promo endpoint
+    const isPromoEndpoint = fullUrl.includes('/promo/');
+
+    // Check if this is a requests-recommended endpoint
+    const isRequestsRecommended = fullUrl.includes('/requests-recommended');
+
+    console.log('🔍 Products API called:', req.method, 'fullUrl:', fullUrl, 'req.url:', req.url, 'ProductID:', productId, 'IsPromo:', isPromoEndpoint, 'IsRequestsRecommended:', isRequestsRecommended);
+
+    try {
     // ==================== PROMO CODES ENDPOINTS ====================
     
     // GET /api/products/promo/list - Get all promo codes (admin only)
@@ -839,6 +840,16 @@ module.exports = async function handler(req, res) {
 
   } catch (error) {
     console.error('Products API error:', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
+  }
+  } catch (error) {
+    console.error('❌ MongoDB Connection Error:', error);
+    return res.status(500).json({ 
+      message: 'Database connection error',
+      error: error.message 
+    });
   }
 };
