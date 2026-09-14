@@ -299,13 +299,13 @@ const PointsSection = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+    <div className="bg-black rounded-lg border border-gray-800 p-6 shadow-sm">
       {/* Header */}
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-playfair mb-3 text-black whitespace-nowrap">Catch a Discount</h2>
+        <h2 className="text-2xl font-playfair mb-3 text-white whitespace-nowrap">Catch a Discount</h2>
         <div className="flex items-center justify-center gap-2">
-          <span className="text-gray-600 font-montserrat">Your Points:</span>
-          <span className="text-3xl font-bold text-black">{points}</span>
+          <span className="text-gray-300 font-montserrat">Your Points:</span>
+          <span className="text-3xl font-bold text-white">{points}</span>
         </div>
       </div>
 
@@ -313,7 +313,7 @@ const PointsSection = () => {
       <div className="max-w-md mx-auto space-y-4 mb-4">
         {/* Points Input */}
         <div>
-          <label className="block text-sm text-gray-700 mb-2 font-montserrat">Use Points</label>
+          <label className="block text-sm text-gray-300 mb-2 font-montserrat">Use Points</label>
           <input
             type="number"
             value={pointsToUse}
@@ -322,24 +322,24 @@ const PointsSection = () => {
             min="0"
             max="400"
             step="10"
-            className="w-full px-4 py-3 bg-white border-2 border-gray-300 rounded-lg text-black placeholder-gray-400 focus:outline-none focus:border-black transition-colors font-montserrat"
+            className="w-full px-4 py-3 bg-gray-900 border-2 border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-white transition-colors font-montserrat"
           />
           {showInsufficientMessage && (
-            <p className="text-red-600 text-sm mt-1 font-montserrat">Don't have enough points</p>
+            <p className="text-red-400 text-sm mt-1 font-montserrat">Don't have enough points</p>
           )}
         </div>
 
         {/* Discount Display */}
         <div>
-          <label className="block text-sm text-gray-700 mb-2 font-montserrat">Discount</label>
-          <div className="w-full px-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-lg text-center">
-            <span className="text-3xl font-bold text-black">{discount}%</span>
+          <label className="block text-sm text-gray-300 mb-2 font-montserrat">Discount</label>
+          <div className="w-full px-4 py-3 bg-gray-900 border-2 border-gray-700 rounded-lg text-center">
+            <span className="text-3xl font-bold text-white">{discount}%</span>
           </div>
         </div>
       </div>
 
       {/* Info */}
-      <div className="bg-gray-50 rounded-lg p-3 mb-4 text-sm text-gray-600 text-center font-montserrat">
+      <div className="bg-gray-900 rounded-lg p-3 mb-4 text-sm text-gray-300 text-center font-montserrat">
         Every 10 points = 1% discount
       </div>
 
@@ -347,7 +347,7 @@ const PointsSection = () => {
       <button
         onClick={handleRedeem}
         disabled={loading || !pointsToUse || points < 10}
-        className="w-full max-w-md mx-auto block bg-black hover:bg-gray-800 text-white font-bold py-3 rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:bg-black font-montserrat"
+        className="w-full max-w-md mx-auto block bg-white hover:bg-gray-200 text-black font-bold py-3 rounded-lg transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:bg-white font-montserrat"
       >
         {loading ? 'Creating...' : 'Redeem Now'}
       </button>
@@ -355,14 +355,14 @@ const PointsSection = () => {
       {/* Promo Code Display */}
       {promoCode && (
         <div className="mt-6 max-w-md mx-auto animate-fadeIn">
-          <p className="text-sm text-gray-600 mb-2 text-center font-montserrat">Your Code:</p>
-          <div 
+          <p className="text-sm text-gray-300 mb-2 text-center font-montserrat">Your Code:</p>
+          <div
             onClick={copyPromoCode}
-            className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer hover:border-black transition-colors"
+            className="bg-gray-900 border-2 border-dashed border-gray-700 rounded-lg p-4 text-center cursor-pointer hover:border-white transition-colors"
           >
-            <p className="text-2xl font-bold text-black tracking-wider font-montserrat">{promoCode}</p>
+            <p className="text-2xl font-bold text-white tracking-wider font-montserrat">{promoCode}</p>
           </div>
-          <p className="text-sm text-red-600 font-bold text-center mt-2 font-montserrat">
+          <p className="text-sm text-red-400 font-bold text-center mt-2 font-montserrat">
             One-time use only
           </p>
         </div>

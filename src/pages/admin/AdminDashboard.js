@@ -36,6 +36,7 @@ const AdminDashboard = () => {
     gender: '', // men, women, unisex
     images: [],
     sizesWithPrices: [], // Array of {size: '5ml', price: 450}
+    count: 0, // Inventory count
     // Bundle specific fields - up to 4 perfumes (3 & 4 are optional)
     bundlePerfume1: { name: '', sizesWithPrices: [] },
     bundlePerfume2: { name: '', sizesWithPrices: [] },
@@ -544,6 +545,7 @@ const AdminDashboard = () => {
       gender: product.gender || '',
       images: product.images || [],
       sizesWithPrices: product.sizesWithPrices || (product.size && product.priceEGP ? [{ size: product.size, price: product.priceEGP }] : []),
+      count: product.count || 0,
       bundlePerfume1: product.bundlePerfume1 || { name: '', sizesWithPrices: [] },
       bundlePerfume2: product.bundlePerfume2 || { name: '', sizesWithPrices: [] },
       bundlePerfume3: product.bundlePerfume3 || { name: '', sizesWithPrices: [] },
@@ -932,6 +934,20 @@ const AdminDashboard = () => {
                   />
                 </div>
 
+                {/* COUNT - Inventory */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">COUNT (Inventory)</label>
+                  <input
+                    type="number"
+                    value={productForm.count}
+                    onChange={(e) => setProductForm({ ...productForm, count: parseInt(e.target.value) || 0 })}
+                    className="input-field"
+                    min="0"
+                    placeholder="Enter inventory count"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">This will be displayed on product cards and automatically deducted when orders are placed</p>
+                </div>
+
                 {/* Fragrance Notes */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Fragrance Notes</label>
@@ -1009,57 +1025,39 @@ const AdminDashboard = () => {
                 )}
 
                 {/* Gender - Show for Winter/Summer Samples, Bundles, and Bottles */}
-                {(productForm.collection === 'Winter Samples' || 
-                  productForm.collection === 'Summer Samples' || 
-                  productForm.collection === 'Bundles' || 
+                {(productForm.collection === 'Winter Samples' ||
+                  productForm.collection === 'Summer Samples' ||
+                  productForm.collection === 'Bundles' ||
                   productForm.collection === 'Bottles') && (
                   <div>
-                    <label className="block text-sm font-medium mb-2">Gender (Select one or more)</label>
+                    <label className="block text-sm font-medium mb-2">Gender</label>
                     <div className="flex flex-wrap gap-4">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
-                          type="checkbox"
-                          checked={productForm.gender?.includes('men')}
-                          onChange={(e) => {
-                            const currentGenders = productForm.gender ? productForm.gender.split(',') : [];
-                            if (e.target.checked) {
-                              setProductForm({ ...productForm, gender: [...currentGenders, 'men'].join(',') });
-                            } else {
-                              setProductForm({ ...productForm, gender: currentGenders.filter(g => g !== 'men').join(',') });
-                            }
-                          }}
+                          type="radio"
+                          name="gender"
+                          checked={productForm.gender === 'men'}
+                          onChange={() => setProductForm({ ...productForm, gender: 'men' })}
                           className="w-4 h-4"
                         />
                         <span className="text-sm">Men</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
-                          type="checkbox"
-                          checked={productForm.gender?.includes('women')}
-                          onChange={(e) => {
-                            const currentGenders = productForm.gender ? productForm.gender.split(',') : [];
-                            if (e.target.checked) {
-                              setProductForm({ ...productForm, gender: [...currentGenders, 'women'].join(',') });
-                            } else {
-                              setProductForm({ ...productForm, gender: currentGenders.filter(g => g !== 'women').join(',') });
-                            }
-                          }}
+                          type="radio"
+                          name="gender"
+                          checked={productForm.gender === 'women'}
+                          onChange={() => setProductForm({ ...productForm, gender: 'women' })}
                           className="w-4 h-4"
                         />
                         <span className="text-sm">Women</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
-                          type="checkbox"
-                          checked={productForm.gender?.includes('unisex')}
-                          onChange={(e) => {
-                            const currentGenders = productForm.gender ? productForm.gender.split(',') : [];
-                            if (e.target.checked) {
-                              setProductForm({ ...productForm, gender: [...currentGenders, 'unisex'].join(',') });
-                            } else {
-                              setProductForm({ ...productForm, gender: currentGenders.filter(g => g !== 'unisex').join(',') });
-                            }
-                          }}
+                          type="radio"
+                          name="gender"
+                          checked={productForm.gender === 'unisex'}
+                          onChange={() => setProductForm({ ...productForm, gender: 'unisex' })}
                           className="w-4 h-4"
                         />
                         <span className="text-sm">Unisex</span>
@@ -1579,6 +1577,9 @@ const AdminDashboard = () => {
                       {product.sizesWithPrices && product.sizesWithPrices.length > 0 
                         ? `${product.sizesWithPrices[0].price} EGP` 
                         : `${product.priceEGP || 0} EGP`}
+                    </p>
+                    <p className="text-sm font-medium mb-2">
+                      COUNT: <span className={product.count <= 0 ? 'text-red-600 font-bold' : 'text-green-600'}>{product.count || 0}</span>
                     </p>
 
                     {/* Bundle Sizes with Sold Out Toggle */}

@@ -15,6 +15,8 @@ import Category from './pages/Category';
 import BundleCategory from './pages/BundleCategory';
 import BundleSubcategory from './pages/BundleSubcategory';
 import RequestsRecommendedPage from './pages/RequestsRecommendedPage';
+import BestSellers from './pages/BestSellers';
+import BestReview from './pages/BestReview';
 import OrderTracking from './pages/OrderTracking';
 import Wishlist from './pages/Wishlist';
 import Notifications from './pages/Notifications';
@@ -167,6 +169,8 @@ function App() {
                     {/* PerfumeQuiz route removed */}
                     <Route path="/products" element={<Products />} />
                     <Route path="/products/:id" element={<ProductDetail />} />
+                    <Route path="/best-sellers" element={<BestSellers />} />
+                    <Route path="/best-review" element={<BestReview />} />
                     <Route path="/category/bundles" element={<BundleCategory />} />
                     <Route path="/category/bundles/:subcategory" element={<BundleSubcategory />} />
                     <Route path="/category/:category/requests" element={<RequestsRecommendedPage />} />

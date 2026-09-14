@@ -57,7 +57,7 @@ const ProductCard = ({ product, onQuickAdd }) => {
               const p4 = product.bundlePerfume4?.sizesWithPrices?.[0]?.price || 0;
               const p5 = product.bundlePerfume5?.sizesWithPrices?.[0]?.price || 0;
               const totalPrice = p1 + p2 + p3 + p4 + p5;
-              
+
               // Debug log
               if (totalPrice === 0) {
                 console.log('Bundle price is 0 for:', product.name, {
@@ -68,15 +68,37 @@ const ProductCard = ({ product, onQuickAdd }) => {
                   bundlePerfume2: product.bundlePerfume2
                 });
               }
-              
+
               return totalPrice > 0 ? `${totalPrice} EGP` : '0 EGP';
             }
             // For regular products
-            return product.sizesWithPrices && product.sizesWithPrices.length > 0 
-              ? `${product.sizesWithPrices[0].price} EGP` 
+            return product.sizesWithPrices && product.sizesWithPrices.length > 0
+              ? `${product.sizesWithPrices[0].price} EGP`
               : `${product.priceEGP || 0} EGP`;
           })()}
         </p>
+
+        {/* Count and Reviews */}
+        <div className="flex items-center gap-3 mt-1">
+          {/* Count */}
+          {product.count !== undefined && (
+            <span className={`text-xs font-montserrat ${product.count === 0 ? 'text-red-600' : 'text-gray-600'}`}>
+              {product.count === 0 ? 'SOLD OUT' : `${product.count} in stock`}
+            </span>
+          )}
+
+          {/* Reviews */}
+          {product.reviewCount !== undefined && product.reviewCount > 0 && (
+            <div className="flex items-center gap-1">
+              <svg className="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              <span className="text-xs font-montserrat text-gray-600">
+                {product.averageRating?.toFixed(1) || '0.0'} ({product.reviewCount})
+              </span>
+            </div>
+          )}
+        </div>
       </Link>
       
       {/* Action Buttons */}

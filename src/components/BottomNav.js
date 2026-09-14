@@ -59,13 +59,13 @@ const BottomNav = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 bg-black border-t border-gray-800 z-40 md:hidden">
       <div className="flex justify-around items-center h-16">
         {/* Notifications */}
         <Link
           to="/notifications"
           className={`flex flex-col items-center justify-center flex-1 h-full relative ${
-            isActive('/notifications') ? 'text-black' : 'text-gray-500'
+            isActive('/notifications') ? 'text-white' : 'text-gray-500'
           }`}
         >
           <div className="relative">
@@ -85,7 +85,7 @@ const BottomNav = () => {
         <Link
           to="/"
           className={`flex flex-col items-center justify-center flex-1 h-full ${
-            isActive('/') ? 'text-black' : 'text-gray-500'
+            isActive('/') ? 'text-white' : 'text-gray-500'
           }`}
         >
           <svg className="w-6 h-6" fill={isActive('/') ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
@@ -98,14 +98,14 @@ const BottomNav = () => {
         <Link
           to="/ai-chat"
           className={`flex flex-col items-center justify-center flex-1 h-full relative ${
-            isActive('/ai-chat') ? 'text-black' : 'text-gray-500'
+            isActive('/ai-chat') ? 'text-white' : 'text-gray-500'
           }`}
         >
           <div className="relative">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            <span className="absolute -top-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-white"></span>
+            <span className="absolute -top-1 -right-1 bg-green-500 w-3 h-3 rounded-full border-2 border-black"></span>
           </div>
           <span className="text-[10px] mt-1 font-medium">Chat</span>
         </Link>
@@ -114,7 +114,7 @@ const BottomNav = () => {
         <Link
           to="/my-orders"
           className={`flex flex-col items-center justify-center flex-1 h-full relative ${
-            isActive('/my-orders') ? 'text-black' : 'text-gray-500'
+            isActive('/my-orders') ? 'text-white' : 'text-gray-500'
           }`}
         >
           <div className="relative">
@@ -122,7 +122,7 @@ const BottomNav = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
             </svg>
             {ordersCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+              <span className="absolute -top-2 -right-2 bg-white text-black text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                 {ordersCount > 9 ? '9+' : ordersCount}
               </span>
             )}

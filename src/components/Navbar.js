@@ -23,16 +23,20 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navbarClasses = isHomePage && !isScrolled
+  const navbarClasses = isHomePage
     ? 'fixed top-0 left-0 right-0 z-50 transition-all duration-300'
     : 'sticky top-0 z-50 bg-beige-50 shadow-md transition-all duration-300';
 
-  const textColor = isHomePage && !isScrolled ? 'text-white' : 'text-black';
-  const logoTextColor = isHomePage && !isScrolled ? 'text-white' : 'text-black';
+  const navbarBgStyle = isHomePage
+    ? { backgroundColor: 'transparent' }
+    : {};
+
+  const textColor = isHomePage ? 'text-white' : 'text-black';
+  const logoTextColor = isHomePage ? 'text-white' : 'text-black';
 
   return (
     <>
-      <nav className={navbarClasses}>
+      <nav className={navbarClasses} style={navbarBgStyle}>
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
           <div className="flex justify-between items-center h-20">
             {/* Left: Order Tracking */}
