@@ -1,6 +1,7 @@
 const { ObjectId } = require('mongodb');
 const clientPromise = require('./lib/mongodb');
 const { requireAuth } = require('./lib/auth');
+const { handleCors } = require('./lib/cors');
 const admin = require('firebase-admin');
 let firebaseAdmin = null;
 
@@ -87,6 +88,8 @@ async function sendNotificationToAdmins(title, body, data = {}) {
 }
 
 module.exports = async function handler(req, res) {
+  if (handleCors(req, res)) return;
+
   // Skip if this is a paymob request
   if (req.url && (req.url.includes('/paymob') || req.url.includes('paymob'))) {
     console.log('⏭️ Skipping orders.js - this is a paymob request');
@@ -412,6 +415,44 @@ module.exports = async function handler(req, res) {
       
       // Get the complete order with ID
       const completeOrder = { ...order, _id: result.insertedId };
+      
+      // Deduct inventory count for each product in the order
+      console.log('📦 Deducting inventory for order items...');
+      for (const item of items) {
+        try {
+          const productId = item.productId || item._id;
+          const quantity = item.quantity || 1;
+          
+          if (productId) {
+            let product;
+            try {
+              product = await db.collection('products').findOne({ _id: new ObjectId(productId) });
+            } catch (error) {
+              product = await db.collection('products').findOne({ _id: productId });
+            }
+            
+            if (product) {
+              const newCount = Math.max(0, (product.count || 0) - quantity);
+              const isSoldOut = newCount === 0;
+              
+              await db.collection('products').updateOne(
+                { _id: product._id },
+                { 
+                  $set: { 
+                    count: newCount,
+                    soldOut: isSoldOut,
+                    updatedAt: new Date()
+                  } 
+                }
+              );
+              
+              console.log(`✅ Deducted ${quantity} from product ${productId}. New count: ${newCount}, Sold out: ${isSoldOut}`);
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error deducting inventory for item:', error);
+        }
+      }
       
       // إرسال إيميل تأكيد للعميل
       if (customer.email) {

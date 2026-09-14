@@ -1,6 +1,7 @@
 const { ObjectId } = require('mongodb');
 const clientPromise = require('./lib/mongodb');
 const { requireAuth } = require('./lib/auth');
+const { handleCors } = require('./lib/cors');
 
 // Firebase Admin SDK for sending notifications
 let admin;
@@ -51,6 +52,8 @@ async function sendNotificationToAll(title, body, data = {}) {
 }
 
 module.exports = async function handler(req, res) {
+  if (handleCors(req, res)) return;
+
   const client = await clientPromise;
   const db = client.db('danger-sneakers');
 
@@ -250,6 +253,7 @@ module.exports = async function handler(req, res) {
           sizesWithPrices, 
           priceEGP, 
           size, 
+          count,
           bundlePerfume1, 
           bundlePerfume2, 
           bundlePerfume3, 
@@ -299,6 +303,7 @@ module.exports = async function handler(req, res) {
           collection,
           images: images || [],
           soldOut: false,
+          count: count || 0,
           createdAt: new Date(),
           updatedAt: new Date()
         };
