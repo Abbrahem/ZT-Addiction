@@ -1,6 +1,5 @@
 const { GridFSBucket } = require('mongodb');
-const clientPromise = require('./lib/mongodb');
-const { requireAuth } = require('./lib/auth');
+const { clientPromise, requireAuth } = require('./_lib');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {

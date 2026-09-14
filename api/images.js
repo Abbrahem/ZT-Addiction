@@ -1,6 +1,5 @@
 const { GridFSBucket, ObjectId } = require('mongodb');
-const clientPromise = require('./lib/mongodb');
-const { handleCors } = require('./lib/cors');
+const { clientPromise, handleCors } = require('./_lib');
 
 module.exports = async function handler(req, res) {
   if (handleCors(req, res)) return;

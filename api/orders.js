@@ -1,7 +1,5 @@
 const { ObjectId } = require('mongodb');
-const clientPromise = require('./lib/mongodb');
-const { requireAuth } = require('./lib/auth');
-const { handleCors } = require('./lib/cors');
+const { clientPromise, requireAuth, handleCors } = require('./_lib');
 const admin = require('firebase-admin');
 let firebaseAdmin = null;
 

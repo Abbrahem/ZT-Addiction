@@ -1,7 +1,4 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const clientPromise = require('./lib/mongodb');
-const { handleCors } = require('./lib/cors');
+const { clientPromise, handleCors, bcrypt, jwt } = require('./_lib');
 
 // Authentication middleware
 const requireAuth = async (req, res, next) => {
