@@ -165,7 +165,7 @@ const Home = () => {
         <div className="text-center mb-4">
           <h2 className="text-white font-playfair text-2xl md:text-3xl mb-1">Full Bottle</h2>
         </div>
-        <Link to="/category/full-bottles" className="group relative block overflow-hidden rounded-lg">
+        <Link to="/category/bottles" className="group relative block overflow-hidden rounded-lg">
           <div className="relative" style={{ paddingBottom: '40%' }}>
             <img
               src="/bootels.jpeg"
