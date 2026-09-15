@@ -525,6 +525,11 @@ const ProductDetail = () => {
         <div className="space-y-6">
           <h1 className="text-3xl font-playfair text-black">{product.name}</h1>
           <p className="text-2xl font-montserrat font-semibold text-black">{currentPrice} EGP</p>
+          {product.count > 0 && (
+            <p className="text-sm font-montserrat text-gray-500">
+              {product.count} {product.count === 1 ? 'item' : 'items'} left in stock
+            </p>
+          )}
 
           <hr className="border-beige-300" />
 

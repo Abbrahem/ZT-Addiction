@@ -7,8 +7,6 @@ const Home = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const slides = [
     { image: '/HE1.png', link: '/best-sellers', text: 'BEST SELLERS' },
-    { image: '/HE2.png', link: '/best-review', text: 'BEST REVIEW' },
-    { image: '/HE3.png', link: '/category/bottles', text: 'NICHE BOTTLES' }
   ];
 
   useEffect(() => {
