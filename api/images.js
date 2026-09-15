@@ -1,5 +1,23 @@
-const { GridFSBucket, ObjectId } = require('mongodb');
-const { clientPromise, handleCors } = require('./_lib');
+const { GridFSBucket, ObjectId, MongoClient } = require('mongodb');
+
+const uri = process.env.MONGODB_URI;
+const mongoOptions = { serverSelectionTimeoutMS: 30000, socketTimeoutMS: 45000, connectTimeoutMS: 30000, retryWrites: true, w: 'majority' };
+let _client, _clientPromise;
+if (process.env.NODE_ENV === 'production') { _client = new MongoClient(uri, mongoOptions); _clientPromise = _client.connect(); }
+else { if (!global._mongoImagesPromise) { _client = new MongoClient(uri, mongoOptions); global._mongoImagesPromise = _client.connect(); } _clientPromise = global._mongoImagesPromise; }
+const clientPromise = _clientPromise;
+
+function handleCors(req, res) {
+  const origin = req.headers.origin || '';
+  const allowed = ['https://www.zt-addiction.com','https://zt-addiction.com','https://zt-addiction.vercel.app','http://localhost:3000','capacitor://localhost','https://localhost'];
+  if (allowed.includes(origin) || /\.vercel\.app$/.test(origin) || !origin) res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  else res.setHeader('Access-Control-Allow-Origin', 'https://www.zt-addiction.com');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') { res.status(200).end(); return true; }
+  return false;
+}
 
 module.exports = async function handler(req, res) {
   if (handleCors(req, res)) return;

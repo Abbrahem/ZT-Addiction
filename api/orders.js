@@ -1,5 +1,41 @@
-const { ObjectId } = require('mongodb');
-const { clientPromise, requireAuth, handleCors } = require('./_lib');
+const { ObjectId, MongoClient } = require('mongodb');
+const jwt = require('jsonwebtoken');
+
+// ── MongoDB ──────────────────────────────────────────────
+const uri = process.env.MONGODB_URI;
+const mongoOptions = { serverSelectionTimeoutMS: 30000, socketTimeoutMS: 45000, connectTimeoutMS: 30000, retryWrites: true, w: 'majority' };
+let _client, _clientPromise;
+if (process.env.NODE_ENV === 'production') {
+  _client = new MongoClient(uri, mongoOptions);
+  _clientPromise = _client.connect();
+} else {
+  if (!global._mongoOrdersPromise) { _client = new MongoClient(uri, mongoOptions); global._mongoOrdersPromise = _client.connect(); }
+  _clientPromise = global._mongoOrdersPromise;
+}
+const clientPromise = _clientPromise;
+
+// ── CORS ─────────────────────────────────────────────────
+function handleCors(req, res) {
+  const origin = req.headers.origin || '';
+  const allowed = ['https://www.zt-addiction.com','https://zt-addiction.com','https://zt-addiction.vercel.app','http://localhost:3000','capacitor://localhost','https://localhost'];
+  if (allowed.includes(origin) || /\.vercel\.app$/.test(origin) || !origin) res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  else res.setHeader('Access-Control-Allow-Origin', 'https://www.zt-addiction.com');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cookie, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') { res.status(200).end(); return true; }
+  return false;
+}
+
+// ── requireAuth ───────────────────────────────────────────
+const requireAuth = async (req, res, next) => {
+  try {
+    const token = req.cookies?.token;
+    if (!token) return res.status(401).json({ message: 'Access denied' });
+    jwt.verify(token, process.env.JWT_SECRET);
+    const result = next(); if (result?.then) return await result; return result;
+  } catch { return res.status(401).json({ message: 'Invalid token' }); }
+};
 const admin = require('firebase-admin');
 let firebaseAdmin = null;
 

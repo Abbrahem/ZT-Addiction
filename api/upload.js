@@ -1,5 +1,21 @@
-const { GridFSBucket } = require('mongodb');
-const { clientPromise, requireAuth } = require('./_lib');
+const { GridFSBucket, MongoClient } = require('mongodb');
+const jwt = require('jsonwebtoken');
+
+const uri = process.env.MONGODB_URI;
+const mongoOptions = { serverSelectionTimeoutMS: 30000, socketTimeoutMS: 45000, connectTimeoutMS: 30000, retryWrites: true, w: 'majority' };
+let _client, _clientPromise;
+if (process.env.NODE_ENV === 'production') { _client = new MongoClient(uri, mongoOptions); _clientPromise = _client.connect(); }
+else { if (!global._mongoUploadPromise) { _client = new MongoClient(uri, mongoOptions); global._mongoUploadPromise = _client.connect(); } _clientPromise = global._mongoUploadPromise; }
+const clientPromise = _clientPromise;
+
+const requireAuth = async (req, res, next) => {
+  try {
+    const token = req.cookies?.token;
+    if (!token) return res.status(401).json({ message: 'Access denied' });
+    jwt.verify(token, process.env.JWT_SECRET);
+    const result = next(); if (result?.then) return await result; return result;
+  } catch { return res.status(401).json({ message: 'Invalid token' }); }
+};
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
